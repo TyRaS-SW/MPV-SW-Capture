@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions / general help
+    url: https://github.com/TyRaS-SW/MPV-SW-Capture/discussions
+    about: Use GitHub Discussions for questions, setup help, or general feedback.

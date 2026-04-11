@@ -1,0 +1,71 @@
+name: 🐞 Bug report
+description: Report a bug or something that is not working as expected
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for using MPV-SW-Capture! Please fill in the details below so it's easier to reproduce and fix the bug.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched existing issues and did not find a similar bug
+          required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: MPV-SW-Capture version (tag or commit)
+      placeholder: "e.g. v1.0.0 or commit hash"
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "e.g. Windows 10, Windows 11"
+    validations:
+      required: true
+
+  - type: input
+    id: capture_card
+    attributes:
+      label: Capture card model
+      placeholder: "e.g. 4K Ultra HD USB 3.0 (MS 2131)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened?
+      description: Describe clearly what is happening and what you expected instead.
+      placeholder: "Example: When I start recording, the image freezes after 5 seconds..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Step-by-step instructions so I can reproduce the issue.
+      placeholder: |
+        1. Start MPV-SW-Capture
+        2. Open the menu and select ...
+        3. Apply shader/bezel/crop ...
+        4. Start recording and see the issue
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra info (logs, screenshots, etc.)
+      description: You can paste logs here or drag & drop screenshots or error messages.
+    validations:
+      required: false
