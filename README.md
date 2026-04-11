@@ -112,7 +112,7 @@ Bezel images included in this project are generic CRT/handheld-style frames (cre
 
 ## ❓ FAQ (Frequently Asked Questions)
 
-You can find the FAQ here: [FAQ](FAQ.md)
+You can find the FAQ here: [FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ)
 
 ## 💖 Sponsors
 
