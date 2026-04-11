@@ -110,6 +110,15 @@ Some visual examples of MPV‑SW‑Capture in action:
 
 Bezel images included in this project are generic CRT/handheld-style frames (created/edited for this project) and are not official assets from any console or game. They are decorative overlays only.
 
+## ❓ FAQ (Frequently Asked Questions)
+
+You can find the FAQ here: [FAQ](FAQ.md)
+
+## 💖 Sponsors
+
+If MPV-SW-Capture is useful to you, consider supporting development through [GitHub Sponsors](https://github.com/sponsors/TyRaS-SW).  
+Sponsors help keep the project maintained and make new features possible.
+
 ## 📄 License
 
 This project (Lua scripts, batch files, bezels, documentation, and original shaders authored by TyRaS-SW) is licensed under the MIT License – see the `LICENSE` file.
