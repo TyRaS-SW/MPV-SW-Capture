@@ -1,5 +1,5 @@
 # MPV‑SW‑Capture
-Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Switch / Switch 2 (or any console) laglessly and with many extra features.
+Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Switch / Switch 2 (or any console) with minimal lag/latency and with many extra features.
 
 ![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.png)
 
