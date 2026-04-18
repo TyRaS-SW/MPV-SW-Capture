@@ -1,5 +1,5 @@
 # MPV‑SW‑Capture
-Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Switch / Switch 2 (or any console) laglessly and with many extra features.
+Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Video Game Console (such as SW/2, or any other) with minimal lag/latency and with many extra features.
 
 ![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.png)
 
@@ -7,7 +7,7 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
 
 ## 📋 Features
 - **Play any console** (Nintendo Switch / Switch 2 or any other) through your USB capture card using MPV.
-- **Lagless** – play your real console without lag. Nearly the same as connect it directly to TV.
+- **With minimal lag/latency** – play your real console with minimal lag/latency. Nearly the same as connect it directly to TV.
 - **Portable** – copy/move and use the whole folder in any location; it will work there without reinstallation.
 - **Custom menu** (accessible via right‑click or a hotkey) with:
   - **Shaders** – load shaders to improve image quality up to 4K or switch to retro looks (CRT TV, VHS, CRT arcade, etc.).
@@ -18,13 +18,13 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
   - **Video recording** – record 30 seconds of good‑quality, small‑size video.
 - **Customize** the menu, replace and add your own bezels and shaders.
 
-## ⚙️ How it works (lagless audio + video)
+## ⚙️ How it works (minimal lag/latency audio + video)
 MPV alone can introduce noticeable latency when handling both audio and video from a capture card.  
 This setup **splits the workload**:
 - MPV handles the video stream only.
 - `ffplay` (from the ffmpeg bundle) handles the audio stream only.
 
-Both programs run silently, stay in sync, and together deliver lagless gameplay with audio and video.
+Both programs run silently, stay in sync, and together deliver minimal lag/latency gameplay with audio and video.
 
 ## 📦 Requirements
 
@@ -87,7 +87,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 
 4. **Launch the stream in MPV**
    - Run `MPV-SW-Capture.vbs` (you can create a desktop shortcut for convenience).
-   - If everything is set correctly, you will see your console with audio and video, laglessly.
+   - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
 
 ## 🖼️ Screenshots / Examples
@@ -118,6 +118,8 @@ You can find the FAQ here: [FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki
 
 If MPV-SW-Capture is useful to you, consider supporting development through [GitHub Sponsors](https://github.com/sponsors/TyRaS-SW).  
 Sponsors help keep the project maintained and make new features possible.
+
+You can also support me in Ko-fi: [![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tyras_sw)
 
 ## 📄 License
 
