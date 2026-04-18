@@ -119,6 +119,8 @@ You can find the FAQ here: [FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki
 If MPV-SW-Capture is useful to you, consider supporting development through [GitHub Sponsors](https://github.com/sponsors/TyRaS-SW).  
 Sponsors help keep the project maintained and make new features possible.
 
+You can also support me in Ko-fi: [![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tyras_sw)
+
 ## 📄 License
 
 This project (Lua scripts, batch files, bezels, documentation, and original shaders authored by TyRaS-SW) is licensed under the MIT License – see the `LICENSE` file.
