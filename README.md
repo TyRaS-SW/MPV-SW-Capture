@@ -18,13 +18,13 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
   - **Video recording** – record 30 seconds of good‑quality, small‑size video.
 - **Customize** the menu, replace and add your own bezels and shaders.
 
-## ⚙️ How it works (lagless audio + video)
+## ⚙️ How it works (minimal lag/latency audio + video)
 MPV alone can introduce noticeable latency when handling both audio and video from a capture card.  
 This setup **splits the workload**:
 - MPV handles the video stream only.
 - `ffplay` (from the ffmpeg bundle) handles the audio stream only.
 
-Both programs run silently, stay in sync, and together deliver lagless gameplay with audio and video.
+Both programs run silently, stay in sync, and together deliver minimal lag/latency gameplay with audio and video.
 
 ## 📦 Requirements
 
@@ -87,7 +87,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 
 4. **Launch the stream in MPV**
    - Run `MPV-SW-Capture.vbs` (you can create a desktop shortcut for convenience).
-   - If everything is set correctly, you will see your console with audio and video, laglessly.
+   - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
 
 ## 🖼️ Screenshots / Examples
