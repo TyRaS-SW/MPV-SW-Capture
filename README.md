@@ -7,7 +7,7 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
 
 ## 📋 Features
 - **Play any console** (Nintendo Switch / Switch 2 or any other) through your USB capture card using MPV.
-- **Lagless** – play your real console without lag. Nearly the same as connect it directly to TV.
+- **With minimal lag/latency** – play your real console with minimal lag/latency. Nearly the same as connect it directly to TV.
 - **Portable** – copy/move and use the whole folder in any location; it will work there without reinstallation.
 - **Custom menu** (accessible via right‑click or a hotkey) with:
   - **Shaders** – load shaders to improve image quality up to 4K or switch to retro looks (CRT TV, VHS, CRT arcade, etc.).
