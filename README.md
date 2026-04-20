@@ -46,7 +46,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
      - Visit <https://www.gyan.dev/ffmpeg/builds/>.
      - Download the latest `ffmpeg-git-essentials.7z`.
    - Get MPV‑SW‑Capture:
-     - Download the latest release of this repository (ZIP).
+     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases).
 
 2. **Prepare the folder**
    - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
