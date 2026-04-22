@@ -41,12 +41,13 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 1. **Download files**
    - Download MPV (latest official zhongfly build):
      - Go to <https://github.com/zhongfly/mpv-winbuild/releases>.
-     - Choose the latest build matching your Windows version (64‑bit, 64‑bit‑legacy for older PCs, or ARM64) and download the `.7z` archive.
+     - Check in "**Download Tips**". There are 3 versions. Choose **only ONE** of the latest build matching your Windows version (_64‑bit_, _64‑bit‑legacy for older PCs_, or _ARM64_) and download the `.7z` archive.
    - Download ffmpeg/ffplay:
      - Visit <https://www.gyan.dev/ffmpeg/builds/>.
+     - Go to "**git master builds**".
      - Download the latest `ffmpeg-git-essentials.7z`.
    - Get MPV‑SW‑Capture:
-     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases).
+     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **MPV-SW-Capture-v....zip**.
 
 2. **Prepare the folder**
    - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
