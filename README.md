@@ -83,7 +83,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    **Setup file**
    - Inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
 
-   - If you have the files, you will see ffplay.exe: Found! and menu.conf: Found!
+   - If you have the files in the folder, you will see ffplay.exe: Found! and menu.conf: Found!
    - If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want.
    - Press **"Scan Device"**, it will list all audio and video devices currently attached.
      (If nothing is connected, the list will be empty. Connect your devices, and try pressing the button again.)
@@ -92,7 +92,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    - When you are ready, press the green **"Apply Setup"** button.
    - If all is okay, you will receive a message with the changes.
   - *OPTIONAL: You can translate the MENU tu Spanish if you want. You must press **"MENU: English <- -> Espanol"**. You can do it without using the main options (It's independent)*
-4. **Launch the stream in MPV**
+4. **Launch the stream in MPV-SW-Capture**
    - Run `MPV-SW-Capture.exe` (you can create a desktop shortcut for convenience).
    - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
