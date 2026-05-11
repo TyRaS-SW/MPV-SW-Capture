@@ -82,7 +82,6 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 
    **Setup file**
    - Inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
-
    - If you have the files in the folder, you will see ffplay.exe: Found! and menu.conf: Found!
    - If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want.
    - Press **"Scan Device"**, it will list all audio and video devices currently attached.
@@ -120,6 +119,10 @@ Bezel images included in this project are generic CRT/handheld-style frames (cre
 ## ❓ FAQ (Frequently Asked Questions)
 
 You can find the FAQ here: [FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ)
+
+## 📄 LEEME en Español (Spanish README)
+
+Puedes encontrar este README en Español aquí: [LEEME](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME)
 
 ## 💖 Sponsors
 
