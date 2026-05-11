@@ -28,14 +28,14 @@
 //!TYPE CONSTANT float
 //!MINIMUM 0
 //!MAXIMUM 1
-0.1
+0.0
 
 //!PARAM CURVATURE_Y
 //!DESC Screen curvature - vertical
 //!TYPE CONSTANT float
 //!MINIMUM 0
 //!MAXIMUM 1
-0.15
+0.0
 
 //!PARAM HORIZONTAL_BLUR
 //!DESC Horizontal Blur
@@ -212,11 +212,14 @@ void fragment_main() {
         texcoord.y *= 1. + params.SHRINK;
         texcoord.y += 0.5;
     }
+
     texcoord = fragment_Distort(texcoord);
-    if (texcoord.x < 0. || texcoord.x > 1.0 || texcoord.y < 0. || texcoord.y > 1.0) {
-        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-        return;
-    }
+
+    // Flat geometry: no black border here, external Form shaders handle borders.
+    // if (texcoord.x < 0. || texcoord.x > 1.0 || texcoord.y < 0. || texcoord.y > 1.0) {
+    //     FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    //     return;
+    // }
     vec2 fragCoord = texcoord.xy * params.OutputSize.xy;
     vec2 factor = texSize.xy / params.OutputSize.xy;
     highp float yCoord = fragment_YCoord(fragCoord.y, factor.y);

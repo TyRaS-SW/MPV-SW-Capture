@@ -8,8 +8,10 @@ SET "audio_device=Interfaz de sonido digital (USB3 Digital Audio)"
 
 if not defined INVISIBLE_MODE (
 set INVISIBLE_MODE=1
-cscript //nologo "%~dp0MPV-SW-Capture.vbs"
-exit
+if exist "%~dp0MPV-SW-Capture.vbs" (
+    cscript //nologo "%~dp0MPV-SW-Capture.vbs"
+    exit
+)
 )
 
 REM MPV: 1080p60

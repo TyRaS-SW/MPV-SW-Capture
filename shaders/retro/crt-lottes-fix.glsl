@@ -102,12 +102,10 @@ vec3 horz7(vec2 pos, float off, float scale) {
     return (a * wa + b * wb + c * wc + d * wd + e * we + f * wf + g * wg) / (wa + wb + wc + wd + we + wf + wg);
 }
 
-// 🔧 CRITIC FIX #1: Bend + CLAMP
+// Curvature disabled: geometry is flat, external Form shaders handle shape.
 vec2 bend_screen(vec2 pos) {
-    pos = pos * 2.0 - 1.0;
-    pos *= vec2(1.0 + (pos.y * pos.y) * CURVATURE.x,
-                1.0 + (pos.x * pos.x) * CURVATURE.y);
-    return pos * 0.5 + 0.5; // si quieres, aquí puedes añadir clamp
+    // Input is expected in 0–1, keep it that way.
+    return clamp(pos, 0.0, 1.0);
 }
 
 float scan(vec2 pos, float off) {
@@ -179,13 +177,12 @@ vec3 mask(vec2 pos) {
     return m;
 }
 
-// 🔧 CRITIC FIX #2: Bilineal with clamp
 vec4 calculate_crt(vec2 mpos, vec2 tsize, float scale_x, float scale_y) {
     vec2 pos = bend_screen(mpos);
 
-    // If pixel was out of the "screen" curved → black tint
-    if (pos.x < 0.0 || pos.x > 1.0 || pos.y < 0.0 || pos.y > 1.0)
-        return vec4(0.0, 0.0, 0.0, 1.0);
+    // Flat geometry: do not kill pixels here, Forms will handle borders.
+    // if (pos.x < 0.0 || pos.x > 1.0 || pos.y < 0.0 || pos.y > 1.0)
+    //     return vec4(0.0, 0.0, 0.0, 1.0);
 
     vec3 color = tri(pos);
     color += bloom(pos) * BLOOM_AMOUNT;

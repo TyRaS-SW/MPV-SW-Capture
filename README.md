@@ -1,7 +1,7 @@
 # MPV‑SW‑Capture
 Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Video Game Console (such as SW/2, or any other) with minimal lag/latency and with many extra features.
 
-![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.png)
+![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.jpg)
 
 ---
 
@@ -11,11 +11,12 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
 - **Portable** – copy/move and use the whole folder in any location; it will work there without reinstallation.
 - **Custom menu** (accessible via right‑click or a hotkey) with:
   - **Shaders** – load shaders to improve image quality up to 4K or switch to retro looks (CRT TV, VHS, CRT arcade, etc.).
-  - **Bezels** – overlay special border images (e.g., SNES NSO bezel) for an authentic feel.
+  - **Shapes** – change the shape of how screen looks (CRT TV, VHS, CRT arcade, etc.).
   - **Crop** – crop the window to the exact size of a NSO system (GBA, NES, SNES, etc.).
+  - **Bezels** – overlay special border images (e.g., SNES NSO bezel) for an authentic feel.
   - **Window options** – resize, reposition, set Always on Top, and more.
   - **Screenshots** – automatically save screenshots to your MPV folder.
-  - **Video recording** – record 30 seconds of good‑quality, small‑size video.
+  - **Video recording** – record 30/60/90/120 seconds of good‑quality, small‑size video.
 - **Customize** the menu, replace and add your own bezels and shaders.
 
 ## ⚙️ How it works (minimal lag/latency audio + video)
@@ -41,12 +42,13 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 1. **Download files**
    - Download MPV (latest official zhongfly build):
      - Go to <https://github.com/zhongfly/mpv-winbuild/releases>.
-     - Choose the latest build matching your Windows version (64‑bit, 64‑bit‑legacy for older PCs, or ARM64) and download the `.7z` archive.
+     - Check in "**Download Tips**". There are 3 versions. Choose **only ONE** of the latest build matching your Windows version (_64‑bit_, _64‑bit‑legacy for older PCs_, or _ARM64_) and download the `.7z` archive.
    - Download ffmpeg/ffplay:
      - Visit <https://www.gyan.dev/ffmpeg/builds/>.
+     - Go to "**git master builds**".
      - Download the latest `ffmpeg-git-essentials.7z`.
    - Get MPV‑SW‑Capture:
-     - Download the latest release of this repository (ZIP).
+     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **MPV-SW-Capture-v....zip**.
 
 2. **Prepare the folder**
    - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
@@ -61,13 +63,13 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    ├── bezels/
    ├── scripts/
    ├── shaders/
-   ├── _Setup_MPV-SW-Capture.bat
+   ├── Setup_MPV-SW-Capture.exe
    ├── ffmpeg.exe
    ├── ffplay.exe
    ├── input.conf
    ├── menu.conf
    ├── MPV-SW-Capture.bat
-   ├── MPV-SW-Capture.vbs
+   ├── MPV-SW-Capture.exe
    ├── mpv.conf
    └── mpv.exe
    ```
@@ -79,24 +81,29 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    - Connect HDMI from your console to the **input** of the capture card.
 
    **Setup file**
-   - Inside the folder, run `_Setup_MPV-SW-Capture.bat`. It will list all audio and video devices currently attached.  
-     (If nothing is connected, the list will be empty. Close the window, connect your devices, and try again.)
-   - Choose the video device (press the corresponding number) and then the audio device.
-   - The batch file updates the necessary config files with your selections.
-   - Follow the prompts to set your preferences (date format for screenshots and video, autostart with shaders, and whether to create a desktop shortcut).
+   - Inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
 
+   - If you have the files, you will see ffplay.exe: Found! and menu.conf: Found!
+   - If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want.
+   - Press **"Scan Device"**, it will list all audio and video devices currently attached.
+     (If nothing is connected, the list will be empty. Connect your devices, and try pressing the button again.)
+   - Choose the video device in the list and then the audio device (must be the same type as the capture card).
+   - Choose Date Format, Auto Start Special Shaders, Default Record Video Time, Create Desktop Shorcut, to set your preferences.
+   - When you are ready, press the green **"Apply Setup"** button.
+   - If all is okay, you will receive a message with the changes.
+  - *OPTIONAL: You can translate the MENU tu Spanish if you want. You must press **"MENU: English <- -> Espanol"**. You can do it without using the main options (It's independent)*
 4. **Launch the stream in MPV**
-   - Run `MPV-SW-Capture.vbs` (you can create a desktop shortcut for convenience).
+   - Run `MPV-SW-Capture.exe` (you can create a desktop shortcut for convenience).
    - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
 
 ## 🖼️ Screenshots / Examples
 Some visual examples of MPV‑SW‑Capture in action:
 
-| <center>Custom Menu</center> | <center>Shader example</center> |
+| <center>Custom Menu</center> | <center>Shader+Shape example</center> |
 |----------|----------|
 | ![Custom Menu](assets/mpv-sw-capture2.jpg) | ![Shader example](assets/mpv-sw-capture3.jpg) |
-| <center><small>*Right‑click / ESC menu with shaders, bezels, crop, window and capture options.*</small></center> | <center><small>*Example of a CRT‑style shader applied through MPV‑SW‑Capture.*</small></center> |
+| <center><small>*Right‑click / ESC menu with shaders, bezels, crop, window and capture options.*</small></center> | <center><small>*Example of a CRT‑style shader+CRT Curved Shape applied through MPV‑SW‑Capture.*</small></center> |
 
 | <center>Bezel example</center> | <center>Crop example</center> |
 |----------|----------|
