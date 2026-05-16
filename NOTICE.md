@@ -149,6 +149,16 @@ Origin: AMD FidelityFX SDK (FSR1)
 License: see the original LICENSE at:  
 https://github.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/blob/v2.1.0/Kits/FidelityFX/upscalers/fsr3/include/gpu/fsr1/ffx\_fsr1.h  
 Status: included as‑is, no modifications by TyRaS-SW.
+* NVScaler\_RT.glsl  
+Origin: NVIDIA Image Scaling  
+License: see the original LICENSE at:  
+https://github.com/NVIDIAGameWorks/NVIDIAImageScaling/blob/v1.0.3/licence.txt
+Status: included as‑is, no modifications by TyRaS-SW.
+* NVSharpen\_RT.glsl  
+Origin: NVIDIA Image Scaling  
+License: see the original LICENSE at:  
+https://github.com/NVIDIAGameWorks/NVIDIAImageScaling/blob/v1.0.3/licence.txt
+Status: included as‑is, no modifications by TyRaS-SW.
 * KrigBilateral.glsl  
 Author: Shiandow  
 License: GNU Lesser General Public License (LGPL), version 3.0 or later  

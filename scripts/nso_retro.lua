@@ -74,148 +74,165 @@ local active_crop = ""
 local active_bezel = nil
 local active_shape = "none"
 local syncing_glsl = false
+local bezel_apply_serial = 0
+local bezel_sync_timer = nil
+local glsl_resync_timer = nil
 
 -- -------------------------------------------------------------------------
 -- Helpers
 -- -------------------------------------------------------------------------
 local function split_shader_list_native(v)
-if type(v) == "table" then
-local out = {}
-for _, s in ipairs(v) do
-if s and s ~= "" then
-table.insert(out, tostring(s))
-end
-end
-return out
-end
+    if type(v) == "table" then
+        local out = {}
+        for _, s in ipairs(v) do
+            if s and s ~= "" then
+                table.insert(out, tostring(s))
+            end
+        end
+        return out
+    end
 
-if not v or v == "" then
-return {}
-end
+    if not v or v == "" then
+        return {}
+    end
 
-local t = {}
-for part in string.gmatch(tostring(v), "([^;]+)") do
-table.insert(t, part)
-end
-return t
+    local t = {}
+    for part in string.gmatch(tostring(v), "([^;]+)") do
+        table.insert(t, part)
+    end
+    return t
 end
 
 local function path_in_addons(path)
-for _, info in pairs(addons) do
-if info.path == path then
-return true
-end
-end
-return false
+    for _, info in pairs(addons) do
+        if info.path == path then
+            return true
+        end
+    end
+    return false
 end
 
 local function current_shape_path()
-if active_shape ~= "none" and addons[active_shape] then
-return addons[active_shape].path
-end
-return nil
+    if active_shape ~= "none" and addons[active_shape] then
+        return addons[active_shape].path
+    end
+    return nil
 end
 
 local function get_shield_path()
-return temp_dir .. "/protect_" .. (active_bezel or "default") .. ".glsl"
+    return temp_dir .. "/protect_" .. (active_bezel or "default") .. ".glsl"
 end
 
 local function update_shape_property()
-mp.set_property_native("user-data/active_shape", active_shape)
+    mp.set_property_native("user-data/active_shape", active_shape)
+end
+
+local function shader_list_contains(list, wanted)
+    if not wanted or wanted == "" then
+        return true
+    end
+
+    for _, s in ipairs(split_shader_list_native(list or {})) do
+        if tostring(s) == wanted then
+            return true
+        end
+    end
+
+    return false
 end
 
 local function sync_glsl_stack()
-if syncing_glsl then
-return
-end
+    if syncing_glsl then
+        return
+    end
 
-syncing_glsl = true
+    syncing_glsl = true
 
-local shaders = mp.get_property_native("glsl-shaders", {}) or {}
-local list = split_shader_list_native(shaders)
+    local shaders = mp.get_property_native("glsl-shaders", {}) or {}
+    local list = split_shader_list_native(shaders)
 
-local clean = {}
-for _, s in ipairs(list) do
-local str = tostring(s)
-if not str:find("protect_") and not path_in_addons(str) then
-table.insert(clean, str)
-end
-end
+    local clean = {}
+    for _, s in ipairs(list) do
+        local str = tostring(s)
+        if not str:find("protect_") and not path_in_addons(str) then
+            table.insert(clean, str)
+        end
+    end
 
-local final = {}
+    local final = {}
 
-if active_bezel then
-table.insert(final, get_shield_path())
-end
+    if active_bezel then
+        table.insert(final, get_shield_path())
+    end
 
-local shape_path = current_shape_path()
-if shape_path then
-table.insert(final, shape_path)
-end
+    local shape_path = current_shape_path()
+    if shape_path then
+        table.insert(final, shape_path)
+    end
 
-for _, s in ipairs(clean) do
-table.insert(final, s)
-end
+    for _, s in ipairs(clean) do
+        table.insert(final, s)
+    end
 
-mp.set_property_native("glsl-shaders", final)
-update_shape_property()
+    mp.set_property_native("glsl-shaders", final)
+    update_shape_property()
 
-syncing_glsl = false
+    syncing_glsl = false
 end
 
 -- -------------------------------------------------------------------------
 -- Shape controls
 -- -------------------------------------------------------------------------
 local function set_language(lang)
-if lang == "es" then
-current_lang = "es"
-else
-current_lang = "en"
-end
-mp.set_property("user-data/osd_lang", current_lang)
+    if lang == "es" then
+        current_lang = "es"
+    else
+        current_lang = "en"
+    end
+    mp.set_property("user-data/osd_lang", current_lang)
 end
 
 local function tr(en_text, es_text)
-if current_lang == "es" then
-return es_text
-end
-return en_text
+    if current_lang == "es" then
+        return es_text
+    end
+    return en_text
 end
 
 local function addon_label(id)
-local a = addons[id]
-if not a then
-return "none"
-end
-if current_lang == "es" then
-return a.es or a.en or "none"
-end
-return a.en or a.es or "none"
+    local a = addons[id]
+    if not a then
+        return "none"
+    end
+    if current_lang == "es" then
+        return a.es or a.en or "none"
+    end
+    return a.en or a.es or "none"
 end
 
 local function toggle_shape(id)
-if not addons[id] and id ~= "none" then
-mp.osd_message(tr("Unknown Shape: ", "Forma desconocida: ") .. tostring(id))
-return
-end
+    if not addons[id] and id ~= "none" then
+        mp.osd_message(tr("Unknown Shape: ", "Forma desconocida: ") .. tostring(id))
+        return
+    end
 
-if active_shape == id then
-active_shape = "none"
-mp.osd_message(tr("Shape OFF", "Forma DESACTIVADA"))
-else
-active_shape = id
-mp.osd_message(tr("Shape ON: ", "Forma ACTIVADA: ") .. addon_label(id))
-end
+    if active_shape == id then
+        active_shape = "none"
+        mp.osd_message(tr("Shape OFF", "Forma DESACTIVADA"))
+    else
+        active_shape = id
+        mp.osd_message(tr("Shape ON: ", "Forma ACTIVADA: ") .. addon_label(id))
+    end
 
-sync_glsl_stack()
+    sync_glsl_stack()
 end
 
 local function clear_shapes(silent)
-active_shape = "none"
-sync_glsl_stack()
-if silent ~= "silent" then
-mp.osd_message(tr("Shape Cleared", "Forma Limpiada"))
-end
+    active_shape = "none"
+    sync_glsl_stack()
+    if silent ~= "silent" then
+        mp.osd_message(tr("Shape Cleared", "Forma Limpiada"))
+    end
 end
 
 mp.register_script_message("set-addon-language", set_language)
@@ -351,11 +368,11 @@ vec4 hook() { return HOOKED_texOff(0.0); }
 //!BIND HOOKED
 //!COMPONENTS 4
 vec4 hook() {
-    vec2 uv = HOOKED_pos;
-    if (uv.x < %s || uv.x > %s || uv.y < %s || uv.y > %s) {
-        return vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    return HOOKED_texOff(0.0);
+vec2 uv = HOOKED_pos;
+if (uv.x < %s || uv.x > %s || uv.y < %s || uv.y > %s) {
+return vec4(0.0, 0.0, 0.0, 1.0);
+}
+return HOOKED_texOff(0.0);
 }
 
 //!HOOK OUTPUT
@@ -363,11 +380,11 @@ vec4 hook() {
 //!BIND CLEAN_FRAME
 //!COMPONENTS 4
 vec4 hook() {
-    vec2 uv = HOOKED_pos;
-    if (uv.x < %s || uv.x > %s || uv.y < %s || uv.y > %s) {
-        return CLEAN_FRAME_tex(uv);
-    }
-    return HOOKED_texOff(0.0);
+vec2 uv = HOOKED_pos;
+if (uv.x < %s || uv.x > %s || uv.y < %s || uv.y > %s) {
+return CLEAN_FRAME_tex(uv);
+}
+return HOOKED_texOff(0.0);
 }
 ]]
 
@@ -431,8 +448,12 @@ local function clear_bezel_only()
     active_bezel = nil
     mp.set_property("user-data/active_bezel", "none")
 
+    if bezel_sync_timer then
+        bezel_sync_timer:kill()
+        bezel_sync_timer = nil
+    end
+
     remove_protect_shader()
-    sync_glsl_stack()
 end
 
 local function clear_crop_only()
@@ -451,12 +472,11 @@ local function apply_bezel(image_file, bezel_id, px, py, pw, ph)
     px, py, pw, ph = tonumber(px), tonumber(py), tonumber(pw), tonumber(ph)
 
     local spx, spy, spw, sph = scale_from_base_1080(px, py, pw, ph)
+    local my_serial = bezel_apply_serial + 1
+    bezel_apply_serial = my_serial
 
     active_bezel = bezel_id
     mp.set_property("user-data/active_bezel", bezel_id)
-
-    generate_shader(spx, spy, spw, sph)
-    sync_glsl_stack()
 
     local path = mp.command_native({ "expand-path", "~~/bezels/" .. image_file })
     path = path:gsub("\\", "/"):gsub(":", "\\:")
@@ -476,6 +496,21 @@ local function apply_bezel(image_file, bezel_id, px, py, pw, ph)
     })
 
     mp.set_property_native("vf", vf_list)
+
+    if bezel_sync_timer then
+        bezel_sync_timer:kill()
+        bezel_sync_timer = nil
+    end
+
+    bezel_sync_timer = mp.add_timeout(0.05, function()
+        if my_serial ~= bezel_apply_serial then
+            return
+        end
+
+        generate_shader(spx, spy, spw, sph)
+        sync_glsl_stack()
+    end)
+
     mp.osd_message(tr("BEZEL: ", "MARCO: ") .. bezel_id, 2)
 end
 
@@ -519,38 +554,6 @@ for id, _ in pairs(crops) do
         toggle_crop(id)
     end)
 end
-
--- -------------------------------------------------------------------------
--- Shape controls
--- -------------------------------------------------------------------------
-local function toggle_shape(id)
-if not addons[id] and id ~= "none" then
-mp.osd_message(tr("Unknown Shape: ", "Forma desconocida: ") .. tostring(id))
-return
-end
-
-if active_shape == id then
-active_shape = "none"
-mp.osd_message(tr("Shape OFF", "Forma DESACTIVADA"))
-else
-active_shape = id
-mp.osd_message(tr("Shape ON: ", "Forma ACTIVADA: ") .. addon_label(id))
-end
-
-sync_glsl_stack()
-end
-
-local function clear_shapes(silent)
-active_shape = "none"
-sync_glsl_stack()
-if silent ~= "silent" then
-mp.osd_message(tr("Shape Cleared", "Forma Limpiada"))
-end
-end
-
-mp.register_script_message("set-addon-language", set_language)
-mp.register_script_message("toggle-addon-shader", toggle_shape)
-mp.register_script_message("clear-addon-shaders", clear_shapes)
 
 -- -------------------------------------------------------------------------
 -- Toggle bezel.
@@ -603,13 +606,31 @@ end)
 -- -------------------------------------------------------------------------
 -- Watch shader list changes and restore shield + active shape order.
 -- -------------------------------------------------------------------------
-mp.observe_property("glsl-shaders", "native", function()
+mp.observe_property("glsl-shaders", "native", function(_, value)
     if syncing_glsl then
         return
     end
 
-    if active_bezel or active_shape ~= "none" then
-        mp.add_timeout(0.01, function()
+    local need_resync = false
+    local shader_list = split_shader_list_native(value or {})
+
+    if active_bezel and not shader_list_contains(shader_list, get_shield_path()) then
+        need_resync = true
+    end
+
+    local shape_path = current_shape_path()
+    if shape_path and not shader_list_contains(shader_list, shape_path) then
+        need_resync = true
+    end
+
+    if need_resync then
+        if glsl_resync_timer then
+            glsl_resync_timer:kill()
+            glsl_resync_timer = nil
+        end
+
+        glsl_resync_timer = mp.add_timeout(0.05, function()
+            glsl_resync_timer = nil
             sync_glsl_stack()
         end)
     end
