@@ -9,6 +9,9 @@
 #define warpY 0.05
 #define vignette 1.0
 
+// Width of the anti-aliased edge in UV space (~1 pixel)
+#define EDGE_AA 0.001
+
 vec2 fragment_Warp(vec2 pos) {
     pos = pos * 2.0 - 1.0;
     pos *= vec2(1.0 + (pos.y * pos.y) * warpX, 1.0 + (pos.x * pos.x) * warpY);
@@ -17,7 +20,7 @@ vec2 fragment_Warp(vec2 pos) {
 
 float fragment_vign(vec2 vpos) {
     if (vignette == 0.0) return 1.0;
-    vpos = vpos * (1.0 - vpos); 
+    vpos = vpos * (1.0 - vpos);
     float vig = max(vpos.x * vpos.y * 45.0, 0.0);
     return min(pow(vig, 0.15), 1.0);
 }
@@ -25,12 +28,19 @@ float fragment_vign(vec2 vpos) {
 vec4 hook() {
     vec2 pos = fragment_Warp(MAIN_pos);
 
-    vec4 color = MAIN_tex(pos);
-    color.rgb *= fragment_vign(pos);
+    if (pos.x < -EDGE_AA || pos.x > 1.0 + EDGE_AA ||
+        pos.y < -EDGE_AA || pos.y > 1.0 + EDGE_AA)
+        return vec4(0.0, 0.0, 0.0, 1.0);
 
-    float in_bounds = step(0.0, pos.x) * step(pos.x, 1.0) * step(0.0, pos.y) * step(pos.y, 1.0);
+    vec2 clamped = clamp(pos, 0.0, 1.0);
+    vec4 color = MAIN_tex(clamped);
+    color.rgb *= fragment_vign(clamped);
 
-    // FIX BLACK transparencies (original shape)
-    vec4 final_color = in_bounds * color;
-    return mix(vec4(0.0, 0.0, 0.0, 1.0), final_color, in_bounds);
+    float mask_x = smoothstep(0.0, EDGE_AA, pos.x) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, pos.x);
+    float mask_y = smoothstep(0.0, EDGE_AA, pos.y) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, pos.y);
+    float mask = mask_x * mask_y;
+
+    return vec4(color.rgb * mask, 1.0);
 }

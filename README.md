@@ -6,7 +6,7 @@ Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture
 ---
 
 ## 📋 Features
-- **Play any console** (Nintendo Switch / Switch 2 or any other) through your USB capture card using MPV.
+- **Play any console** (Switch/2/PS/XB/Retro or any other HDMI compatible console) through your USB capture card using MPV.
 - **With minimal lag/latency** – play your real console with minimal lag/latency. Nearly the same as connect it directly to TV.
 - **Portable** – copy/move and use the whole folder in any location; it will work there without reinstallation.
 - **Custom menu** (accessible via right‑click or a hotkey) with:
@@ -37,23 +37,14 @@ Both programs run silently, stay in sync, and together deliver minimal lag/laten
 
 Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licenses (LGPL/GPL, etc.). They are required to use this project but are not bundled in this repository or its release assets.
 
-## 🛠️ Installation (step‑by‑step)
+## 🛠️ Installation v2.2.0+ (step‑by‑step)
 
 1. **Download files**
-   - Download MPV (latest official zhongfly build):
-     - Go to <https://github.com/zhongfly/mpv-winbuild/releases>.
-     - Check in "**Download Tips**". There are 3 versions. Choose **only ONE** of the latest build matching your Windows version (_64‑bit_, _64‑bit‑legacy for older PCs_, or _ARM64_) and download the `.7z` archive.
-   - Download ffmpeg/ffplay:
-     - Visit <https://www.gyan.dev/ffmpeg/builds/>.
-     - Go to "**git master builds**".
-     - Download the latest `ffmpeg-git-essentials.7z`.
-   - Get MPV‑SW‑Capture:
-     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **MPV-SW-Capture-v....zip**.
+   - Get MPV‑SW‑Capture (v2.2.0 or more):
+     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **MPV-SW-Capture-v.X.Y.Z.zip**.
 
 2. **Prepare the folder**
    - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
-   - Open the latest MPV version (zhongfly build) you downloaded and extract **only** `mpv.exe` into that folder.
-   - Open `ffmpeg-git-essentials.7z`, go to the `bin` folder, and copy `ffplay.exe` and `ffmpeg.exe` into the same folder where `mpv.exe` lives.
    - Open the latest MPV‑SW‑Capture release and extract **all the files** into this same folder.
 
    You should end up with something like:
@@ -63,15 +54,13 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    ├── bezels/
    ├── scripts/
    ├── shaders/
+   ├── Installer_MPV-SW-Capture.exe
    ├── Setup_MPV-SW-Capture.exe
-   ├── ffmpeg.exe
-   ├── ffplay.exe
    ├── input.conf
    ├── menu.conf
-   ├── MPV-SW-Capture.bat
-   ├── MPV-SW-Capture.exe
    ├── mpv.conf
-   └── mpv.exe
+   ├── MPV-SW-Capture.bat
+   └── MPV-SW-Capture.exe
    ```
 
 3. **First setup**
@@ -80,14 +69,18 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    - Connect your capture card to your PC using USB 3.0 (or USB 2.0).
    - Connect HDMI from your console to the **input** of the capture card.
 
-   **Setup file**
-   - Inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
-   - If you have the files in the folder, you will see ffplay.exe: Found! and menu.conf: Found!
-   - If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want.
-   - Press **"Scan Device"**, it will list all audio and video devices currently attached.
+   **INSTALL file**
+    - Inside the folder, run `Installer_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_installer.jpg)</div>
+      Change anything you want in any options, or use the default ones.
+    - Press **"Install / Update ALL"** and wait the Installer do the job.
+      
+   **SETUP file**
+    - Now, inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
+      _If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want._
+    - Press **"Scan Device"**, it will list all audio and video devices currently attached.
      (If nothing is connected, the list will be empty. Connect your devices, and try pressing the button again.)
-   - Choose the video device in the list and then the audio device (must be the same type as the capture card).
-   - Choose Date Format, Auto Start Special Shaders, Default Record Video Time, Create Desktop Shorcut, to set your preferences.
+    - Choose the video device in the list and then the audio device (must be the same type as the capture card).
+    - Choose Date Format, Auto Start Special Shaders, Default Record Video Time, Create Desktop Shorcut, to set your preferences.
    - When you are ready, press the green **"Apply Setup"** button.
    - If all is okay, you will receive a message with the changes.
   - *OPTIONAL: You can translate the MENU tu Spanish if you want. You must press **"MENU: English <- -> Espanol"**. You can do it without using the main options (It's independent)*
@@ -95,6 +88,9 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    - Run `MPV-SW-Capture.exe` (you can create a desktop shortcut for convenience).
    - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
+   
+## MANUAL Install
+If you want to use the old way to install MPV-SW-Capture (that still works), you are having problems, or anything else, you can find it here: **[MANUAL Install](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)**
 
 ## 🖼️ Screenshots / Examples
 Some visual examples of MPV‑SW‑Capture in action:

@@ -8,6 +8,9 @@
 
 #define VIGNETTE_STRENGTH 2.0
 
+// Width of the anti-aliased edge in UV space (~1 pixel)
+#define EDGE_AA 0.001
+
 vec2 bend_screen(vec2 pos) {
     pos = pos * 2.0 - 1.0;
     pos *= vec2(1.0 + (pos.y * pos.y) * CURVATURE.x,
@@ -25,14 +28,21 @@ float fragment_vign(vec2 vpos) {
 vec4 hook() {
     vec2 pos = bend_screen(MAIN_pos);
 
-    // Black borders
-    if (pos.x < 0.0 || pos.x > 1.0 || pos.y < 0.0 || pos.y > 1.0)
+    if (pos.x < -EDGE_AA || pos.x > 1.0 + EDGE_AA ||
+        pos.y < -EDGE_AA || pos.y > 1.0 + EDGE_AA)
         return vec4(0.0, 0.0, 0.0, 1.0);
 
-    vec4 color = MAIN_tex(pos);
+    vec2 clamped = clamp(pos, 0.0, 1.0);
+    vec4 color = MAIN_tex(clamped);
 
     float v = fragment_vign(MAIN_pos);
     color.rgb *= v;
 
-    return color;
+    float mask_x = smoothstep(0.0, EDGE_AA, pos.x) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, pos.x);
+    float mask_y = smoothstep(0.0, EDGE_AA, pos.y) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, pos.y);
+    float mask = mask_x * mask_y;
+
+    return vec4(color.rgb * mask, 1.0);
 }

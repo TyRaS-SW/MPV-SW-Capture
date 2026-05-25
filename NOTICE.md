@@ -115,6 +115,13 @@ Header example:
 Description: original screen-shape shader implementing a pinball table-style perspective transform.  
 Header example:  
 "Pinball Table Perspective Shape. By TyRaS-SW, 2026"
+* gb\_origin\_lcd\_colors.glsl 
+Description: original shader derived from an experimental modification of `crt-guest-sm.glsl`.   
+Notes: the initial accidental green-tinted result was intentionally refined into a new shader look. 
+Header example:
+Derived from crt-guest-sm.glsl" 
+"Modified by TyRaS-SW, 2026" 
+"This experimental port produced a useful greenish-screen effect and became the basis for gb\_origin\_lcd\_colors.""This experimental port produced a useful greenish-screen effect and became the basis for gb\_origin\_lcd\_colors."
 
 As stated in the file headers, for example:  
 "This file is inspired in CRT Lottes curvature. By TyRaS-SW, 2026"  

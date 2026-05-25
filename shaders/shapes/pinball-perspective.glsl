@@ -19,6 +19,9 @@
 // No extra black side borders
 #define SIDE_BORDER  0.0
 
+// Width of the anti-aliased edge in UV space (~1 pixel)
+#define EDGE_AA 0.001
+
 vec2 warp_screen(vec2 uv_out)
 {
     float y = uv_out.y;              // 0 = bottom, 1 = top
@@ -47,8 +50,18 @@ vec4 hook()
 
     vec2 uv = warp_screen(MAIN_pos);
 
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0)
-        return vec4(0.0);
+    if (uv.x < -EDGE_AA || uv.x > 1.0 + EDGE_AA ||
+        uv.y < -EDGE_AA || uv.y > 1.0 + EDGE_AA)
+        return vec4(0.0, 0.0, 0.0, 1.0);
 
-    return MAIN_tex(uv);
+    vec2 clamped = clamp(uv, 0.0, 1.0);
+    vec4 color = MAIN_tex(clamped);
+
+    float mask_x = smoothstep(0.0, EDGE_AA, uv.x) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, uv.x);
+    float mask_y = smoothstep(0.0, EDGE_AA, uv.y) *
+                   smoothstep(1.0, 1.0 - EDGE_AA, uv.y);
+    float mask = mask_x * mask_y;
+
+    return vec4(color.rgb * mask, 1.0);
 }
