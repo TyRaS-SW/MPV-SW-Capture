@@ -41,7 +41,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
 
 1. **Download files**
    - Get MPV‑SW‑Capture (v2.2.0 or more):
-     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **MPV-SW-Capture-v.X.Y.Z.zip**.
+     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **`MPV-SW-Capture-v.`X.Y.Z`.zip`**.
 
 2. **Prepare the folder**
    - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
