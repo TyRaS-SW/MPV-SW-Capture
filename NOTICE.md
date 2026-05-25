@@ -202,3 +202,22 @@ upstream project.
 The MIT License in this repository applies only to original code authored by
 TyRaS-SW, not to third‑party shaders included here.
 
+## 5. External tools downloaded by the installer
+
+The installer script (`Installer_MPV-SW-Capture_GUI.exe`) is provided as a
+convenience tool that automates the download of the following third-party
+applications from their respective official GitHub repositories. These tools
+are **not bundled** in this repository and are downloaded at runtime to the
+user's local machine.
+
+- **mpv** — downloaded from [zhongfly/mpv-winbuild](https://github.com/zhongfly/mpv-winbuild)  
+  License: GNU General Public License v2+ and GNU Lesser General Public License v2.1+  
+  See: https://github.com/mpv-player/mpv/blob/master/LICENSE
+
+- **ffmpeg / ffplay** — downloaded from [GyanD/codexffmpeg](https://github.com/GyanD/codexffmpeg)  
+  License: GNU Lesser General Public License v2.1+ (LGPL) and optionally GPL  
+  See: https://ffmpeg.org/legal.html
+
+This project does not redistribute, modify, or sublicense any of the above
+binaries. Each tool remains under its own upstream license. Users who run the
+installer are responsible for complying with the terms of those licenses.
