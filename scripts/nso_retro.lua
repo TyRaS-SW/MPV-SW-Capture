@@ -13,16 +13,17 @@ temp_dir = temp_dir:gsub("\\", "/")
 -- -------------------------------------------------------------------------
 local crops = {
     crop1  = { filter = "crop=ih*4/3:ih", title = "NSO N64/GC (4:3)" },
-    crop2  = { filter = "crop=1436:1008", title = "NSO N64 (Mario 64 Size)" },
-    crop3  = { filter = "crop=1316:1026", title = "NSO NES (4:3/CRT)" },
-    crop4  = { filter = "crop=1024:912", title = "NSO NES (Pixel Perfect)" },
-    crop5  = { filter = "crop=1316:1008", title = "NSO SNES/GEN (4:3/CRT)" },
-    crop6  = { filter = "crop=1152:1008", title = "NSO SNES (Pixel Perfect)" },
-    crop7  = { filter = "crop=1120:1008", title = "NSO GameBoy Color" },
-    crop8  = { filter = "crop=800:720", title = "NSO GameBoy (Small)" },
-    crop9  = { filter = "crop=1440:960", title = "NSO GameBoy Advance" },
-    crop10 = { filter = "crop=960:640", title = "NSO GameBoy Advance (Small)" },
-    crop11 = { filter = "crop=1280:896", title = "NSO Genesis (Pixel Perfect)" }
+    crop2  = { filter = "crop=1316:1026", title = "NSO NES (4:3/CRT)" },
+    crop3  = { filter = "crop=1024:912", title = "NSO NES (Pixel Perfect)" },
+    crop4  = { filter = "crop=1316:1008", title = "NSO SNES/GEN (4:3/CRT)" },
+    crop5  = { filter = "crop=1152:1008", title = "NSO SNES (Pixel Perfect)" },
+    crop6  = { filter = "crop=1120:1008", title = "NSO GameBoy Color" },
+    crop7  = { filter = "crop=800:720", title = "NSO GameBoy (Small)" },
+    crop8  = { filter = "crop=1440:960", title = "NSO GameBoy Advance" },
+    crop9 = { filter = "crop=960:640", title = "NSO GameBoy Advance (Small)" },
+    crop10 = { filter = "crop=1280:896", title = "NSO Genesis (Pixel Perfect)" },
+    cropsp1  = { filter = "crop=1436:1008", title = "NSO N64 (Mario 64 Size)" },
+    cropsp2  = { filter = "crop=1611:983", title = "NSO N64 (DK64 Widescreen Size)" }
 }
 
 -- -------------------------------------------------------------------------
