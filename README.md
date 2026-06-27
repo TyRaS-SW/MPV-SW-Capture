@@ -37,10 +37,10 @@ Both programs run silently, stay in sync, and together deliver minimal lag/laten
 
 Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licenses (LGPL/GPL, etc.). They are required to use this project but are not bundled in this repository or its release assets.
 
-## 🛠️ Installation v2.2.0+ (step‑by‑step)
+## 🛠️ Installation v3.0.0+ (step‑by‑step)
 
 1. **Download files**
-   - Get MPV‑SW‑Capture (v2.2.0 or more):
+   - Get MPV‑SW‑Capture (v3.0.0 or more):
      - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **`MPV-SW-Capture-v.`X.Y.Z`.zip`**.
 
 2. **Prepare the folder**
@@ -52,15 +52,15 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    ```text
    MPV-SW-Capture/
    ├── bezels/
+   ├── data/
    ├── scripts/
    ├── shaders/
+   ├── tools/
    ├── Installer_MPV-SW-Capture.exe
    ├── Setup_MPV-SW-Capture.exe
    ├── input.conf
    ├── menu.conf
-   ├── mpv.conf
-   ├── MPV-SW-Capture.bat
-   └── MPV-SW-Capture.exe
+   └── mpv.conf
    ```
 
 3. **First setup**
@@ -85,7 +85,7 @@ Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licens
    - If all is okay, you will receive a message with the changes.
   - *OPTIONAL: You can translate the MENU tu Spanish if you want. You must press **"MENU: English <- -> Espanol"**. You can do it without using the main options (It's independent)*
 4. **Launch the stream in MPV-SW-Capture**
-   - Run `MPV-SW-Capture.exe` (you can create a desktop shortcut for convenience).
+   - Run `MPV.exe` (you can create a desktop shortcut for convenience).
    - If everything is set correctly, you will see your console with audio and video.
    - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
    
