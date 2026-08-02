@@ -2,6 +2,9 @@
 // Modified by TyRaS-SW, 2026
 // This experimental port produced a useful greenish-screen effect and became the basis
 // for gb_origin_lcd_colors.
+//
+// FIX: Auto-scale scanline and mask parameters based on input height to keep
+// the same visual effect at any resolution (reference: 1080p).
 
 //!PARAM WP
 //!DESC Color Temperature %
@@ -229,7 +232,7 @@ vec4 hook() {
 
 //!HOOK MAIN
 //!COMPONENTS 4
-//!DESC crt-guest-sm.slang
+//!DESC crt-guest-sm.slang (auto-scaled)
 //!WIDTH _PASS_0.width 1 *
 //!HEIGHT _PASS_0.height 1 *
 //!BIND MAIN_RGB
@@ -302,6 +305,20 @@ float fragment_Overscan(float pos, float dy) {
 }
 
 void fragment_main() {
+    // --- AUTO-SCALE PARAMETERS BASED ON INPUT HEIGHT (REF: 1080) ---
+    const float refHeight = 1080.0;
+    float scaleY = params.SourceSize.y / refHeight;
+
+    float scanline1_scaled = params.scanline1 * scaleY;
+    float scanline2_scaled = params.scanline2 * scaleY;
+    float beam_min_scaled   = params.beam_min * scaleY;
+    float beam_max_scaled   = params.beam_max * scaleY;
+    float s_beam_scaled     = params.s_beam;  // This is a ratio, not a length
+    float masksize_scaled   = params.masksize; // This is a multiplier, not a length
+    // The mask reference dimensions are also scaled to keep the pattern density constant.
+    float mask_ref_x_scaled = params.mask_ref_x * scaleY;
+    float mask_ref_y_scaled = params.mask_ref_y * scaleY;
+
     vec2 tex = clamp(vTexCoord.xy, vec2(0.0), vec2(1.0));
     if (params.smart == 1.) {
         float factor = params.OutputSize.y / params.SourceSize.y;
@@ -335,26 +352,85 @@ void fragment_main() {
     float wt = 1. / (t1 + t2);
     vec3 cl = (ul * t1 + dl * t2) * wt;
     vec3 cr = (ur * t1 + dr * t2) * wt;
-    vec3 ref_ul = mix(cl, ul, params.s_beam);
-    vec3 ref_ur = mix(cr, ur, params.s_beam);
-    vec3 ref_dl = mix(cl, dl, params.s_beam);
-    vec3 ref_dr = mix(cr, dr, params.s_beam);
-    float scan1 = mix(params.scanline1, params.scanline2, f1);
-    float scan2 = mix(params.scanline1, params.scanline2, f2);
-    float scan0 = mix(params.scanline1, params.scanline2, f3);
+    vec3 ref_ul = mix(cl, ul, s_beam_scaled);
+    vec3 ref_ur = mix(cr, ur, s_beam_scaled);
+    vec3 ref_dl = mix(cl, dl, s_beam_scaled);
+    vec3 ref_dr = mix(cr, dr, s_beam_scaled);
+    float scan1 = mix(scanline1_scaled, scanline2_scaled, f1);
+    float scan2 = mix(scanline1_scaled, scanline2_scaled, f2);
+    float scan0 = mix(scanline1_scaled, scanline2_scaled, f3);
     f3 = fragment_st1(f3, scan0);
     f3 = f3 * f3 * (3. - 2. * f3);
     float w1, w2, w3, w4 = 0.;
     if (params.stype < 2.) {
-        w1 = fragment_sw1(f1, ref_ul, scan1);
-        w2 = fragment_sw1(f2, ref_dl, scan2);
-        w3 = fragment_sw1(f1, ref_ur, scan1);
-        w4 = fragment_sw1(f2, ref_dr, scan2);
+        // Use scaled beam values in sw1
+        float beam_min_sw = beam_min_scaled;
+        float beam_max_sw = beam_max_scaled;
+        // Re-define sw1 logic inline with scaled beams
+        {
+            float mx = max(max(ref_ul.r, ref_ul.g), ref_ul.b);
+            float ex = mix((2.75 - 1.75 * params.stype) * beam_min_sw, beam_max_sw, mx);
+            ex = mix(beam_max_sw, ex, pow(f1, mx + 0.25)) * f1;
+            w1 = exp2(-scan1 * ex * ex);
+        }
+        {
+            float mx = max(max(ref_dl.r, ref_dl.g), ref_dl.b);
+            float ex = mix((2.75 - 1.75 * params.stype) * beam_min_sw, beam_max_sw, mx);
+            ex = mix(beam_max_sw, ex, pow(f2, mx + 0.25)) * f2;
+            w2 = exp2(-scan2 * ex * ex);
+        }
+        {
+            float mx = max(max(ref_ur.r, ref_ur.g), ref_ur.b);
+            float ex = mix((2.75 - 1.75 * params.stype) * beam_min_sw, beam_max_sw, mx);
+            ex = mix(beam_max_sw, ex, pow(f1, mx + 0.25)) * f1;
+            w3 = exp2(-scan1 * ex * ex);
+        }
+        {
+            float mx = max(max(ref_dr.r, ref_dr.g), ref_dr.b);
+            float ex = mix((2.75 - 1.75 * params.stype) * beam_min_sw, beam_max_sw, mx);
+            ex = mix(beam_max_sw, ex, pow(f2, mx + 0.25)) * f2;
+            w4 = exp2(-scan2 * ex * ex);
+        }
     } else {
-        w1 = fragment_sw2(f1, ref_ul);
-        w2 = fragment_sw2(f2, ref_dl);
-        w3 = fragment_sw2(f1, ref_ur);
-        w4 = fragment_sw2(f2, ref_dr);
+        // Use scaled beam values in sw2
+        float beam_min_sw = beam_min_scaled;
+        float beam_max_sw = beam_max_scaled;
+        {
+            float mx = max(max(ref_ul.r, ref_ul.g), ref_ul.b);
+            float ex = mix(2. * beam_min_sw, beam_max_sw, mx);
+            float m = 0.5 * ex;
+            float x = f1 * ex;
+            float xx = x * x;
+            xx = mix(xx, x * xx, m);
+            w1 = exp2(-10. * xx);
+        }
+        {
+            float mx = max(max(ref_dl.r, ref_dl.g), ref_dl.b);
+            float ex = mix(2. * beam_min_sw, beam_max_sw, mx);
+            float m = 0.5 * ex;
+            float x = f2 * ex;
+            float xx = x * x;
+            xx = mix(xx, x * xx, m);
+            w2 = exp2(-10. * xx);
+        }
+        {
+            float mx = max(max(ref_ur.r, ref_ur.g), ref_ur.b);
+            float ex = mix(2. * beam_min_sw, beam_max_sw, mx);
+            float m = 0.5 * ex;
+            float x = f1 * ex;
+            float xx = x * x;
+            xx = mix(xx, x * xx, m);
+            w3 = exp2(-10. * xx);
+        }
+        {
+            float mx = max(max(ref_dr.r, ref_dr.g), ref_dr.b);
+            float ex = mix(2. * beam_min_sw, beam_max_sw, mx);
+            float m = 0.5 * ex;
+            float x = f2 * ex;
+            float xx = x * x;
+            xx = mix(xx, x * xx, m);
+            w4 = exp2(-10. * xx);
+        }
     }
     vec3 colorl = w1 * ul + w2 * dl;
     vec3 colorr = w3 * ur + w4 * dr;
@@ -372,9 +448,10 @@ void fragment_main() {
     vec3 saturated_color = max((1. + sp) * color - 0.5 * sp * (color + mx1), 0.);
     color = mix(saturated_color, color, f3);
     vec3 scan3 = vec3(0.);
-    vec2 ref_res = vec2(params.mask_ref_x, params.mask_ref_y);
+    // Use scaled mask reference resolution
+    vec2 ref_res = vec2(mask_ref_x_scaled, mask_ref_y_scaled);
     vec2 ref_px  = floor(tex * ref_res + vec2(0.5));
-    float spos   = floor(ref_px.x / params.masksize);
+    float spos   = floor(ref_px.x / masksize_scaled);
     float spos1  = 0.;
     vec3 tmp1 = 0.5 * (sqrt(ctemp) + sctemp);
     color *= mix(params.brightboost1, params.brightboost2, max(max(ctemp.r, ctemp.g), ctemp.b));
@@ -417,4 +494,3 @@ vec4 hook() {
     fragment_main();
     return FragColor;
 }
-

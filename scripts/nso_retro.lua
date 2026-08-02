@@ -32,14 +32,14 @@ cropsp2 = { filter = "crop=1611:983", title = "NSO N64 (DK64 Widescreen Size)" }
 local current_lang = "en"
 
 local addons = {
-FRM1 = { en = "CRT Curvature", es = "Curvatura CRT", path = "shaders/shapes/crt-curvature-only.glsl" },
-FRM2 = { en = "CRT Curvature (Edge Darkening)", es = "Curvatura CRT (Oscurecer Bordes)", path = "shaders/shapes/crt-curvature-onlyE.glsl" },
-FRM3 = { en = "Wide CRT Barrel", es = "CRT Barril Ancho", path = "shaders/shapes/crt-widebarrel.glsl" },
-FRM4 = { en = "Wide CRT Barrel (Edge Darkening)", es = "CRT Barril Ancho (Oscurecer Bordes)", path = "shaders/shapes/crt-widebarrelE.glsl" },
-FRM5 = { en = "CRT Super Curvature", es = "Super Curvatura CRT", path = "shaders/shapes/crt-supercurvature.glsl" },
+FRM1 = { en = "CRT Curvature", es = "CRT Curvatura", path = "shaders/shapes/crt-curvature-only.glsl" },
+FRM2 = { en = "CRT Curvature (Edge Darkening)", es = "CRT Curvatura (Orillas Oscuras)", path = "shaders/shapes/crt-curvature-onlyE.glsl" },
+FRM3 = { en = "CRT Wide Barrel", es = "CRT Barril Ancho", path = "shaders/shapes/crt-widebarrel.glsl" },
+FRM4 = { en = "CRT Wide Barrel (Edge Darkening)", es = "CRT Barril Ancho (Orillas Oscuras)", path = "shaders/shapes/crt-widebarrelE.glsl" },
+FRM5 = { en = "CRT Super Curvature", es = "CRT Super Curvatura", path = "shaders/shapes/crt-supercurvature.glsl" },
 FRM6 = { en = "Rounded Corners", es = "Esquinas Redondeadas", path = "shaders/shapes/rounded-corners.glsl" },
-FRM7 = { en = "Tilted CRT (Keystone)", es = "CRT Inclinado (Keystone)", path = "shaders/shapes/tilted-crt.glsl" },
-FRM8 = { en = "Tilted CRT (Keystone Inverted)", es = "CRT Inclinado (Keystone Invertido)", path = "shaders/shapes/tilted-crt_inv.glsl" },
+FRM7 = { en = "CRT Tilted  (Keystone)", es = "CRT Inclinado (Keystone)", path = "shaders/shapes/tilted-crt.glsl" },
+FRM8 = { en = "CRT Tilted  (Keystone Inverted)", es = "CRT Inclinado (Keystone Invertido)", path = "shaders/shapes/tilted-crt_inv.glsl" },
 FRM9 = { en = "Pinball Perspective", es = "Perspectiva Pinball", path = "shaders/shapes/pinball-perspective.glsl" },
 FRMO_1 = { en = "Inward Keystone (Low Bottom Zoom)", es = "Keystone hacia adentro (Zoom inferior bajo)", path = "shaders/shapes/inward-keystone-bottom.glsl" },
 }
