@@ -807,36 +807,47 @@
         // ------------------------------------------------------------------
         // 4. MODAL FOR EXTERNAL CONTENT (README, FAQ, etc.)
         // ------------------------------------------------------------------
-        async function openModal(title, url, githubUrl) {
-            const overlay = document.getElementById('modal-overlay');
-            const body = document.getElementById('modal-body');
-            const titleEl = document.getElementById('modal-title');
-            const githubLink = document.getElementById('modal-github-link');
+async function openModal(title, url, githubUrl) {
+    const overlay = document.getElementById('modal-overlay');
+    const body = document.getElementById('modal-body');
+    const titleEl = document.getElementById('modal-title');
+    const githubLink = document.getElementById('modal-github-link');
 
-            overlay.classList.add('active');
-            titleEl.textContent = title;
-            githubLink.href = githubUrl;
-            body.innerHTML = 'Loading...';
+    overlay.classList.add('active');
+    titleEl.textContent = title;
+    githubLink.href = githubUrl;
+    body.innerHTML = 'Loading...';
 
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error('Error loading file');
-                let text = await response.text();
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error loading file');
+        let text = await response.text();
 
-                // --- CONVERT RELATIVE IMAGE PATHS TO ABSOLUTE ---
-                const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
-                text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
-                    const cleanSrc = src.replace(/^\.\//, '');
-                    const fullUrl = baseRawUrl + cleanSrc;
-                    return `![${alt}](${fullUrl})`;
-                });
-
-                const html = marked.parse(text);
-                body.innerHTML = html;
-            } catch (error) {
-                body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
+        // --- CONVERT IMAGE PATHS TO RAW URLs ---
+        // 1. Convert GitHub blob URLs to raw URLs
+        // Example: https://github.com/user/repo/blob/main/path/file.jpg -> https://raw.githubusercontent.com/user/repo/main/path/file.jpg
+        text = text.replace(
+            /!\[([^\]]*)\]\((https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^)]+))\)/g,
+            (match, alt, fullUrl, user, repo, path) => {
+                const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${path}`;
+                return `![${alt}](${rawUrl})`;
             }
-        }
+        );
+
+        // 2. Convert relative paths (for other Markdown files) to absolute URLs
+        const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
+        text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
+            let cleanSrc = src.replace(/^\.\//, '').replace(/^\//, '');
+            const fullUrl = baseRawUrl + cleanSrc;
+            return `![${alt}](${fullUrl})`;
+        });
+
+        const html = marked.parse(text);
+        body.innerHTML = html;
+    } catch (error) {
+        body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
+    }
+}
 
         // Function to open README or LEEME based on current language
 function openReadme() {
