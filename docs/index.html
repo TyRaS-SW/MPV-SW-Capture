@@ -3,117 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MPV-SW-Capture · Juega tu consola con mínima latencia</title>
-    <!-- Fuentes e íconos -->
+    <title>MPV-SW-Capture · Play your console with minimal lag</title>
+    <!-- Fonts and icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Librería para convertir Markdown a HTML -->
+    <!-- Library to convert Markdown to HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- Estilos generales (igual que antes) --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: #0b0e14; color: #e8edf2; line-height: 1.6; scroll-behavior: smooth; }
-        .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
-        a { color: #6bc7ff; text-decoration: none; }
-        a:hover { color: #a8daff; text-decoration: underline; }
-        h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
-        h2 { font-size: 2rem; margin: 2rem 0 1.5rem; border-bottom: 2px solid #2a313c; padding-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
-        h2 i { color: #6bc7ff; font-size: 1.6rem; }
-        .badge { background: #1f8bff; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 20px; text-transform: uppercase; margin-left: 10px; }
+        /* --- Global Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0b0e14;
+            color: #e8edf2;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        a {
+            color: #6bc7ff;
+            text-decoration: none;
+        }
+        a:hover {
+            color: #a8daff;
+            text-decoration: underline;
+        }
+        h1, h2, h3 {
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        h2 {
+            font-size: 2rem;
+            margin: 2rem 0 1.5rem;
+            border-bottom: 2px solid #2a313c;
+            padding-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2 i {
+            color: #6bc7ff;
+            font-size: 1.6rem;
+        }
+        .badge {
+            background: #1f8bff;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            margin-left: 10px;
+        }
 
-        /* --- Navegación --- */
-        nav { position: sticky; top: 0; z-index: 100; background: rgba(11, 14, 20, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2a313c; padding: 0.8rem 0; }
-        nav .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .nav-logo { font-size: 1.4rem; font-weight: 700; color: #fff; }
-        .nav-logo i { color: #6bc7ff; margin-right: 8px; }
-        .nav-links { display: flex; gap: 1.5rem; flex-wrap: wrap; font-weight: 500; font-size: 0.95rem; align-items: center; }
-        .nav-links a { color: #b0bccf; }
-        .nav-links a:hover { color: #fff; text-decoration: none; }
-        #lang-toggle { background: none; border: 1px solid #3d4a5a; color: #b0bccf; padding: 4px 14px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        #lang-toggle:hover { border-color: #6bc7ff; color: #fff; }
+        /* --- Navigation --- */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(11, 14, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #2a313c;
+            padding: 0.8rem 0;
+        }
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .nav-logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .nav-logo i {
+            color: #6bc7ff;
+            margin-right: 8px;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-weight: 500;
+            font-size: 0.95rem;
+            align-items: center;
+        }
+        .nav-links a {
+            color: #b0bccf;
+        }
+        .nav-links a:hover {
+            color: #fff;
+            text-decoration: none;
+        }
+        #lang-toggle {
+            background: none;
+            border: 1px solid #3d4a5a;
+            color: #b0bccf;
+            padding: 4px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+        #lang-toggle:hover {
+            border-color: #6bc7ff;
+            color: #fff;
+        }
 
         /* --- Hero --- */
-        .hero { padding: 4rem 0 3rem; text-align: center; border-bottom: 1px solid #1f2630; }
-        .hero h1 { font-size: 3.2rem; background: linear-gradient(135deg, #fff 60%, #6bc7ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; }
-        .hero p { font-size: 1.25rem; color: #b0bccf; max-width: 720px; margin: 0.5rem auto 1.5rem; }
-        .hero-buttons { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; }
-        .btn { display: inline-block; background: #1f8bff; color: #fff; padding: 0.7rem 1.8rem; border-radius: 40px; font-weight: 600; transition: 0.2s; }
-        .btn:hover { background: #3d9eff; text-decoration: none; transform: scale(1.02); }
-        .btn-outline { background: transparent; border: 1.5px solid #3d4a5a; color: #b0bccf; }
-        .btn-outline:hover { background: #1f2630; border-color: #6bc7ff; color: #fff; }
+        .hero {
+            padding: 4rem 0 3rem;
+            text-align: center;
+            border-bottom: 1px solid #1f2630;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            background: linear-gradient(135deg, #fff 60%, #6bc7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        .hero p {
+            font-size: 1.25rem;
+            color: #b0bccf;
+            max-width: 720px;
+            margin: 0.5rem auto 1.5rem;
+        }
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            background: #1f8bff;
+            color: #fff;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #3d9eff;
+            text-decoration: none;
+            transform: scale(1.02);
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1.5px solid #3d4a5a;
+            color: #b0bccf;
+        }
+        .btn-outline:hover {
+            background: #1f2630;
+            border-color: #6bc7ff;
+            color: #fff;
+        }
 
-        /* --- Tarjetas y secciones --- */
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.8rem; margin: 2rem 0; }
-        .card { background: #141a24; border: 1px solid #2a313c; border-radius: 16px; padding: 1.8rem; transition: 0.2s; }
-        .card:hover { border-color: #3d4a5a; transform: translateY(-4px); }
-        .card i { font-size: 2rem; color: #6bc7ff; margin-bottom: 0.8rem; }
-        .card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
-        .card p { color: #b0bccf; font-size: 0.95rem; }
+        /* --- Cards and sections --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.8rem;
+            margin: 2rem 0;
+        }
+        .card {
+            background: #141a24;
+            border: 1px solid #2a313c;
+            border-radius: 16px;
+            padding: 1.8rem;
+            transition: 0.2s;
+        }
+        .card:hover {
+            border-color: #3d4a5a;
+            transform: translateY(-4px);
+        }
+        .card i {
+            font-size: 2rem;
+            color: #6bc7ff;
+            margin-bottom: 0.8rem;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            color: #b0bccf;
+            font-size: 0.95rem;
+        }
 
-        /* --- Tablas --- */
-        .table-wrap { overflow-x: auto; margin: 1.5rem 0; border-radius: 12px; border: 1px solid #2a313c; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
-        th { background: #1f2630; color: #c8d0dc; font-weight: 600; text-align: left; padding: 0.8rem 1rem; }
-        td { padding: 0.8rem 1rem; border-top: 1px solid #1f2630; }
-        tr:hover td { background: #141a24; }
+        /* --- Tables --- */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+            border-radius: 12px;
+            border: 1px solid #2a313c;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        th {
+            background: #1f2630;
+            color: #c8d0dc;
+            font-weight: 600;
+            text-align: left;
+            padding: 0.8rem 1rem;
+        }
+        td {
+            padding: 0.8rem 1rem;
+            border-top: 1px solid #1f2630;
+        }
+        tr:hover td {
+            background: #141a24;
+        }
 
-        /* --- Comparativas visuales --- */
-        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
-        .compare-item { background: #141a24; border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid #2a313c; }
-        .compare-item img { max-width: 100%; border-radius: 8px; background: #0b0e14; height: auto; aspect-ratio: 16/9; object-fit: cover; }
-        .compare-item .label { display: block; margin-top: 0.5rem; font-weight: 600; color: #b0bccf; }
+        /* --- Visual comparisons --- */
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+        }
+        .compare-item {
+            background: #141a24;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid #2a313c;
+        }
+        .compare-item img {
+            max-width: 100%;
+            border-radius: 8px;
+            background: #0b0e14;
+            height: auto;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+        }
+        .compare-item .label {
+            display: block;
+            margin-top: 0.5rem;
+            font-weight: 600;
+            color: #b0bccf;
+        }
 
         /* --- Modal --- */
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        #modal-overlay.active { display: flex; }
-        .modal-content { background: #141a24; border: 1px solid #2a313c; border-radius: 16px; width: 90%; max-width: 900px; max-height: 85vh; overflow: auto; padding: 2rem; position: relative; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8); }
-        .modal-close { position: sticky; top: 0; float: right; background: none; border: none; color: #b0bccf; font-size: 2rem; cursor: pointer; z-index: 10; }
-        .modal-close:hover { color: #fff; }
-        #modal-title { margin-top: 0; color: #fff; }
-        #modal-body { color: #e8edf2; line-height: 1.7; overflow-wrap: break-word; }
-        #modal-body h1, #modal-body h2, #modal-body h3 { margin: 1rem 0 0.5rem; }
-        #modal-body ul, #modal-body ol { padding-left: 1.5rem; }
-        #modal-body code { background: #1f2630; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9rem; }
-        #modal-body pre { background: #0b0e14; padding: 1rem; border-radius: 8px; overflow-x: auto; }
-        #modal-body a { color: #6bc7ff; }
-        .modal-footer { margin-top: 1.5rem; text-align: right; }
-        .modal-footer a { color: #6bc7ff; text-decoration: underline; }
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        #modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #141a24;
+            border: 1px solid #2a313c;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow: auto;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        }
+        .modal-close {
+            position: sticky;
+            top: 0;
+            float: right;
+            background: none;
+            border: none;
+            color: #b0bccf;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .modal-close:hover {
+            color: #fff;
+        }
+        #modal-title {
+            margin-top: 0;
+            color: #fff;
+        }
+        #modal-body {
+            color: #e8edf2;
+            line-height: 1.7;
+            overflow-wrap: break-word;
+        }
+        #modal-body h1, #modal-body h2, #modal-body h3 {
+            margin: 1rem 0 0.5rem;
+        }
+        #modal-body ul, #modal-body ol {
+            padding-left: 1.5rem;
+        }
+        #modal-body code {
+            background: #1f2630;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        #modal-body pre {
+            background: #0b0e14;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        #modal-body a {
+            color: #6bc7ff;
+        }
+        .modal-footer {
+            margin-top: 1.5rem;
+            text-align: right;
+        }
+        .modal-footer a {
+            color: #6bc7ff;
+            text-decoration: underline;
+        }
 
-        /* --- Utilidades --- */
-        .text-center { text-align: center; }
-        .mt-2 { margin-top: 2rem; }
-        .mb-1 { margin-bottom: 0.5rem; }
+        /* --- Utilities --- */
+        .text-center {
+            text-align: center;
+        }
+        .mt-2 {
+            margin-top: 2rem;
+        }
+        .mb-1 {
+            margin-bottom: 0.5rem;
+        }
 
         /* --- Footer --- */
-        footer { margin-top: 4rem; padding: 2rem 0; border-top: 1px solid #1f2630; color: #6a7a8a; font-size: 0.9rem; text-align: center; }
+        footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid #1f2630;
+            color: #6a7a8a;
+            font-size: 0.9rem;
+            text-align: center;
+        }
 
         /* --- Responsive --- */
         @media (max-width: 768px) {
-            .hero h1 { font-size: 2.4rem; }
-            .nav-links { gap: 0.8rem; font-size: 0.85rem; justify-content: center; margin-top: 0.5rem; }
-            .compare-grid { grid-template-columns: 1fr; }
-            .modal-content { padding: 1rem; width: 95%; }
+            .hero h1 {
+                font-size: 2.4rem;
+            }
+            .nav-links {
+                gap: 0.8rem;
+                font-size: 0.85rem;
+                justify-content: center;
+                margin-top: 0.5rem;
+            }
+            .compare-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                padding: 1rem;
+                width: 95%;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- NAVEGACIÓN -->
+    <!-- NAVIGATION -->
     <nav>
         <div class="container">
             <div class="nav-logo">
                 <i class="fas fa-gamepad"></i> MPV-SW-Capture
             </div>
             <div class="nav-links">
-                <a href="#features" data-i18n="nav-features">Características</a>
-                <a href="#modos" data-i18n="nav-modes">Modos</a>
-                <a href="#menu" data-i18n="nav-menu">Menú</a>
-                <a href="#personalizacion" data-i18n="nav-custom">Personalización</a>
-                <a href="#" onclick="openModal('README', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md'); return false;" data-i18n="nav-readme">README</a>
-                <a href="#" onclick="openModal('FAQ', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/FAQ.md'); return false;" data-i18n="nav-faq">FAQ</a>
-                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Descargar</a>
+                <a href="#features" data-i18n="nav-features">Features</a>
+                <a href="#modos" data-i18n="nav-modes">Modes</a>
+                <a href="#menu" data-i18n="nav-menu">Menu</a>
+                <a href="#personalizacion" data-i18n="nav-custom">Customization</a>
+                <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
+                <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
+                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
                 <button id="lang-toggle">🇪🇸 ES</button>
             </div>
         </div>
@@ -131,11 +417,21 @@
                 <span class="lang-en" style="display:none;">Ready-to-use MPV configuration for Windows, adapted for USB 3.0 capture cards. Play Nintendo Switch, PS, Xbox or any HDMI console with near-zero latency and endless options.</span>
             </p>
             <div class="hero-buttons">
+                <!-- Download button -->
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn">
                     <i class="fas fa-download"></i>
                     <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
                     <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
                 </a>
+                <!-- README/LEEME button -->
+                <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
+                    <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
+                </a>
+                <!-- FAQ button -->
+                <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
+                    <i class="fas fa-question-circle"></i> FAQ
+                </a>
+                <!-- Wiki button -->
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
                     <i class="fas fa-book"></i>
                     <span class="lang-es">Ver Wiki</span>
@@ -145,7 +441,7 @@
         </div>
     </section>
 
-    <!-- CARACTERÍSTICAS -->
+    <!-- FEATURES -->
     <section id="features" class="container">
         <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
         <div class="card-grid">
@@ -182,13 +478,13 @@
         </div>
     </section>
 
-    <!-- COMPARATIVAS VISUALES -->
+    <!-- VISUAL COMPARISONS -->
     <section id="modos" class="container">
         <h2><i class="fas fa-images"></i> <span class="lang-es">Comparativas visuales</span><span class="lang-en" style="display:none;">Visual comparisons</span></h2>
         <p class="mb-1"><span class="lang-es">Ejemplos de lo que puedes lograr con shaders, bezels y crops.</span><span class="lang-en" style="display:none;">Examples of what you can achieve with shaders, bezels and crops.</span></p>
         <div class="compare-grid">
             <div class="compare-item">
-                <img src="assets/menu.jpg" alt="Menú personalizado" loading="lazy">
+                <img src="assets/menu.jpg" alt="Custom menu" loading="lazy">
                 <span class="label">📋 <span class="lang-es">Menú personalizado (clic derecho / ESC)</span><span class="lang-en" style="display:none;">Custom menu (right-click / ESC)</span></span>
             </div>
             <div class="compare-item">
@@ -211,7 +507,7 @@
         </p>
     </section>
 
-    <!-- OPCIONES DEL MENÚ (TABLA) -->
+    <!-- MENU OPTIONS (TABLE) -->
     <section id="menu" class="container">
         <h2><i class="fas fa-bars"></i> <span class="lang-es">Opciones del menú</span><span class="lang-en" style="display:none;">Menu options</span></h2>
         <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Todas las opciones disponibles:</span>
@@ -227,7 +523,7 @@
                 <tbody>
                     <tr>
                         <td><strong><span class="lang-es">Shaders</span><span class="lang-en" style="display:none;">Shaders</span></strong></td>
-                        <td id="shaders-list">Cargando...</td>
+                        <td id="shaders-list">Loading...</td>
                         <td><span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian.</span><span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it.</span></td>
                     </tr>
                     <tr>
@@ -242,7 +538,7 @@
                     </tr>
                     <tr>
                         <td><strong><span class="lang-es">Bezels</span><span class="lang-en" style="display:none;">Bezels</span></strong></td>
-                        <td id="bezels-list">Cargando...</td>
+                        <td id="bezels-list">Loading...</td>
                         <td><span class="lang-es">Superponen bordes decorativos para un aspecto auténtico.</span><span class="lang-en" style="display:none;">Overlay decorative borders for an authentic look.</span></td>
                     </tr>
                     <tr>
@@ -270,7 +566,7 @@
         </p>
     </section>
 
-    <!-- PERSONALIZACIÓN -->
+    <!-- CUSTOMIZATION -->
     <section id="personalizacion" class="container">
         <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
         <div class="card-grid">
@@ -295,7 +591,7 @@
         </div>
     </section>
 
-    <!-- FAQ (resumen) -->
+    <!-- FAQ (summary) -->
     <section id="faq" class="container">
         <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
         <div class="card-grid">
@@ -321,18 +617,18 @@
             </div>
         </div>
         <p class="text-center mt-2">
-            <a href="#" onclick="openModal('FAQ', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/FAQ.md'); return false;" class="btn btn-outline">
+            <a href="#" onclick="openFaq(); return false;" class="btn btn-outline">
                 <span class="lang-es">Ver FAQ completa →</span>
                 <span class="lang-en" style="display:none;">View full FAQ →</span>
             </a>
         </p>
     </section>
 
-    <!-- NOVEDADES (dinámico desde releases.json) -->
+    <!-- NEWS (dynamic from releases.json) -->
     <section id="novedades" class="container">
         <h2><i class="fas fa-rocket"></i> <span class="lang-es">Novedades</span><span class="lang-en" style="display:none;">News</span></h2>
         <div id="releases-container">
-            <p class="text-center" style="color:#6a7a8a;">Cargando últimas versiones...</p>
+            <p class="text-center" style="color:#6a7a8a;">Loading latest releases...</p>
         </div>
         <p class="text-center mt-2">
             <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline">
@@ -358,14 +654,14 @@
         </div>
     </footer>
 
-    <!-- MODAL PARA CONTENIDO EXTERNO -->
+    <!-- MODAL FOR EXTERNAL CONTENT -->
     <div id="modal-overlay">
         <div class="modal-content">
             <button class="modal-close" id="modal-close">&times;</button>
-            <h2 id="modal-title">Título</h2>
-            <div id="modal-body">Cargando...</div>
+            <h2 id="modal-title">Title</h2>
+            <div id="modal-body">Loading...</div>
             <div class="modal-footer">
-                <a id="modal-github-link" href="#" target="_blank">Ver en GitHub &rarr;</a>
+                <a id="modal-github-link" href="#" target="_blank">View on GitHub &rarr;</a>
             </div>
         </div>
     </div>
@@ -373,11 +669,11 @@
     <!-- SCRIPTS -->
     <script>
         // ------------------------------------------------------------------
-        // 1. IDIOMA: Detección por URL, localStorage y botón
+        // 1. LANGUAGE: Detect from URL, localStorage, and button toggle
         // ------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', function() {
             const toggle = document.getElementById('lang-toggle');
-            let currentLang = 'es';
+            let currentLang = 'en'; // Default language is English
 
             function getIdiomaDesdeURL() {
                 const params = new URLSearchParams(window.location.search);
@@ -387,9 +683,11 @@
             }
 
             function setLanguage(lang) {
+                // Show/hide language-specific blocks
                 document.querySelectorAll('.lang-es').forEach(el => el.style.display = (lang === 'es') ? '' : 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = (lang === 'en') ? '' : 'none');
 
+                // Update navigation texts using data-i18n attributes
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     const translations = {
@@ -397,7 +695,7 @@
                         'nav-modes': { es: 'Modos', en: 'Modes' },
                         'nav-menu': { es: 'Menú', en: 'Menu' },
                         'nav-custom': { es: 'Personalización', en: 'Customization' },
-                        'nav-readme': { es: 'README', en: 'README' },
+                        'nav-readme': { es: 'LEEME', en: 'README' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-download': { es: 'Descargar', en: 'Download' }
                     };
@@ -406,12 +704,16 @@
                     }
                 });
 
+                // Update toggle button text
                 toggle.textContent = (lang === 'es') ? '🇬🇧 EN' : '🇪🇸 ES';
+                // Save preference
                 localStorage.setItem('mpv-lang', lang);
+                // Update URL without reload
                 const url = new URL(window.location);
                 url.searchParams.set('lang', lang);
                 window.history.replaceState({}, '', url);
                 currentLang = lang;
+                window.currentLang = lang; // Make global for openReadme
             }
 
             toggle.addEventListener('click', function() {
@@ -419,26 +721,24 @@
                 setLanguage(newLang);
             });
 
-            // Determinar idioma inicial: URL > localStorage > 'en' por defecto
-const langURL = getIdiomaDesdeURL();
-const langGuardado = localStorage.getItem('mpv-lang');
-let idiomaInicial = langURL || langGuardado || 'en';
-// Si el idioma guardado no es válido, usar 'en' (o 'es' si prefieres)
-if (idiomaInicial !== 'es' && idiomaInicial !== 'en') idiomaInicial = 'en';
-setLanguage(idiomaInicial);
+            // Determine initial language: URL > localStorage > 'en' (default)
+            const langURL = getIdiomaDesdeURL();
+            const langGuardado = localStorage.getItem('mpv-lang');
+            let idiomaInicial = langURL || langGuardado || 'en';
+            if (idiomaInicial !== 'es' && idiomaInicial !== 'en') idiomaInicial = 'en';
+            setLanguage(idiomaInicial);
         });
 
         // ------------------------------------------------------------------
-        // 2. VERSIÓN Y RELEASES (cargar desde releases.json)
+        // 2. VERSION AND RELEASES (load from releases.json)
         // ------------------------------------------------------------------
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
             try {
                 const response = await fetch('releases.json');
-                if (!response.ok) throw new Error('No se pudo cargar el archivo de releases');
+                if (!response.ok) throw new Error('Could not load releases file');
                 const releases = await response.json();
 
-                // Actualizar versión en el botón de descarga
                 if (releases.length > 0) {
                     const version = releases[0].tag;
                     document.querySelectorAll('#version-number, #version-number-en').forEach(el => el.textContent = version);
@@ -446,7 +746,7 @@ setLanguage(idiomaInicial);
 
                 mostrarReleases(releases);
             } catch (error) {
-                contenedor.innerHTML = `<p style="color:#ff6b6b;">Error al cargar las novedades. Puedes verlas en <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.</p>`;
+                contenedor.innerHTML = `<p style="color:#ff6b6b;">Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.</p>`;
             }
         }
 
@@ -457,7 +757,7 @@ setLanguage(idiomaInicial);
             let html = '<ul style="list-style: none; padding-left:0;">';
             ultimas.forEach((release, index) => {
                 const fecha = new Date(release.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-                const descripcion = marked.parse(release.descripcion || 'Sin descripción');
+                const descripcion = marked.parse(release.descripcion || 'No description');
                 const colorBorde = index === 0 ? '#1f8bff' : (index === 1 ? '#6bc7ff' : '#6a7a8a');
                 html += `
                     <li style="margin-bottom:0.8rem; background:#141a24; padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
@@ -473,32 +773,32 @@ setLanguage(idiomaInicial);
         }
 
         // ------------------------------------------------------------------
-        // 3. SHADERS Y BEZELS (cargar desde shaders.json y bezels.json)
+        // 3. SHADERS AND BEZELS (load from shaders.json and bezels.json)
         // ------------------------------------------------------------------
         async function cargarShaders() {
             try {
                 const response = await fetch('shaders.json');
-                if (!response.ok) throw new Error('No se pudo cargar shaders.json');
+                if (!response.ok) throw new Error('Could not load shaders.json');
                 const shaders = await response.json();
-                document.getElementById('shaders-list').textContent = shaders.join(', ') || 'Ninguno';
+                document.getElementById('shaders-list').textContent = shaders.join(', ') || 'None';
             } catch (error) {
-                document.getElementById('shaders-list').textContent = 'Error al cargar';
+                document.getElementById('shaders-list').textContent = 'Error loading';
             }
         }
 
         async function cargarBezels() {
             try {
                 const response = await fetch('bezels.json');
-                if (!response.ok) throw new Error('No se pudo cargar bezels.json');
+                if (!response.ok) throw new Error('Could not load bezels.json');
                 const bezels = await response.json();
-                document.getElementById('bezels-list').textContent = bezels.join(', ') || 'Ninguno';
+                document.getElementById('bezels-list').textContent = bezels.join(', ') || 'None';
             } catch (error) {
-                document.getElementById('bezels-list').textContent = 'Error al cargar';
+                document.getElementById('bezels-list').textContent = 'Error loading';
             }
         }
 
         // ------------------------------------------------------------------
-        // 4. MODAL PARA CONTENIDO EXTERNO (README, FAQ, etc.)
+        // 4. MODAL FOR EXTERNAL CONTENT (README, FAQ, etc.)
         // ------------------------------------------------------------------
         async function openModal(title, url, githubUrl) {
             const overlay = document.getElementById('modal-overlay');
@@ -509,19 +809,52 @@ setLanguage(idiomaInicial);
             overlay.classList.add('active');
             titleEl.textContent = title;
             githubLink.href = githubUrl;
-            body.innerHTML = 'Cargando...';
+            body.innerHTML = 'Loading...';
 
             try {
                 const response = await fetch(url);
-                if (!response.ok) throw new Error('Error al cargar el archivo');
-                const text = await response.text();
+                if (!response.ok) throw new Error('Error loading file');
+                let text = await response.text();
+
+                // --- CONVERT RELATIVE IMAGE PATHS TO ABSOLUTE ---
+                const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
+                text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
+                    const cleanSrc = src.replace(/^\.\//, '');
+                    const fullUrl = baseRawUrl + cleanSrc;
+                    return `![${alt}](${fullUrl})`;
+                });
+
                 const html = marked.parse(text);
                 body.innerHTML = html;
             } catch (error) {
-                body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Intenta abrirlo directamente en GitHub.</p>`;
+                body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
             }
         }
 
+        // Function to open README or LEEME based on current language
+        function openReadme() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                // Use LEEME from the wiki (raw URL)
+                const wikiUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
+                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
+                openModal('LEEME', wikiUrl, githubUrl);
+            } else {
+                // Use README from the root
+                const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
+                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
+                openModal('README', readmeUrl, githubUrl);
+            }
+        }
+
+        // Function to open FAQ (always in English)
+        function openFaq() {
+            const faqUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/FAQ.md';
+            const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/FAQ.md';
+            openModal('FAQ', faqUrl, githubUrl);
+        }
+
+        // Close modal
         document.getElementById('modal-close').addEventListener('click', function() {
             document.getElementById('modal-overlay').classList.remove('active');
         });
@@ -535,7 +868,7 @@ setLanguage(idiomaInicial);
         });
 
         // ------------------------------------------------------------------
-        // 5. EJECUTAR AL CARGAR LA PÁGINA
+        // 5. RUN ON PAGE LOAD
         // ------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', function() {
             cargarReleases();
