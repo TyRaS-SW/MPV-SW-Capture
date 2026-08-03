@@ -1,0 +1,11 @@
+[
+  "AMD_FSR1_RT.glsl",
+  "Adaptive_sharpen_RT.glsl",
+  "Adaptive_sharpen_lite_RT.glsl",
+  "KrigBilateral.glsl",
+  "NVScaler_RT.glsl",
+  "NVSharpen_scl_RT.glsl",
+  "inverted_colors.glsl",
+  "lcd_brokenTV.glsl",
+  "lcd_dust.glsl"
+]
