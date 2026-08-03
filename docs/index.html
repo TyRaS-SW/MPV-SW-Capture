@@ -839,27 +839,27 @@
         }
 
         // Function to open README or LEEME based on current language
-        function openReadme() {
-            const lang = window.currentLang || 'en';
-            if (lang === 'es') {
-                // Use LEEME from the wiki (raw URL)
-                const wikiUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
-                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
-                openModal('LEEME', wikiUrl, githubUrl);
-            } else {
-                // Use README from the root
-                const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
-                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
-                openModal('README', readmeUrl, githubUrl);
-            }
-        }
+function openReadme() {
+    const lang = window.currentLang || 'en';
+    if (lang === 'es') {
+        // Use LEEME from the wiki (raw URL)
+        const leemeUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
+        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
+        openModal('LEEME', leemeUrl, githubUrl);
+    } else {
+        // Use README from the root
+        const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
+        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
+        openModal('README', readmeUrl, githubUrl);
+    }
+}
 
-        // Function to open FAQ (always in English)
-        function openFaq() {
-            const faqUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/FAQ.md';
-            const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/FAQ.md';
-            openModal('FAQ', faqUrl, githubUrl);
-        }
+        // Function to open FAQ (from the wiki raw URL)
+function openFaq() {
+    const faqUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md';
+    const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ';
+    openModal('FAQ', faqUrl, githubUrl);
+}
 
         // Close modal
         document.getElementById('modal-close').addEventListener('click', function() {
