@@ -1,7 +1,7 @@
 # Setup_MSCGUI.ps1
 # GUI Setup for MPV-SW-Capture - PowerShell 5+ (Windows 10/11)
 # EN/ES GUI + independent MENU translation button
-# Layout 2x3 cards
+# Layout 2x3 cards (classic layout)
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -195,20 +195,18 @@ $script:Lang["EN"] = @{
     S4Opt3      = " 90 seconds  -  21-30 GB disk space"
     S4Opt4      = "120 seconds  -  28-40 GB disk space"
 
-    S5Title     = "OTHER OPTIONS FOR MPV-SW-Capture"
+    S5Title     = "OTHER OPTIONS"
     S5Shorcut   = "CREATE DESKTOP AND LOCAL SHORTCUTS"
     S5IccTitle  = "AUTOSTART WITH YOUR ICC PROFILE"
-    S5OsdTitle  = "AUTOSTART HIDE OSD MESSAGES (Streamer Mode)"
-    S5BorderTitle = "AUTOSTART WINDOW BORDER+TITLE BAR"
     S5No        = "No"
     S5Yes       = "Yes"
-    S5BorderOnly = "Only border"
-    S5BorderBoth = "Border+T.Bar"
+    S5IccNo     = "No - Start without it."
+    S5IccYes    = "Yes - Autostart with ICC Profile."
 
     StatusReady = "Ready. Scan devices then click Apply Setup."
     ApplyBtn    = "Apply Setup"
     ErrSelect   = "Select video and audio devices first!"
-    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - menu.conf`n  - scripts\record.lua`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
+    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\nso_retro.lua`n  - menu.conf`n  - scripts\record.lua`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
     DoneTitle   = "MPV-SW-Capture Setup"
     DoneStatus  = "Setup complete! All files updated."
     ErrStatus   = "Error: {0}"
@@ -252,20 +250,18 @@ $script:Lang["ES"] = @{
     S4Opt3      = " 90 segundos  -  21-30 GB de espacio en disco"
     S4Opt4      = "120 segundos  -  28-40 GB de espacio en disco"
 
-    S5Title     = "OTRAS OPCIONES PARA MPV-SW-Capture"
+    S5Title     = "OTRAS OPCIONES"
     S5Shorcut   = "CREAR ACCESOS DIRECTOS EN EL ESCRITORIO Y LOCAL"
     S5IccTitle  = "INICIO AUTOMATICO CON TU PERFIL ICC"
-    S5OsdTitle  = "OCULTAR MENSAJES OSD AL INICIO (Modo Streamer)"
-    S5BorderTitle = "BORDE VENTANA+BARRA DE TITULO AL INICIO"
     S5No        = "No"
     S5Yes       = "Si"
-    S5BorderOnly = "Solo borde"
-    S5BorderBoth = "Borde+Barra T."
+    S5IccNo     = "No - Iniciar sin el."
+    S5IccYes    = "Si - Iniciar automaticamente con Perfil ICC."
 
     StatusReady = "Listo. Busca dispositivos y luego haz clic en Aplicar."
     ApplyBtn    = "Aplicar"
     ErrSelect   = "Selecciona los dispositivos de video y audio primero!"
-    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - menu.conf`n  - scripts\record.lua`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
+    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\nso_retro.lua`n  - menu.conf`n  - scripts\record.lua`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
     DoneTitle   = "Configuracion MPV-SW-Capture"
     DoneStatus  = "Configuracion completa! Todos los archivos actualizados."
     ErrStatus   = "Error: {0}"
@@ -400,7 +396,7 @@ function New-CardXY(
 }
 
 # ============================================================
-#  FORM & CARDS
+#  FORM & CARDS (classic layout)
 # ============================================================
 $formW   = 1140
 $formH   = 550
@@ -472,11 +468,12 @@ $form.Controls.Add($pHeader)
 $pMain = New-Pnl 0 $headerH $formW ($formH-$headerH) $script:BG
 $form.Controls.Add($pMain)
 
+# Cards: classic layout
 $card1 = New-CardXY $pMain $leftX  $row1Y $cardW $cTopH    "S1Title" $null    $false
 $card2 = New-CardXY $pMain $leftX  $row3Y $cardW $cBottomH "S2Title" $null $false
-$card3 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH    "S3Title" $null    $false  # <-- Shaders ahora en top-right
+$card3 = New-CardXY $pMain $leftX  $row2Y $cardW $cMidH    "S3Title" $null    $false
 $card4 = New-CardXY $pMain $rightX $row2Y $cardW $cMidH    "S4Title" $null    $false
-$card5 = New-CardXY $pMain $leftX  $row2Y $cardW $cMidH    "S5Title" $null    $false  # <-- Other Options ahora en middle-left
+$card5 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH    "S5Title" $null $false
 $card6 = New-CardXY $pMain $rightX $row3Y $cardW $cBottomH "ActionsTitle" $null $false
 
 $card1.Tag="S1"
@@ -508,7 +505,7 @@ $rbUS  = New-RB (T "S2Opt3") 14 70 500
 $rbEU.Checked = $true
 $card2.Controls.AddRange(@($rbEU,$rbISO,$rbUS))
 
-# --- Card 3: Shaders (ahora en top-right) ---
+# --- Card 3: Shaders (middle-left) ---
 $lS3Note = New-Object System.Windows.Forms.Label
 $lS3Note.Text        = T "S3Note"
 $lS3Note.Location    = [System.Drawing.Point]::new(14,34)
@@ -525,7 +522,7 @@ $rbShOff = New-RB (T "S3No")  14 124 520
 $rbShOn.Checked = $true
 $card3.Controls.AddRange(@($rbShOn,$rbShOff))
 
-# --- Card 4: Record Time ---
+# --- Card 4: Record Time (middle-right) ---
 $lS4Note = New-Object System.Windows.Forms.Label
 $lS4Note.Text        = T "S4Note"
 $lS4Note.Location    = [System.Drawing.Point]::new(14,34)
@@ -544,46 +541,28 @@ $rbR120 = New-RB (T "S4Opt4") 14 172 520
 $rbR30.Checked = $true
 $card4.Controls.AddRange(@($rbR30,$rbR60,$rbR90,$rbR120))
 
-# --- Card 5: Other Options (ahora en middle-left, sin título redundante) ---
-# Cada grupo de opciones va en su propio Panel para que sean independientes
+# --- Card 5: Other Options (top-right) ---
+$lOtherOpts = New-Lbl (T "S5Shorcut") 14 27 520 18 $FontSectionTitle $script:ACCENT3
 
-# Panel 1: Shortcuts
-$pnlSc = New-Pnl 14 28 520 26 $script:CARD
-$lScLabel = New-Lbl (T "S5Shorcut") 0 5 320 16 $FontSmallBold $script:ACCENT3
-$rbScNo   = New-RB (T "S5No")  320 3 50
-$rbScYes  = New-RB (T "S5Yes") 420 3 50
+# Panel grupo 1: Shortcut
+$pScGroup = New-Pnl 0 42 550 26 $script:CARD
+$rbScNo   = New-RB (T "S5No")  14 2 240
+$rbScYes  = New-RB (T "S5Yes") 280 2 250
 $rbScYes.Checked = $true
-$pnlSc.Controls.AddRange(@($lScLabel, $rbScNo, $rbScYes))
+$pScGroup.Controls.AddRange(@($rbScNo,$rbScYes))
 
-# Panel 2: ICC Profile
-$pnlIcc = New-Pnl 14 52 520 26 $script:CARD
-$lIccLabel = New-Lbl (T "S5IccTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
-$rbIccNo   = New-RB (T "S5No")  320 3 50
-$rbIccYes  = New-RB (T "S5Yes") 420 3 50
+$lIccTitle = New-Lbl (T "S5IccTitle") 14 74 520 18 $FontSectionTitle $script:ACCENT3
+
+# Panel grupo 2: ICC Profile
+$pIccGroup = New-Pnl 0 96 550 26 $script:CARD
+$rbIccNo   = New-RB (T "S5IccNo")  14 -4 240
+$rbIccYes  = New-RB (T "S5IccYes") 280 -4 260
 $rbIccNo.Checked = $true
-$pnlIcc.Controls.AddRange(@($lIccLabel, $rbIccNo, $rbIccYes))
+$pIccGroup.Controls.AddRange(@($rbIccNo,$rbIccYes))
 
-# Panel 3: OSD Messages (Streamer Mode)
-$pnlOsd = New-Pnl 14 76 520 26 $script:CARD
-$lOsdLabel = New-Lbl (T "S5OsdTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
-$rbOsdNo   = New-RB (T "S5No")  320 3 50
-$rbOsdYes  = New-RB (T "S5Yes") 420 3 50
-$rbOsdNo.Checked = $true
-$pnlOsd.Controls.AddRange(@($lOsdLabel, $rbOsdNo, $rbOsdYes))
+$card5.Controls.AddRange(@($lOtherOpts,$pScGroup,$lIccTitle,$pIccGroup))
 
-# Panel 4: Window Border & Title Bar
-$pnlBorder = New-Pnl 14 100 520 26 $script:CARD
-$lBorderLabel = New-Lbl (T "S5BorderTitle") 0 5 260 16 $FontSmallBold $script:ACCENT3
-$rbBorderNo   = New-RB (T "S5No")        265 3 50
-$rbBorderOnly = New-RB (T "S5BorderOnly") 320 3 100
-$rbBorderBoth = New-RB (T "S5BorderBoth") 420 3 110
-$rbBorderNo.Checked = $true
-$pnlBorder.Controls.AddRange(@($lBorderLabel, $rbBorderNo, $rbBorderOnly, $rbBorderBoth))
-
-# Agregar los paneles a la tarjeta
-$card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder))
-
-# --- Card 6: Actions ---
+# --- Card 6: Actions (bottom-right) ---
 $btnMenuToggle = New-Object System.Windows.Forms.Button
 $btnMenuToggle.Text     = "MENU: English <-> Espanol"
 $btnMenuToggle.Location = [System.Drawing.Point]::new(14,36)
@@ -657,20 +636,13 @@ function Apply-Lang([string]$lang) {
     $rbR90.Text   = T "S4Opt3"
     $rbR120.Text  = T "S4Opt4"
 
-    # Card 5 translations (sin título redundante)
-    $lScLabel.Text   = T "S5Shorcut"
-    $lIccLabel.Text  = T "S5IccTitle"
-    $lOsdLabel.Text  = T "S5OsdTitle"
-    $lBorderLabel.Text = T "S5BorderTitle"
+    # Card 5 translations
+    $lOtherOpts.Text = T "S5Shorcut"
+    $lIccTitle.Text  = T "S5IccTitle"
     $rbScNo.Text     = T "S5No"
     $rbScYes.Text    = T "S5Yes"
-    $rbIccNo.Text    = T "S5No"
-    $rbIccYes.Text   = T "S5Yes"
-    $rbOsdNo.Text    = T "S5No"
-    $rbOsdYes.Text   = T "S5Yes"
-    $rbBorderNo.Text = T "S5No"
-    $rbBorderOnly.Text = T "S5BorderOnly"
-    $rbBorderBoth.Text = T "S5BorderBoth"
+    $rbIccNo.Text    = T "S5IccNo"
+    $rbIccYes.Text   = T "S5IccYes"
 
     switch ($script:LastStatusState) {
         "ready"          { $lStatus.ForeColor = $script:MUTED;   $lStatus.Text = T "StatusReady" }
@@ -697,7 +669,7 @@ function Apply-Lang([string]$lang) {
 }
 
 # ============================================================
-#  EVENTS
+#  EVENTS (same as improved version)
 # ============================================================
 $btnEN.Add_Click({ Apply-Lang "EN" })
 $btnES.Add_Click({ Apply-Lang "ES" })
@@ -799,6 +771,7 @@ $btnScan.Add_Click({
 $btnMenuToggle.Add_Click({
     $menuPath = Join-Path $script:RootDir "menu.conf"
     $autoPath = Join-Path $script:RootDir "scripts\\autocompress.lua"
+    $nsoPath  = Join-Path $script:RootDir "scripts\\nso_retro.lua"
 
     if (-not (Test-Path $menuPath)) {
         $script:LastStatusState = "menu_not_found"
@@ -828,8 +801,28 @@ $btnMenuToggle.Add_Click({
         [System.IO.File]::WriteAllText($path, $c, $enc)
     }
 
+    function Set-NsoRetroLanguage([string]$path, [string]$lang, [System.Text.Encoding]$enc) {
+        if (-not (Test-Path $path)) { return }
+        $c = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+        $langValue = if ($lang -eq "ES") { "es" } else { "en" }
+        $pattern = 'local\s+current_lang\s*=\s*"(?:en|es)"'
+        $replace = 'local current_lang = "' + $langValue + '"'
+        if ($c -match $pattern) {
+            $c = [regex]::Replace($c, $pattern, $replace, 1)
+        } else {
+            $marker = '-- -------------------------------------------------------------------------`r`n-- Shape addons'
+            if ($c.Contains($marker)) {
+                $c = $c.Replace($marker, 'local current_lang = "' + $langValue + '"' + "`r`n`r`n" + $marker)
+            } else {
+                $c = 'local current_lang = "' + $langValue + '"' + "`r`n`r`n" + $c
+            }
+        }
+        [System.IO.File]::WriteAllText($path, $c, $enc)
+    }
+
     $mapEN = @{
-        'CERRAR MPV-SW-Capture'='CLOSE MPV-SW-Capture'; 'Videojuegos'='VideoGame'; 'Rellenar Ventana'='Fill Screen'; 'Solo Nitidez'='Only Sharpen'; 'Limpiar Shaders'='Clean Shaders'; 'RECORTES'='CROPS'; 'Borrar Recorte'='Clear Crop'; 'Recorte Eliminado'='Crop Cleared'
+        'CERRAR MPV-SW-Capture'='CLOSE MPV-SW-Capture'; 'Videojuegos'='VideoGame'; 'Solo Nitidez'='Only Sharpen'; 'Limpiar Shaders'='Clean Shaders'
+        'RECORTES'='CROPS'; 'Borrar Recorte'='Clear Crop'; 'Recorte Eliminado'='Crop Cleared'
         'MARCOS'='BEZELS'; 'Borrar Marcos'='Clear Bezels'; 'Marcos Eliminados'='Bezels Cleared'
         'VENTANA'='WINDOW'; 'TAMANO'='SIZE'; 'Pantalla Completa'='Fullscreen'; 'POSICION'='POSITION'
         'Arriba Izquierda'='Top Left'; 'Arriba Derecha'='Top Right'; 'Arriba Centro'='Top Center'
@@ -838,22 +831,23 @@ $btnMenuToggle.Add_Click({
         'Estirar Ventana'='Stretch Window'; 'Modo Mini'='Mini Mode'; '"Modo Mini"'='"Mini Mode"'
         'CAPTURA'='CAPTURE'; 'Capturar Imagen'='Take Screenshot'; 'Grabar Video'='Record Video'
         'AUDIO'='AUDIO'; 'Silenciar/Activar sonido'='Mute/Unmute'
-        'OPCIONES DE VIDEO'='VIDEO OPTIONS'; 'VIDEO'='VIDEO'; 'Cambiar a Perfil ICC Automatico'='Change to Auto ICC Profile'; 'Alternar Deband'='Toggle Deband'
+        'OPCIONES DE VIDEO'='VIDEO OPTIONS'; 'VIDEO'='VIDEO'; 'Cambiar a Perfil ICC Automatico'='Change to Auto ICC Profile'
+        'Otras Opciones de Video'='Other Video Options'; 'Alternar Deband'='Toggle Deband'
         'Deband:'='Deband:'; 'Alternar Desentrelazado'='Toggle Deinterlace'; 'Desentrelazado:'='Deinterlace:'
-        'Bordes'='Borders'
+        'Sin Bordes en Pantalla Completa'='Borderless Fullscreen'; 'Bordes'='Borders'
         'OTROS'='OTHERS'; 'Limpiar TODO'='Clean ALL'; '"Limpiando TODO"'='"Cleaning ALL"'
         'Informacion de Stream'='Info Stream'; 'CENTRO'='CENTER'; 'Especial'='Special'
-        'FORMAS'='SHAPES'; 'Interpolacion de Movimiento'='Motion Interpolation'; 'Limpiar Forma'='Clean Shape'; 'Forma Limpiada'='Shape Cleared'
-        'Curvatura'='Curvature'; 'Orillas Oscuras'='Edge Darkening'
-        'Barril Ancho'='Wide Barrel'; 'Esquinas Redondeadas'='Rounded Corners'
-        'Inclinado'='Tilted'; 'Invertido'='Inverted'
-        'Perspectiva Pinball'='Pinball Perspective';
+        'FORMAS'='SHAPES'; 'Curvatura CRT'='CRT Curvature'; 'Oscurecer Bordes'='Edge Darkening'
+        'CRT Barril Ancho'='Wide CRT Barrel'; 'Super Curvatura CRT'='CRT Super Curvature'; 'Esquinas Redondeadas'='Rounded Corners'
+        'CRT Inclinado (Keystone)'='Tilted CRT (Keystone)'
+        'CRT Inclinado (Keystone Invertido)'='Tilted CRT (Keystone Inverted)'
+        'Perspectiva Pinball'='Pinball Perspective';'Interpolacion de Movimiento'='Motion Interpolation'; 'Limpiar Forma'='Clean Shape'; 'Forma Limpiada'='Shape Cleared'
         'Keystone Hacia Adentro (Zoom Inferior Bajo)'='Inward Keystone (Low Bottom Zoom)'
-        'ROTACION'='ROTATION'; 'Girar a la Derecha'='Rotate Clockwise'; 'Girar a la Izquierda'='Rotate Counter-Clockwise'; 'Restablecer Rotacion'='Reset Rotation'; 'OTRAS OPCIONES'='OTHER OPTIONS'; 'Borde de Ventana'='Window Border'; 'Barra de Titulo'='Title Bar'; 'Quitar TODO'='Remove ALL'; 'Girado +90°'='Rotated +90°'; 'Girado -90°'='Rotated -90°'; 'Rotacion Reiniciada'='Rotation Reset'; 'Borde: ${border}'='Border: ${border}'; 'Barra de Titulo: ${border}'='Title Bar: ${border}'; 'Ambos Quitados'='Removed Both'; 'Ocultar Mensajes OSD'='Hide OSD Messages'
     }
 
     $mapES = @{
-        'CLOSE MPV-SW-Capture'='CERRAR MPV-SW-Capture'; 'VideoGame'='Videojuegos'; 'Fill Screen'='Rellenar Ventana'; 'Only Sharpen'='Solo Nitidez'; 'Clean Shaders'='Limpiar Shaders'; 'CROPS'='RECORTES'; 'Clear Crop'='Borrar Recorte'; 'Crop Cleared'='Recorte Eliminado'
+        'CLOSE MPV-SW-Capture'='CERRAR MPV-SW-Capture'; 'VideoGame'='Videojuegos'; 'Only Sharpen'='Solo Nitidez'; 'Clean Shaders'='Limpiar Shaders'
+        'CROPS'='RECORTES'; 'Clear Crop'='Borrar Recorte'; 'Crop Cleared'='Recorte Eliminado'
         'BEZELS'='MARCOS'; 'Clear Bezels'='Borrar Marcos'; 'Bezels Cleared'='Marcos Eliminados'
         'WINDOW'='VENTANA'; 'SIZE'='TAMANO'; 'Fullscreen'='Pantalla Completa'; 'POSITION'='POSICION'
         'Top Left'='Arriba Izquierda'; 'Top Right'='Arriba Derecha'; 'Top Center'='Arriba Centro'
@@ -862,18 +856,18 @@ $btnMenuToggle.Add_Click({
         'Stretch Window'='Estirar Ventana'; 'Mini Mode'='Modo Mini'; '"Mini Mode"'='"Modo Mini"'
         'CAPTURE'='CAPTURA'; 'Take Screenshot'='Capturar Imagen'; 'Record Video'='Grabar Video'
         'AUDIO'='AUDIO'; 'Mute/Unmute'='Silenciar/Activar sonido'
-        'VIDEO OPTIONS'='OPCIONES DE VIDEO'; 'VIDEO'='VIDEO'; 'Change to Auto ICC Profile'='Cambiar a Perfil ICC Automatico'; 'Toggle Deband'='Alternar Deband'
+        'VIDEO OPTIONS'='OPCIONES DE VIDEO'; 'VIDEO'='VIDEO'; 'Change to Auto ICC Profile'='Cambiar a Perfil ICC Automatico'
+        'Other Video Options'='Otras Opciones de Video'; 'Toggle Deband'='Alternar Deband'
         'Deband:'='Deband:'; 'Toggle Deinterlace'='Alternar Desentrelazado'; 'Deinterlace:'='Desentrelazado:'
-        'Borders'='Bordes'
+        'Borderless Fullscreen'='Sin Bordes en Pantalla Completa'; 'Borders'='Bordes'
         'OTHERS'='OTROS'; 'Clean ALL'='Limpiar TODO'; '"Cleaning ALL"'='"Limpiando TODO"'
         'Info Stream'='Informacion de Stream'; 'CENTER'='CENTRO'; 'Special'='Especial'
-        'SHAPES'='FORMAS'; 'Motion Interpolation'='Interpolacion de Movimiento'; 'Clean Shape'='Limpiar Forma'; 'Shape Cleared'='Forma Limpiada'
-        'Curvature'='Curvatura'; 'Edge Darkening'='Orillas Oscuras'
-        'Wide Barrel'='Barril Ancho'; 'Rounded Corners'='Esquinas Redondeadas'
-        'Tilted'='Inclinado'; 'Inverted'='Invertido'
-        'Pinball Perspective'='Perspectiva Pinball';
+        'SHAPES'='FORMAS'; 'CRT Curvature'='Curvatura CRT'; 'Edge Darkening'='Oscurecer Bordes'
+        'Wide CRT Barrel'='CRT Barril Ancho'; 'CRT Super Curvature'='Super Curvatura CRT'; 'Rounded Corners'='Esquinas Redondeadas'
+        'Tilted CRT (Keystone)'='CRT Inclinado (Keystone)'
+        'Tilted CRT (Keystone Inverted)'='CRT Inclinado (Keystone Invertido)'
+        'Pinball Perspective'='Perspectiva Pinball';'Motion Interpolation'='Interpolacion de Movimiento'; 'Clean Shape'='Limpiar Forma'; 'Shape Cleared'='Forma Limpiada'
         'Inward Keystone (Low Bottom Zoom)'='Keystone Hacia Adentro (Zoom Inferior Bajo)'
-        'ROTATION'='ROTACION'; 'Rotate Clockwise'='Girar a la Derecha'; 'Rotate Counter-Clockwise'='Girar a la Izquierda'; 'Reset Rotation'='Restablecer Rotacion'; 'OTHER OPTIONS'='OTRAS OPCIONES'; 'Window Border'='Borde de Ventana'; 'Title Bar'='Barra de Titulo'; 'Remove ALL'='Quitar TODO'; 'Rotated +90°'='Girado +90°'; 'Rotated -90°'='Girado -90°'; 'Rotation Reset'='Rotacion Reiniciada'; 'Border: ${border}'='Borde: ${border}'; 'Title Bar: ${border}'='Barra de Titulo: ${border}'; 'Removed Both'='Ambos Quitados'; 'Hide OSD Messages'='Ocultar Mensajes OSD'
     }
 
     $autoEN = @{
@@ -911,64 +905,22 @@ $btnMenuToggle.Add_Click({
         [System.IO.File]::WriteAllText($menuPath, $menu, $utf8)
 
         Update-PlainFile $autoPath $autoES $utf8
+        Set-NsoRetroLanguage $nsoPath "ES" $utf8
 
         $script:LastStatusState = "menu_to_es"
         $lStatus.ForeColor = $script:SUCCESS
         $lStatus.Text = T "MenuToSpanish"
-    } else {
+    }
+    else {
         foreach ($k in $mapEN.Keys) { $menu = $menu.Replace($k, $mapEN[$k]) }
         [System.IO.File]::WriteAllText($menuPath, $menu, $utf8)
 
         Update-PlainFile $autoPath $autoEN $utf8
+        Set-NsoRetroLanguage $nsoPath "EN" $utf8
 
         $script:LastStatusState = "menu_to_en"
         $lStatus.ForeColor = $script:SUCCESS
         $lStatus.Text = T "MenuToEnglish"
-    }
-
-    # Update current_lang in shader_init.lua
-    $shaderInitPath = Join-Path $script:RootDir "scripts\shader_init.lua"
-    if (Test-Path $shaderInitPath) {
-        $content = [System.IO.File]::ReadAllText($shaderInitPath, [System.Text.Encoding]::UTF8)
-        $newLang = if ($isEnglish) { "es" } else { "en" }
-        $content = $content -replace '(?m)^\s*local current_lang = "[^"]*"', ('local current_lang = "' + $newLang + '"')
-        [System.IO.File]::WriteAllText($shaderInitPath, $content, $utf8)
-    } else {
-        $langValue = if ($isEnglish) { "es" } else { "en" }
-        $shaderInitContent = @"
--- shader_init.lua - Initialization of shader and OSD control
--- This file is modified by the setup to establish:
---   - active_shader (SH_4K_1 / none)
---   - current_lang (en / es)
-
-local current_lang = "$langValue"  -- Updated by the setup when translating
-
--- Initialize active shader
-mp.set_property("user-data/active_shader", "SH_4K_1")
-
--- Function to toggle OSD (hide/show messages)
-local function toggle_osd()
-    local dur = mp.get_property_number("osd-duration")
-    if dur == 0 then
-        mp.set_property_number("osd-duration", 1000)
-        if current_lang == "es" then
-            mp.osd_message("Mostrar OSD", 1, 0)
-        else
-            mp.osd_message("OSD Show Mode", 1, 0)
-        end
-    else
-        mp.set_property_number("osd-duration", 0)
-        if current_lang == "es" then
-            mp.osd_message("Ocultar OSD", 1, 0)
-        else
-            mp.osd_message("OSD Hidden Mode", 1, 0)
-        end
-    end
-end
-
-mp.register_script_message("toggle-osd", toggle_osd)
-"@
-        [System.IO.File]::WriteAllText($shaderInitPath, $shaderInitContent, $utf8)
     }
 })
 
@@ -1011,15 +963,11 @@ $btnApply.Add_Click({
             '(data\.audio_device\s*=\s*")[^"]*"' = ('${1}' + $aDev + '"')
         } $utf8
 
-        # --- Update mpv.conf with all options (EXCEPT border and title-bar) ---
         $cf = Join-Path $root "mpv.conf"
         if (Test-Path $cf) {
             $c = [System.IO.File]::ReadAllText($cf, [System.Text.Encoding]::UTF8)
-
-            # Screenshot template
             $c = $c -replace 'screenshot-template=.*', ('screenshot-template="' + $tpl + '"')
 
-            # Shader and deband
             if ($shMode -eq "enable") {
                 $c = $c -replace '(?m)^#?(deband=)', '$1'
                 $c = $c -replace '(?m)^#?(glsl-shader=)', '$1'
@@ -1028,7 +976,6 @@ $btnApply.Add_Click({
                 $c = $c -replace '(?m)^#?(glsl-shader=)', '#$1'
             }
 
-            # ICC Profile
             $iccVal = if ($rbIccYes.Checked) { "yes" } else { "no" }
             if ($c -match 'icc-profile-auto=') {
                 $c = $c -replace 'icc-profile-auto=\S+', ('icc-profile-auto=' + $iccVal)
@@ -1036,54 +983,7 @@ $btnApply.Add_Click({
                 $c = $c.TrimEnd() + "`r`nicc-profile-auto=$iccVal`r`n"
             }
 
-            # OSD Duration
-            $osdVal = if ($rbOsdYes.Checked) { "0" } else { "1000" }
-            if ($c -match 'osd-duration=') {
-                $c = $c -replace 'osd-duration=\d+', ('osd-duration=' + $osdVal)
-            } else {
-                $c = $c.TrimEnd() + "`r`nosd-duration=$osdVal`r`n"
-            }
-
             [System.IO.File]::WriteAllText($cf, $c, $utf8)
-        }
-
-        # --- Actualizar MPV-SW-Capture.bat para el borde y la barra de título ---
-        $batPath = Join-Path $root "data\MPV-SW-Capture.bat"
-        if (Test-Path $batPath) {
-            $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
-            
-            # Determinar los argumentos según la selección del usuario
-            if ($rbBorderNo.Checked) {
-                # Opción "No": sin borde ni barra de título → forzar --no-border
-                $borderArg = "--no-border"
-                $titleArg = ""
-            } elseif ($rbBorderOnly.Checked) {
-                # Opción "Only border": borde sin barra de título
-                $borderArg = "--border"  # No necesario, pero explícito
-                $titleArg = "--title-bar=no"
-            } else { # $rbBorderBoth.Checked
-                # Opción "Border + Title Bar": borde y barra de título
-                $borderArg = "--border"  # No necesario, pero explícito
-                $titleArg = ""  # O --title-bar=yes (por defecto)
-            }
-            
-            # Eliminar cualquier --no-border, --border, --title-bar existente para evitar duplicados
-            $batContent = $batContent -replace '--no-border ', ''
-            $batContent = $batContent -replace '--no-border', ''
-            $batContent = $batContent -replace '--border ', ''
-            $batContent = $batContent -replace '--border', ''
-            $batContent = $batContent -replace '--title-bar=\S+ ', ''
-            $batContent = $batContent -replace '--title-bar=\S+', ''
-            
-            # Buscar la línea que comienza con 'start "" /b "%prog1_path%"'
-            # Insertar los argumentos antes de 'av://dshow:video='
-            $pattern = '(start "" /b "%prog1_path%" )'
-            $replacement = '${1}' + $borderArg + ' ' + $titleArg + ' '
-            $batContent = $batContent -replace $pattern, $replacement
-            # Eliminar espacios dobles
-            $batContent = $batContent -replace '  +', ' '
-            
-            [System.IO.File]::WriteAllText($batPath, $batContent, $utf8)
         }
 
         $luaDateFmt = if ($psFmt -eq "yyyy-MM-dd") { "%Y-%m-%d_%H%M%S" } elseif ($psFmt -eq "MM-dd-yyyy") { "%m-%d-%Y_%H%M%S" } else { "%d-%m-%Y_%H%M%S" }
@@ -1092,51 +992,9 @@ $btnApply.Add_Click({
             'os\.date\("%[^"]+"\)' = ('os.date("' + $luaDateFmt + '")')
         } $utf8
 
-        # --- Update shader_init.lua (only the specific lines) ---
-        $shaderInitPath = Join-Path $root "scripts\shader_init.lua"
-        $langValue = if ($script:CurrentLang -eq "EN") { "en" } else { "es" }
-
-        if (Test-Path $shaderInitPath) {
-            $content = [System.IO.File]::ReadAllText($shaderInitPath, [System.Text.Encoding]::UTF8)
-            $content = $content -replace 'local current_lang = "[^"]*"', ('local current_lang = "' + $langValue + '"')
-            $content = $content -replace 'mp\.set_property\("user-data/active_shader",\s*"[^"]*"\)', ('mp.set_property("user-data/active_shader", "' + $shInit + '")')
-            [System.IO.File]::WriteAllText($shaderInitPath, $content, $utf8)
-        } else {
-            $shaderInitContent = @"
--- shader_init.lua - Initialization of shader and OSD control
--- This file is modified by the setup to establish:
---   - active_shader (SH_4K_1 / none)
---   - current_lang (en / es)
-
-local current_lang = "$langValue"  -- Updated by the setup when translating
-
--- Initialize active shader
-mp.set_property("user-data/active_shader", "$shInit")
-
--- Function to toggle OSD (hide/show messages)
-local function toggle_osd()
-    local dur = mp.get_property_number("osd-duration")
-    if dur == 0 then
-        mp.set_property_number("osd-duration", 1000)
-        if current_lang == "es" then
-            mp.osd_message("Mostrar OSD", 1, 0)
-        else
-            mp.osd_message("OSD Show Mode", 1, 0)
-        end
-    else
-        mp.set_property_number("osd-duration", 0)
-        if current_lang == "es" then
-            mp.osd_message("Ocultar OSD", 1, 0)
-        else
-            mp.osd_message("OSD Hidden Mode", 1, 0)
-        end
-    end
-end
-
-mp.register_script_message("toggle-osd", toggle_osd)
-"@
-            [System.IO.File]::WriteAllText($shaderInitPath, $shaderInitContent, $utf8)
-        }
+        Update-File (Join-Path $root "scripts\nso_retro.lua") @{
+            'mp\.set_property\("user-data/active_shader",\s*"[^"]*"\)' = ('mp.set_property("user-data/active_shader", "' + $shInit + '")')
+        } $utf8
 
         Update-File (Join-Path $root "menu.conf") @{
             'Limit=\d+ Sec' = ('Limit=' + $recSec + ' Sec')
@@ -1147,19 +1005,26 @@ mp.register_script_message("toggle-osd", toggle_osd)
         } $utf8
 
         # ============================================================
-        #  SHORTCUT CREATION (C#)
+        #  SHORTCUT CREATION using native IShellLink (C#)
         # ============================================================
         if ($rbScYes.Checked) {
             $targetExe = Join-Path $root "mpv.exe"
-            $icoPath   = Join-Path $root "data\icon\msc-shortcut.ico"   # <-- updated path
+            $icoPath   = Join-Path $root "data\icon\msc-shortcut.ico"
             $desktopFolder = [Environment]::GetFolderPath("Desktop")
 
             function New-Shortcut {
-                param([string]$lnkPath, [string]$targetExe, [string]$workingDir, [string]$iconPath)
+                param(
+                    [string]$lnkPath,
+                    [string]$targetExe,
+                    [string]$workingDir,
+                    [string]$iconPath
+                )
                 try {
                     [ShortcutCreator]::CreateShortcut($lnkPath, $targetExe, $workingDir, $iconPath, 0)
                     return $true
-                } catch { return $false }
+                } catch {
+                    return $false
+                }
             }
 
             $destDesktop = Join-Path $desktopFolder "MPV-SW-Capture.lnk"
