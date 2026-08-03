@@ -333,7 +333,7 @@
         #modal-body a {
             color: #6bc7ff;
         }
-        /* ---- NEW: Limit image size in modal ---- */
+        /* Limit image size in modal */
         #modal-body img {
             max-width: 100%;
             height: auto;
@@ -347,6 +347,29 @@
         .modal-footer a {
             color: #6bc7ff;
             text-decoration: underline;
+        }
+
+        /* --- Limit height and add scroll to releases container --- */
+        #releases-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: #3d4a5a #141a24;
+        }
+        #releases-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        #releases-container::-webkit-scrollbar-track {
+            background: #141a24;
+            border-radius: 8px;
+        }
+        #releases-container::-webkit-scrollbar-thumb {
+            background: #3d4a5a;
+            border-radius: 8px;
+        }
+        #releases-container::-webkit-scrollbar-thumb:hover {
+            background: #6a7a8a;
         }
 
         /* --- Utilities --- */
@@ -744,7 +767,10 @@
             try {
                 const response = await fetch('releases.json');
                 if (!response.ok) throw new Error('Could not load releases file');
-                const releases = await response.json();
+                let releases = await response.json();
+
+                // Sort releases by date (newest first) to ensure latest is on top
+                releases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
                 if (releases.length > 0) {
                     const version = releases[0].tag;
@@ -807,70 +833,70 @@
         // ------------------------------------------------------------------
         // 4. MODAL FOR EXTERNAL CONTENT (README, FAQ, etc.)
         // ------------------------------------------------------------------
-async function openModal(title, url, githubUrl) {
-    const overlay = document.getElementById('modal-overlay');
-    const body = document.getElementById('modal-body');
-    const titleEl = document.getElementById('modal-title');
-    const githubLink = document.getElementById('modal-github-link');
+        async function openModal(title, url, githubUrl) {
+            const overlay = document.getElementById('modal-overlay');
+            const body = document.getElementById('modal-body');
+            const titleEl = document.getElementById('modal-title');
+            const githubLink = document.getElementById('modal-github-link');
 
-    overlay.classList.add('active');
-    titleEl.textContent = title;
-    githubLink.href = githubUrl;
-    body.innerHTML = 'Loading...';
+            overlay.classList.add('active');
+            titleEl.textContent = title;
+            githubLink.href = githubUrl;
+            body.innerHTML = 'Loading...';
 
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Error loading file');
-        let text = await response.text();
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Error loading file');
+                let text = await response.text();
 
-        // --- CONVERT IMAGE PATHS TO RAW URLs ---
-        // 1. Convert GitHub blob URLs to raw URLs
-        // Example: https://github.com/user/repo/blob/main/path/file.jpg -> https://raw.githubusercontent.com/user/repo/main/path/file.jpg
-        text = text.replace(
-            /!\[([^\]]*)\]\((https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^)]+))\)/g,
-            (match, alt, fullUrl, user, repo, path) => {
-                const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${path}`;
-                return `![${alt}](${rawUrl})`;
+                // --- CONVERT IMAGE PATHS TO RAW URLs ---
+                // 1. Convert GitHub blob URLs to raw URLs
+                // Example: https://github.com/user/repo/blob/main/path/file.jpg -> https://raw.githubusercontent.com/user/repo/main/path/file.jpg
+                text = text.replace(
+                    /!\[([^\]]*)\]\((https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^)]+))\)/g,
+                    (match, alt, fullUrl, user, repo, path) => {
+                        const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${path}`;
+                        return `![${alt}](${rawUrl})`;
+                    }
+                );
+
+                // 2. Convert relative paths (for other Markdown files) to absolute URLs
+                const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
+                text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
+                    let cleanSrc = src.replace(/^\.\//, '').replace(/^\//, '');
+                    const fullUrl = baseRawUrl + cleanSrc;
+                    return `![${alt}](${fullUrl})`;
+                });
+
+                const html = marked.parse(text);
+                body.innerHTML = html;
+            } catch (error) {
+                body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
             }
-        );
-
-        // 2. Convert relative paths (for other Markdown files) to absolute URLs
-        const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
-        text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
-            let cleanSrc = src.replace(/^\.\//, '').replace(/^\//, '');
-            const fullUrl = baseRawUrl + cleanSrc;
-            return `![${alt}](${fullUrl})`;
-        });
-
-        const html = marked.parse(text);
-        body.innerHTML = html;
-    } catch (error) {
-        body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
-    }
-}
+        }
 
         // Function to open README or LEEME based on current language
-function openReadme() {
-    const lang = window.currentLang || 'en';
-    if (lang === 'es') {
-        // Use LEEME from the wiki (raw URL)
-        const leemeUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
-        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
-        openModal('LEEME', leemeUrl, githubUrl);
-    } else {
-        // Use README from the root
-        const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
-        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
-        openModal('README', readmeUrl, githubUrl);
-    }
-}
+        function openReadme() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                // Use LEEME from the wiki (raw URL)
+                const leemeUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
+                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
+                openModal('LEEME', leemeUrl, githubUrl);
+            } else {
+                // Use README from the root
+                const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
+                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
+                openModal('README', readmeUrl, githubUrl);
+            }
+        }
 
         // Function to open FAQ (from the wiki raw URL)
-function openFaq() {
-    const faqUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md';
-    const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ';
-    openModal('FAQ', faqUrl, githubUrl);
-}
+        function openFaq() {
+            const faqUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md';
+            const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ';
+            openModal('FAQ', faqUrl, githubUrl);
+        }
 
         // Close modal
         document.getElementById('modal-close').addEventListener('click', function() {
