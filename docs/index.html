@@ -419,11 +419,13 @@
                 setLanguage(newLang);
             });
 
-            const langURL = getIdiomaDesdeURL();
-            const langGuardado = localStorage.getItem('mpv-lang');
-            let idiomaInicial = langURL || langGuardado || 'es';
-            if (idiomaInicial !== 'es' && idiomaInicial !== 'en') idiomaInicial = 'es';
-            setLanguage(idiomaInicial);
+            // Determinar idioma inicial: URL > localStorage > 'en' por defecto
+const langURL = getIdiomaDesdeURL();
+const langGuardado = localStorage.getItem('mpv-lang');
+let idiomaInicial = langURL || langGuardado || 'en';
+// Si el idioma guardado no es válido, usar 'en' (o 'es' si prefieres)
+if (idiomaInicial !== 'es' && idiomaInicial !== 'en') idiomaInicial = 'en';
+setLanguage(idiomaInicial);
         });
 
         // ------------------------------------------------------------------
