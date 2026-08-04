@@ -447,27 +447,33 @@
                 <span class="lang-en" style="display:none;">Ready-to-use MPV configuration for Windows, adapted for USB 3.0 capture cards. Play Nintendo Switch, PS, Xbox or any HDMI console with near-zero latency and endless options.</span>
             </p>
             <div class="hero-buttons">
-                <!-- Download button -->
-                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn">
-                    <i class="fas fa-download"></i>
-                    <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
-                    <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
-                </a>
-                <!-- README/LEEME button -->
-                <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
-                    <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
-                </a>
-                <!-- FAQ button -->
-                <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
-                    <i class="fas fa-question-circle"></i> FAQ
-                </a>
-                <!-- Wiki button -->
-                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
-                    <i class="fas fa-book"></i>
-                    <span class="lang-es">Ver Wiki</span>
-                    <span class="lang-en" style="display:none;">View Wiki</span>
-                </a>
-            </div>
+    <!-- Download button -->
+    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn">
+        <i class="fas fa-download"></i>
+        <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
+        <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
+    </a>
+    <!-- README/LEEME button -->
+    <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
+        <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
+    </a>
+    <!-- Installation Guide button (NUEVO) -->
+    <a href="#" id="btn-installation" class="btn btn-outline" onclick="openInstallationGuide(); return false;">
+        <i class="fas fa-book"></i>
+        <span class="lang-es">Guía de instalación</span>
+        <span class="lang-en" style="display:none;">Installation Guide</span>
+    </a>
+    <!-- FAQ button -->
+    <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
+        <i class="fas fa-question-circle"></i> FAQ
+    </a>
+    <!-- Wiki button -->
+    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
+        <i class="fas fa-book"></i>
+        <span class="lang-es">Ver Wiki</span>
+        <span class="lang-en" style="display:none;">View Wiki</span>
+    </a>
+</div>
         </div>
     </section>
 
@@ -921,6 +927,20 @@
                 openModal('README', readmeUrl, githubUrl);
             }
         }
+
+// Function to open Installation Guide based on current language
+function openInstallationGuide() {
+    const lang = window.currentLang || 'en';
+    if (lang === 'es') {
+        const esUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90de%E2%80%90Instalaci%C3%B3n';
+        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guía-de-Instalación';
+        openModal('Guía de instalación', esUrl, githubUrl);
+    } else {
+        const enUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Installation%E2%80%90Guide';
+        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Installation-Guide';
+        openModal('Installation Guide', enUrl, githubUrl);
+    }
+}
 
         // Function to open FAQ (from the wiki raw URL)
         function openFaq() {
