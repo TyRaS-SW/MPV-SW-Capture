@@ -4,425 +4,151 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPV-SW-Capture · Play your console with minimal lag</title>
-    <!-- Fonts and icons -->
+    <meta name="description" content="MPV-SW-Capture: Juega tu consola (Switch, PS, Xbox) con mínima latencia usando MPV y una tarjeta de captura USB 3.0. Configuración lista para usar, shaders, bezels y más.">
+    <meta property="og:title" content="MPV-SW-Capture · Play your console with minimal lag">
+    <meta property="og:description" content="Configuración lista para usar de MPV para Windows, adaptada para tarjetas de captura USB 3.0.">
+    <meta property="og:image" content="https://tyras-sw.github.io/MPV-SW-Capture/assets/og-image.jpg">
+    <meta property="og:url" content="https://tyras-sw.github.io/MPV-SW-Capture/">
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Library to convert Markdown to HTML -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* --- Global Styles --- */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0b0e14;
-            color: #e8edf2;
-            line-height: 1.6;
-            scroll-behavior: smooth;
-        }
-        .container {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-        a {
-            color: #6bc7ff;
-            text-decoration: none;
-        }
-        a:hover {
-            color: #a8daff;
-            text-decoration: underline;
-        }
-        h1, h2, h3 {
-            font-weight: 700;
-            letter-spacing: -0.02em;
-        }
-        h2 {
-            font-size: 2rem;
-            margin: 2rem 0 1.5rem;
-            border-bottom: 2px solid #2a313c;
-            padding-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        h2 i {
-            color: #6bc7ff;
-            font-size: 1.6rem;
-        }
-        .badge {
-            background: #1f8bff;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 600;
-            padding: 0.2rem 0.6rem;
-            border-radius: 20px;
-            text-transform: uppercase;
-            margin-left: 10px;
+        /* ===== ESTILOS (igual que antes, solo añado un par de ajustes) ===== */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:#0b0e14; color:#e8edf2; line-height:1.6; scroll-behavior:smooth; }
+        .container { max-width:1280px; margin:0 auto; padding:0 24px; }
+        a { color:#6bc7ff; text-decoration:none; }
+        a:hover { color:#a8daff; text-decoration:underline; }
+        h1,h2,h3 { font-weight:700; letter-spacing:-0.02em; }
+        h2 { font-size:2rem; margin:2rem 0 1.5rem; border-bottom:2px solid #2a313c; padding-bottom:0.5rem; display:flex; align-items:center; gap:10px; }
+        h2 i { color:#6bc7ff; font-size:1.6rem; }
+
+        /* NAV */
+        nav { position:sticky; top:0; z-index:100; background:rgba(11,14,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid #2a313c; padding:0.8rem 0; }
+        nav .container { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
+        .nav-logo { font-size:1.4rem; font-weight:700; color:#fff; }
+        .nav-logo i { color:#6bc7ff; margin-right:8px; }
+        .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:500; font-size:0.95rem; align-items:center; }
+        .nav-links a { color:#b0bccf; }
+        .nav-links a:hover { color:#fff; text-decoration:none; }
+        .nav-links .discord-link { color:#5865F2; }
+        .nav-links .discord-link:hover { color:#8ea1ff; }
+        #lang-toggle { background:none; border:1px solid #3d4a5a; color:#b0bccf; padding:4px 14px; border-radius:20px; cursor:pointer; font-size:0.9rem; transition:0.2s; }
+        #lang-toggle:hover { border-color:#6bc7ff; color:#fff; }
+        .menu-toggle { display:none; background:none; border:none; color:#b0bccf; font-size:1.8rem; cursor:pointer; padding:0 8px; }
+        .menu-toggle:hover { color:#fff; }
+        @media (max-width:820px) {
+            .menu-toggle { display:block; }
+            .nav-links { display:none; flex-direction:column; width:100%; gap:0.5rem; padding:1rem 0 0.5rem; border-top:1px solid #2a313c; margin-top:0.5rem; }
+            .nav-links.open { display:flex; }
+            .nav-links a { width:100%; padding:0.3rem 0; }
         }
 
-        /* --- Navigation --- */
-        nav {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(11, 14, 20, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid #2a313c;
-            padding: 0.8rem 0;
-        }
-        nav .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        .nav-logo {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #fff;
-        }
-        .nav-logo i {
-            color: #6bc7ff;
-            margin-right: 8px;
-        }
-        .nav-links {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            font-weight: 500;
-            font-size: 0.95rem;
-            align-items: center;
-        }
-        .nav-links a {
-            color: #b0bccf;
-        }
-        .nav-links a:hover {
-            color: #fff;
-            text-decoration: none;
-        }
-        #lang-toggle {
-            background: none;
-            border: 1px solid #3d4a5a;
-            color: #b0bccf;
-            padding: 4px 14px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: 0.2s;
-        }
-        #lang-toggle:hover {
-            border-color: #6bc7ff;
-            color: #fff;
-        }
+        /* HERO */
+        .hero { padding:4rem 0 3rem; text-align:center; border-bottom:1px solid #1f2630; }
+        .hero h1 { font-size:3.2rem; background:linear-gradient(135deg,#fff 60%,#6bc7ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:0.5rem; }
+        .hero p { font-size:1.25rem; color:#b0bccf; max-width:720px; margin:0.5rem auto 1.5rem; }
+        .hero-buttons { display:flex; justify-content:center; gap:1rem; flex-wrap:wrap; }
+        .btn { display:inline-block; background:#1f8bff; color:#fff; padding:0.7rem 1.8rem; border-radius:40px; font-weight:600; transition:0.2s; }
+        .btn:hover { background:#3d9eff; text-decoration:none; transform:scale(1.02); }
+        .btn-outline { background:transparent; border:1.5px solid #3d4a5a; color:#b0bccf; }
+        .btn-outline:hover { background:#1f2630; border-color:#6bc7ff; color:#fff; }
+        .btn-discord { background:#5865F2; border-color:#5865F2; color:#fff; }
+        .btn-discord:hover { background:#4752c4; border-color:#4752c4; }
 
-        /* --- Hero --- */
-        .hero {
-            padding: 4rem 0 3rem;
-            text-align: center;
-            border-bottom: 1px solid #1f2630;
-        }
-        .hero h1 {
-            font-size: 3.2rem;
-            background: linear-gradient(135deg, #fff 60%, #6bc7ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-        .hero p {
-            font-size: 1.25rem;
-            color: #b0bccf;
-            max-width: 720px;
-            margin: 0.5rem auto 1.5rem;
-        }
-        .hero-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-block;
-            background: #1f8bff;
-            color: #fff;
-            padding: 0.7rem 1.8rem;
-            border-radius: 40px;
-            font-weight: 600;
-            transition: 0.2s;
-        }
-        .btn:hover {
-            background: #3d9eff;
-            text-decoration: none;
-            transform: scale(1.02);
-        }
-        .btn-outline {
-            background: transparent;
-            border: 1.5px solid #3d4a5a;
-            color: #b0bccf;
-        }
-        .btn-outline:hover {
-            background: #1f2630;
-            border-color: #6bc7ff;
-            color: #fff;
-        }
+        /* CARDS */
+        .card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.8rem; margin:2rem 0; }
+        .card { background:#141a24; border:1px solid #2a313c; border-radius:16px; padding:1.8rem; transition:0.2s; }
+        .card:hover { border-color:#3d4a5a; transform:translateY(-4px); }
+        .card i { font-size:2rem; color:#6bc7ff; margin-bottom:0.8rem; }
+        .card h3 { font-size:1.2rem; margin-bottom:0.5rem; }
+        .card p { color:#b0bccf; font-size:0.95rem; }
 
-        /* --- Cards and sections --- */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.8rem;
-            margin: 2rem 0;
-        }
-        .card {
-            background: #141a24;
-            border: 1px solid #2a313c;
-            border-radius: 16px;
-            padding: 1.8rem;
-            transition: 0.2s;
-        }
-        .card:hover {
-            border-color: #3d4a5a;
-            transform: translateY(-4px);
-        }
-        .card i {
-            font-size: 2rem;
-            color: #6bc7ff;
-            margin-bottom: 0.8rem;
-        }
-        .card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-        .card p {
-            color: #b0bccf;
-            font-size: 0.95rem;
-        }
+        /* TABLAS */
+        .table-wrap { overflow-x:auto; margin:1.5rem 0; border-radius:12px; border:1px solid #2a313c; }
+        table { width:100%; border-collapse:collapse; font-size:0.95rem; }
+        th { background:#1f2630; color:#c8d0dc; font-weight:600; text-align:left; padding:0.8rem 1rem; }
+        td { padding:0.8rem 1rem; border-top:1px solid #1f2630; }
+        tr:hover td { background:#141a24; }
+        kbd { background:#1f2630; padding:0.1rem 0.6rem; border-radius:4px; font-size:0.85rem; border:1px solid #3d4a5a; }
 
-        /* --- Tables --- */
-        .table-wrap {
-            overflow-x: auto;
-            margin: 1.5rem 0;
-            border-radius: 12px;
-            border: 1px solid #2a313c;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.95rem;
-        }
-        th {
-            background: #1f2630;
-            color: #c8d0dc;
-            font-weight: 600;
-            text-align: left;
-            padding: 0.8rem 1rem;
-        }
-        td {
-            padding: 0.8rem 1rem;
-            border-top: 1px solid #1f2630;
-        }
-        tr:hover td {
-            background: #141a24;
-        }
+        /* COMPARE GRID */
+        .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin:1.5rem 0; }
+        .compare-item { background:#141a24; border-radius:12px; padding:1rem; text-align:center; border:1px solid #2a313c; }
+        .compare-item img { max-width:100%; border-radius:8px; background:#0b0e14; height:auto; aspect-ratio:16/9; object-fit:cover; }
+        .compare-item .label { display:block; margin-top:0.5rem; font-weight:600; color:#b0bccf; }
 
-        /* --- Visual comparisons --- */
-        .compare-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin: 1.5rem 0;
-        }
-        .compare-item {
-            background: #141a24;
-            border-radius: 12px;
-            padding: 1rem;
-            text-align: center;
-            border: 1px solid #2a313c;
-        }
-        .compare-item img {
-            max-width: 100%;
-            border-radius: 8px;
-            background: #0b0e14;
-            height: auto;
-            aspect-ratio: 16/9;
-            object-fit: cover;
-        }
-        .compare-item .label {
-            display: block;
-            margin-top: 0.5rem;
-            font-weight: 600;
-            color: #b0bccf;
-        }
+        /* MODAL MEJORADO */
+        #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:1000; justify-content:center; align-items:center; }
+        #modal-overlay.active { display:flex; }
+        .modal-content { background:#0d1117; width:90%; max-width:900px; height:85vh; border-radius:12px; border:1px solid #30363d; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.8); overflow:hidden; }
+        .modal-header { padding:15px 25px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#0d1117; }
+        .modal-title { font-size:1.2rem; font-weight:bold; color:#fff; margin:0; }
+        .modal-actions { display:flex; align-items:center; gap:15px; }
+        .btn-source { font-size:0.8rem; padding:6px 12px; background:rgba(56,139,253,0.15); color:#58a6ff; text-decoration:none; border-radius:6px; border:1px solid transparent; transition:0.2s; display:inline-flex; align-items:center; gap:6px; }
+        .btn-source:hover { background:rgba(56,139,253,0.3); text-decoration:none; }
+        .close-btn { background:none; border:none; color:#8b949e; font-size:2rem; cursor:pointer; line-height:1; padding:0 5px; }
+        .close-btn:hover { color:#fff; }
+        .modal-body { flex:1; padding:40px; overflow-y:auto; color:#c9d1d9; font-size:1rem; line-height:1.7; }
+        .modal-body h1,.modal-body h2,.modal-body h3 { margin:1rem 0 0.5rem; color:#e8edf2; }
+        .modal-body ul,.modal-body ol { padding-left:1.5rem; }
+        .modal-body code { background:#1f2630; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.9rem; }
+        .modal-body pre { background:#0b0e14; padding:1rem; border-radius:8px; overflow-x:auto; }
+        .modal-body a { color:#6bc7ff; }
+        .modal-body img { max-width:100%; height:auto; border-radius:6px; margin:0.5rem 0; }
+        .modal-body blockquote { border-left:4px solid #30363d; padding-left:1rem; margin:1rem 0; color:#8b949e; }
+        .modal-body table { width:100%; border-collapse:collapse; margin:1rem 0; }
+        .modal-body th,.modal-body td { border:1px solid #30363d; padding:0.5rem 1rem; text-align:left; }
+        .modal-body th { background:#1f2630; }
 
-        /* --- Modal --- */
-        #modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(4px);
-        }
-        #modal-overlay.active {
-            display: flex;
-        }
-        .modal-content {
-            background: #141a24;
-            border: 1px solid #2a313c;
-            border-radius: 16px;
-            width: 90%;
-            max-width: 900px;
-            max-height: 85vh;
-            overflow: auto;
-            padding: 2rem;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-        }
-        .modal-close {
-            position: sticky;
-            top: 0;
-            float: right;
-            background: none;
-            border: none;
-            color: #b0bccf;
-            font-size: 2rem;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .modal-close:hover {
-            color: #fff;
-        }
-        #modal-title {
-            margin-top: 0;
-            color: #fff;
-        }
-        #modal-body {
-            color: #e8edf2;
-            line-height: 1.7;
-            overflow-wrap: break-word;
-        }
-        #modal-body h1, #modal-body h2, #modal-body h3 {
-            margin: 1rem 0 0.5rem;
-        }
-        #modal-body ul, #modal-body ol {
-            padding-left: 1.5rem;
-        }
-        #modal-body code {
-            background: #1f2630;
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-        #modal-body pre {
-            background: #0b0e14;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-        }
-        #modal-body a {
-            color: #6bc7ff;
-        }
-        /* Limit image size in modal */
-        #modal-body img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 6px;
-            margin: 0.5rem 0;
-        }
-        .modal-footer {
-            margin-top: 1.5rem;
-            text-align: right;
-        }
-        .modal-footer a {
-            color: #6bc7ff;
-            text-decoration: underline;
-        }
+        /* RELEASES */
+        #releases-container { max-height:400px; overflow-y:auto; padding-right:8px; scrollbar-width:thin; scrollbar-color:#3d4a5a #141a24; }
+        #releases-container::-webkit-scrollbar { width:6px; }
+        #releases-container::-webkit-scrollbar-track { background:#141a24; border-radius:8px; }
+        #releases-container::-webkit-scrollbar-thumb { background:#3d4a5a; border-radius:8px; }
+        #releases-container::-webkit-scrollbar-thumb:hover { background:#6a7a8a; }
 
-        /* --- Limit height and add scroll to releases container --- */
-        #releases-container {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 8px;
-            scrollbar-width: thin;
-            scrollbar-color: #3d4a5a #141a24;
-        }
-        #releases-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        #releases-container::-webkit-scrollbar-track {
-            background: #141a24;
-            border-radius: 8px;
-        }
-        #releases-container::-webkit-scrollbar-thumb {
-            background: #3d4a5a;
-            border-radius: 8px;
-        }
-        #releases-container::-webkit-scrollbar-thumb:hover {
-            background: #6a7a8a;
-        }
+        /* BOTÓN VOLVER ARRIBA */
+        .scroll-top { position:fixed; bottom:30px; right:30px; background:#1f8bff; color:#fff; border:none; border-radius:50%; width:50px; height:50px; font-size:1.5rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:0.3s; z-index:999; display:none; align-items:center; justify-content:center; }
+        .scroll-top:hover { transform:scale(1.1); background:#3d9eff; }
 
-        /* --- Utilities --- */
-        .text-center {
-            text-align: center;
-        }
-        .mt-2 {
-            margin-top: 2rem;
-        }
-        .mb-1 {
-            margin-bottom: 0.5rem;
-        }
+        /* FADE-IN */
+        .card, .compare-item, .hero, .table-wrap, .modal-content { opacity:0; transform:translateY(30px); transition:opacity 0.6s ease, transform 0.6s ease; }
+        .card.visible, .compare-item.visible, .hero.visible, .table-wrap.visible, .modal-content.visible { opacity:1; transform:translateY(0); }
 
-        /* --- Footer --- */
-        footer {
-            margin-top: 4rem;
-            padding: 2rem 0;
-            border-top: 1px solid #1f2630;
-            color: #6a7a8a;
-            font-size: 0.9rem;
-            text-align: center;
-        }
+        /* UTILITIES */
+        .text-center { text-align:center; }
+        .mt-2 { margin-top:2rem; }
+        .mb-1 { margin-bottom:0.5rem; }
 
-        /* --- Responsive --- */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.4rem;
-            }
-            .nav-links {
-                gap: 0.8rem;
-                font-size: 0.85rem;
-                justify-content: center;
-                margin-top: 0.5rem;
-            }
-            .compare-grid {
-                grid-template-columns: 1fr;
-            }
-            .modal-content {
-                padding: 1rem;
-                width: 95%;
-            }
+        /* FOOTER */
+        footer { margin-top:4rem; padding:2rem 0; border-top:1px solid #1f2630; color:#6a7a8a; font-size:0.9rem; text-align:center; }
+        footer .social-links { display:flex; justify-content:center; gap:1.5rem; margin-top:0.8rem; flex-wrap:wrap; }
+        footer .social-links a { color:#6a7a8a; font-size:1.4rem; transition:0.2s; }
+        footer .social-links a:hover { color:#fff; text-decoration:none; }
+        footer .social-links a.discord-icon:hover { color:#5865F2; }
+
+        @media (max-width:768px) {
+            .hero h1 { font-size:2.4rem; }
+            .compare-grid { grid-template-columns:1fr; }
+            .modal-content { width:95%; height:90vh; }
+            .modal-body { padding:20px; }
+            .scroll-top { width:42px; height:42px; font-size:1.2rem; bottom:20px; right:20px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- NAVIGATION -->
+    <!-- NAVEGACIÓN -->
     <nav>
         <div class="container">
-            <div class="nav-logo">
-                <i class="fas fa-gamepad"></i> MPV-SW-Capture
-            </div>
-            <div class="nav-links">
+            <div class="nav-logo"><i class="fas fa-gamepad"></i> MPV-SW-Capture</div>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
+            <div class="nav-links" id="nav-links">
                 <a href="#features" data-i18n="nav-features">Features</a>
                 <a href="#modos" data-i18n="nav-modes">Modes</a>
                 <a href="#menu" data-i18n="nav-menu">Menu</a>
@@ -430,13 +156,14 @@
                 <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
                 <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
+                <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-link" data-i18n="nav-discord"><i class="fab fa-discord"></i> Discord</a>
                 <button id="lang-toggle">🇪🇸 ES</button>
             </div>
         </div>
     </nav>
 
     <!-- HERO -->
-    <section class="hero">
+    <section class="hero" id="hero">
         <div class="container">
             <h1>
                 <span class="lang-es">Juega tu consola con <br>mínima latencia</span>
@@ -447,181 +174,182 @@
                 <span class="lang-en" style="display:none;">Ready-to-use MPV configuration for Windows, adapted for USB 3.0 capture cards. Play Nintendo Switch, PS, Xbox or any HDMI console with near-zero latency and endless options.</span>
             </p>
             <div class="hero-buttons">
-    <!-- Download button -->
-    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn">
-        <i class="fas fa-download"></i>
-        <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
-        <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
-    </a>
-    <!-- README/LEEME button -->
-    <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
-        <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
-    </a>
-    <!-- Installation Guide button (NUEVO) -->
-    <a href="#" id="btn-installation" class="btn btn-outline" onclick="openInstallationGuide(); return false;">
-        <i class="fas fa-book"></i>
-        <span class="lang-es">Guía de instalación</span>
-        <span class="lang-en" style="display:none;">Installation Guide</span>
-    </a>
-    <!-- FAQ button -->
-    <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
-        <i class="fas fa-question-circle"></i> FAQ
-    </a>
-    <!-- Wiki button -->
-    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
-        <i class="fas fa-book"></i>
-        <span class="lang-es">Ver Wiki</span>
-        <span class="lang-en" style="display:none;">View Wiki</span>
-    </a>
-</div>
+                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn">
+                    <i class="fas fa-download"></i>
+                    <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
+                    <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
+                </a>
+                <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
+                    <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
+                </a>
+                <a href="#" id="btn-installation" class="btn btn-outline" onclick="openInstallationGuide(); return false;">
+                    <i class="fas fa-book"></i>
+                    <span class="lang-es">Guía de instalación</span>
+                    <span class="lang-en" style="display:none;">Installation Guide</span>
+                </a>
+                <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
+                    <i class="fas fa-question-circle"></i> FAQ
+                </a>
+                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
+                    <i class="fas fa-book"></i>
+                    <span class="lang-es">Ver Wiki</span>
+                    <span class="lang-en" style="display:none;">View Wiki</span>
+                </a>
+                <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="btn btn-discord">
+                    <i class="fab fa-discord"></i> Discord
+                </a>
+            </div>
         </div>
     </section>
 
-<!-- FEATURES -->
-<section id="features" class="container">
-    <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
-    <div class="card-grid">
-        <!-- 1. Minimal lag -->
-        <div class="card">
-            <i class="fas fa-bolt"></i>
-            <h3><span class="lang-es">Mínima latencia</span><span class="lang-en" style="display:none;">Minimal lag</span></h3>
-            <p><span class="lang-es">MPV maneja el vídeo y ffplay el audio en paralelo, sincronizados para una respuesta casi instantánea.</span><span class="lang-en" style="display:none;">MPV handles video and ffplay handles audio in parallel, synced for near-instant response.</span></p>
+    <!-- FEATURES -->
+    <section id="features" class="container">
+        <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
+        <div class="card-grid">
+            <div class="card"><i class="fas fa-bolt"></i><h3><span class="lang-es">Mínima latencia</span><span class="lang-en" style="display:none;">Minimal lag</span></h3><p><span class="lang-es">MPV maneja el vídeo y ffplay el audio en paralelo, sincronizados para una respuesta casi instantánea.</span><span class="lang-en" style="display:none;">MPV handles video and ffplay handles audio in parallel, synced for near-instant response.</span></p></div>
+            <div class="card"><i class="fas fa-rocket"></i><h3><span class="lang-es">Listo para jugar</span><span class="lang-en" style="display:none;">Plug & Play</span></h3><p><span class="lang-es">Descarga, instala y juega en minutos. Sin configuraciones complejas. Conecta tu capturadora, lanza MPV-SW-Capture y disfruta de tu consola con mínima latencia.</span><span class="lang-en" style="display:none;">Download, install and play in minutes. No complex setup. Plug your capture card, launch MPV-SW-Capture and enjoy your console with minimal lag.</span></p></div>
+            <div class="card"><i class="fas fa-wand-magic-sparkles"></i><h3><span class="lang-es">Efectos visuales únicos</span><span class="lang-en" style="display:none;">Unique visual effects</span></h3><p><span class="lang-es">Convierte tu juego en una experiencia retro o cinematográfica. Shaders para VHS, TV antigua, CRT, Arcade y más. Dale un estilo único a tu partida.</span><span class="lang-en" style="display:none;">Turn your game into a retro or cinematic experience. Shaders for VHS, old TV, CRT, Arcade and more. Give a unique style to your gameplay.</span></p></div>
+            <div class="card"><i class="fas fa-arrows-alt"></i><h3><span class="lang-es">Portable</span><span class="lang-en" style="display:none;">Portable</span></h3><p><span class="lang-es">Copia la carpeta en cualquier ubicación y funciona sin reinstalación. Lleva tu configuración contigo.</span><span class="lang-en" style="display:none;">Copy the folder anywhere and it works without reinstallation. Take your config with you.</span></p></div>
+            <div class="card"><i class="fas fa-palette"></i><h3><span class="lang-es">Menú personalizable</span><span class="lang-en" style="display:none;">Custom menu</span></h3><p><span class="lang-es">Accede a shaders, bezels, crops, ajustes de ventana, grabación y más con un clic o tecla.</span><span class="lang-en" style="display:none;">Access shaders, bezels, crops, window settings, recording and more with a click or key.</span></p></div>
+            <div class="card"><i class="fas fa-video"></i><h3><span class="lang-es">Grabación y capturas</span><span class="lang-en" style="display:none;">Recording and screenshots</span></h3><p><span class="lang-es">Graba clips de 30/60/90/120s con buena calidad y pequeño tamaño, o toma capturas instantáneas.</span><span class="lang-en" style="display:none;">Record 30/60/90/120s clips with good quality and small size, or take instant screenshots.</span></p></div>
+            <div class="card"><i class="fas fa-crop-alt"></i><h3><span class="lang-es">Bezels y crops para NSO</span><span class="lang-en" style="display:none;">Bezels and crops for NSO</span></h3><p><span class="lang-es">Superpone bordes decorativos o recorta la pantalla al tamaño exacto de GBA, NES, SNES y más.</span><span class="lang-en" style="display:none;">Overlay decorative borders or crop the screen to exact GBA, NES, SNES and more.</span></p></div>
+            <div class="card"><i class="fas fa-language"></i><h3><span class="lang-es">Bilingüe (ES/EN)</span><span class="lang-en" style="display:none;">Bilingual (ES/EN)</span></h3><p><span class="lang-es">Menú e instaladores completamente traducidos al español e inglés. Cambia con un botón.</span><span class="lang-en" style="display:none;">Menu and installers fully translated to Spanish and English. Change with one button.</span></p></div>
         </div>
+    </section>
 
-        <!-- 2. Plug & Play (new) -->
-        <div class="card">
-            <i class="fas fa-rocket"></i>
-            <h3><span class="lang-es">Listo para jugar</span><span class="lang-en" style="display:none;">Plug & Play</span></h3>
-            <p>
-                <span class="lang-es">Descarga, instala y juega en minutos. Sin configuraciones complejas. Conecta tu capturadora, lanza MPV-SW-Capture y disfruta de tu consola con mínima latencia.</span>
-                <span class="lang-en" style="display:none;">Download, install and play in minutes. No complex setup. Plug your capture card, launch MPV-SW-Capture and enjoy your console with minimal lag.</span>
-            </p>
+    <!-- ===== NUEVA COMPARATIVA DE MODOS (basada en menu.conf) ===== -->
+    <section id="modos-comparativa" class="container">
+        <h2><i class="fas fa-exchange-alt"></i> <span class="lang-es">Combinaciones recomendadas</span><span class="lang-en" style="display:none;">Recommended combinations</span></h2>
+        <p><span class="lang-es">Elige el perfil que mejor se adapte a tu juego. Cada fila te sugiere una combinación de shader, shape, crop y bezel que puedes activar desde el menú.</span>
+           <span class="lang-en" style="display:none;">Choose the profile that best fits your game. Each row suggests a combination of shader, shape, crop and bezel you can enable from the menu.</span></p>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th><span class="lang-es">Perfil</span><span class="lang-en" style="display:none;">Profile</span></th>
+                        <th><span class="lang-es">Shader recomendado</span><span class="lang-en" style="display:none;">Recommended shader</span></th>
+                        <th><span class="lang-es">Shape</span><span class="lang-en" style="display:none;">Shape</span></th>
+                        <th><span class="lang-es">Crop</span><span class="lang-en" style="display:none;">Crop</span></th>
+                        <th><span class="lang-es">Bezel</span><span class="lang-en" style="display:none;">Bezel</span></th>
+                        <th><span class="lang-es">Descripción</span><span class="lang-en" style="display:none;">Description</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>🎮 <span class="lang-es">Gaming</span><span class="lang-en" style="display:none;">Gaming</span></td>
+                        <td><span class="lang-es">Clean Shaders</span><span class="lang-en" style="display:none;">Clean Shaders</span></td>
+                        <td><span class="lang-es">Clean Shape</span><span class="lang-en" style="display:none;">Clean Shape</span></td>
+                        <td><span class="lang-es">Clear Crop</span><span class="lang-en" style="display:none;">Clear Crop</span></td>
+                        <td><span class="lang-es">Clear Bezels</span><span class="lang-en" style="display:none;">Clear Bezels</span></td>
+                        <td><span class="lang-es">Mínima latencia y máxima nitidez. Ideal para juegos modernos (Switch, PS, Xbox).</span><span class="lang-en" style="display:none;">Minimal lag and maximum sharpness. Ideal for modern games (Switch, PS, Xbox).</span></td>
+                    </tr>
+                    <tr>
+                        <td>📺 <span class="lang-es">Retro (CRT)</span><span class="lang-en" style="display:none;">Retro (CRT)</span></td>
+                        <td><span class="lang-es">CRT Royale Kurozumi</span><span class="lang-en" style="display:none;">CRT Royale Kurozumi</span></td>
+                        <td><span class="lang-es">CRT Curvature</span><span class="lang-en" style="display:none;">CRT Curvature</span></td>
+                        <td><span class="lang-es">NSO SNES (4:3/CRT)</span><span class="lang-en" style="display:none;">NSO SNES (4:3/CRT)</span></td>
+                        <td><span class="lang-es">SNES BG ⌗1 (90s TV)</span><span class="lang-en" style="display:none;">SNES BG ⌗1 (90s TV)</span></td>
+                        <td><span class="lang-es">Experiencia auténtica de televisión de los 90. Perfecto para NSO (NES/SNES).</span><span class="lang-en" style="display:none;">Authentic 90s TV experience. Perfect for NSO (NES/SNES).</span></td>
+                    </tr>
+                    <tr>
+                        <td>🕹️ <span class="lang-es">Arcade</span><span class="lang-en" style="display:none;">Arcade</span></td>
+                        <td><span class="lang-es">CRT Arcade (Lottes)</span><span class="lang-en" style="display:none;">CRT Arcade (Lottes)</span></td>
+                        <td><span class="lang-es">Clean Shape</span><span class="lang-en" style="display:none;">Clean Shape</span></td>
+                        <td><span class="lang-es">Clear Crop</span><span class="lang-en" style="display:none;">Clear Crop</span></td>
+                        <td><span class="lang-es">Clear Bezels</span><span class="lang-en" style="display:none;">Clear Bezels</span></td>
+                        <td><span class="lang-es">Nitidez y scanlines para juegos de lucha o arcade. Sin curvatura ni bordes.</span><span class="lang-en" style="display:none;">Sharpness and scanlines for fighting or arcade games. No curvature or borders.</span></td>
+                    </tr>
+                    <tr>
+                        <td>📱 <span class="lang-es">Portátil</span><span class="lang-en" style="display:none;">Handheld</span></td>
+                        <td><span class="lang-es">GameBoy Advance</span><span class="lang-en" style="display:none;">GameBoy Advance</span></td>
+                        <td><span class="lang-es">Clean Shape</span><span class="lang-en" style="display:none;">Clean Shape</span></td>
+                        <td><span class="lang-es">NSO GameBoy Advance</span><span class="lang-en" style="display:none;">NSO GameBoy Advance</span></td>
+                        <td><span class="lang-es">GBA Generic</span><span class="lang-en" style="display:none;">GBA Generic</span></td>
+                        <td><span class="lang-es">Recrea la pantalla de la Game Boy Advance con su relación de aspecto original.</span><span class="lang-en" style="display:none;">Recreates the Game Boy Advance screen with its original aspect ratio.</span></td>
+                    </tr>
+                    <tr>
+                        <td>🔀 <span class="lang-es">VHS / Nostalgia</span><span class="lang-en" style="display:none;">VHS / Nostalgia</span></td>
+                        <td><span class="lang-es">VHS</span><span class="lang-en" style="display:none;">VHS</span></td>
+                        <td><span class="lang-es">CRT Super Curvature</span><span class="lang-en" style="display:none;">CRT Super Curvature</span></td>
+                        <td><span class="lang-es">Clear Crop</span><span class="lang-en" style="display:none;">Clear Crop</span></td>
+                        <td><span class="lang-es">Clear Bezels</span><span class="lang-en" style="display:none;">Clear Bezels</span></td>
+                        <td><span class="lang-es">Efecto cinta VHS con aberración cromática y curvatura exagerada. Muy retro.</span><span class="lang-en" style="display:none;">VHS tape effect with chromatic aberration and exaggerated curvature. Very retro.</span></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+        <p style="color:#6a7a8a; font-size:0.9rem;">
+            <i class="fas fa-info-circle"></i>
+            <span class="lang-es">Puedes activar cada elemento por separado desde el menú. Estas combinaciones son solo sugerencias.</span>
+            <span class="lang-en" style="display:none;">You can activate each element separately from the menu. These combinations are just suggestions.</span>
+        </p>
+    </section>
 
-        <!-- 3. Unique visual effects (new) -->
-        <div class="card">
-            <i class="fas fa-wand-magic-sparkles"></i>
-            <h3><span class="lang-es">Efectos visuales únicos</span><span class="lang-en" style="display:none;">Unique visual effects</span></h3>
-            <p>
-                <span class="lang-es">Convierte tu juego en una experiencia retro o cinematográfica. Shaders para VHS, TV antigua, CRT, Arcade y más. Dale un estilo único a tu partida.</span>
-                <span class="lang-en" style="display:none;">Turn your game into a retro or cinematic experience. Shaders for VHS, old TV, CRT, Arcade and more. Give a unique style to your gameplay.</span>
-            </p>
-        </div>
-
-        <!-- 4. Portable -->
-        <div class="card">
-            <i class="fas fa-arrows-alt"></i>
-            <h3><span class="lang-es">Portable</span><span class="lang-en" style="display:none;">Portable</span></h3>
-            <p><span class="lang-es">Copia la carpeta en cualquier ubicación y funciona sin reinstalación. Lleva tu configuración contigo.</span><span class="lang-en" style="display:none;">Copy the folder anywhere and it works without reinstallation. Take your config with you.</span></p>
-        </div>
-
-        <!-- 5. Custom menu -->
-        <div class="card">
-            <i class="fas fa-palette"></i>
-            <h3><span class="lang-es">Menú personalizable</span><span class="lang-en" style="display:none;">Custom menu</span></h3>
-            <p><span class="lang-es">Accede a shaders, bezels, crops, ajustes de ventana, grabación y más con un clic o tecla.</span><span class="lang-en" style="display:none;">Access shaders, bezels, crops, window settings, recording and more with a click or key.</span></p>
-        </div>
-
-        <!-- 6. Recording and screenshots -->
-        <div class="card">
-            <i class="fas fa-video"></i>
-            <h3><span class="lang-es">Grabación y capturas</span><span class="lang-en" style="display:none;">Recording and screenshots</span></h3>
-            <p><span class="lang-es">Graba clips de 30/60/90/120s con buena calidad y pequeño tamaño, o toma capturas instantáneas.</span><span class="lang-en" style="display:none;">Record 30/60/90/120s clips with good quality and small size, or take instant screenshots.</span></p>
-        </div>
-
-        <!-- 7. Bezels and crops for NSO -->
-        <div class="card">
-            <i class="fas fa-crop-alt"></i>
-            <h3><span class="lang-es">Bezels y crops para NSO</span><span class="lang-en" style="display:none;">Bezels and crops for NSO</span></h3>
-            <p><span class="lang-es">Superpone bordes decorativos o recorta la pantalla al tamaño exacto de GBA, NES, SNES y más.</span><span class="lang-en" style="display:none;">Overlay decorative borders or crop the screen to exact GBA, NES, SNES and more.</span></p>
-        </div>
-
-        <!-- 8. Bilingual (ES/EN) -->
-        <div class="card">
-            <i class="fas fa-language"></i>
-            <h3><span class="lang-es">Bilingüe (ES/EN)</span><span class="lang-en" style="display:none;">Bilingual (ES/EN)</span></h3>
-            <p><span class="lang-es">Menú e instaladores completamente traducidos al español e inglés. Cambia con un botón.</span><span class="lang-en" style="display:none;">Menu and installers fully translated to Spanish and English. Change with one button.</span></p>
-        </div>
-    </div>
-</section>
-
-    <!-- VISUAL COMPARISONS -->
+    <!-- VISUAL COMPARISONS (igual) -->
     <section id="modos" class="container">
         <h2><i class="fas fa-images"></i> <span class="lang-es">Comparativas visuales</span><span class="lang-en" style="display:none;">Visual comparisons</span></h2>
         <p class="mb-1"><span class="lang-es">Ejemplos de lo que puedes lograr con shaders, bezels y crops.</span><span class="lang-en" style="display:none;">Examples of what you can achieve with shaders, bezels and crops.</span></p>
         <div class="compare-grid">
-            <div class="compare-item">
-                <img src="assets/menu.jpg" alt="Custom menu" loading="lazy">
-                <span class="label">📋 <span class="lang-es">Menú personalizado (clic derecho / ESC)</span><span class="lang-en" style="display:none;">Custom menu (right-click / ESC)</span></span>
-            </div>
-            <div class="compare-item">
-                <img src="assets/shader_example.jpg" alt="Shader + Shape" loading="lazy">
-                <span class="label">🎨 <span class="lang-es">Shader CRT + Shape Curvo</span><span class="lang-en" style="display:none;">CRT shader + Curved Shape</span></span>
-            </div>
-            <div class="compare-item">
-                <img src="assets/bezel_example.jpg" alt="Bezel NSO" loading="lazy">
-                <span class="label">🖼️ <span class="lang-es">Bezel para SNES en NSO</span><span class="lang-en" style="display:none;">SNES bezel for NSO</span></span>
-            </div>
-            <div class="compare-item">
-                <img src="assets/crop_example.jpg" alt="Crop GBA" loading="lazy">
-                <span class="label">✂️ <span class="lang-es">Crop para GBA en NSO</span><span class="lang-en" style="display:none;">GBA crop for NSO</span></span>
-            </div>
+            <div class="compare-item"><img src="assets/menu.jpg" alt="Custom menu" loading="lazy"><span class="label">📋 <span class="lang-es">Menú personalizado (clic derecho / ESC)</span><span class="lang-en" style="display:none;">Custom menu (right-click / ESC)</span></span></div>
+            <div class="compare-item"><img src="assets/shader_example.jpg" alt="Shader + Shape" loading="lazy"><span class="label">🎨 <span class="lang-es">Shader CRT + Shape Curvo</span><span class="lang-en" style="display:none;">CRT shader + Curved Shape</span></span></div>
+            <div class="compare-item"><img src="assets/bezel_example.jpg" alt="Bezel NSO" loading="lazy"><span class="label">🖼️ <span class="lang-es">Bezel para SNES en NSO</span><span class="lang-en" style="display:none;">SNES bezel for NSO</span></span></div>
+            <div class="compare-item"><img src="assets/crop_example.jpg" alt="Crop GBA" loading="lazy"><span class="label">✂️ <span class="lang-es">Crop para GBA en NSO</span><span class="lang-en" style="display:none;">GBA crop for NSO</span></span></div>
         </div>
-        <p class="text-center" style="color:#6a7a8a; font-size:0.9rem;">
-            <i class="fas fa-info-circle"></i>
-            <span class="lang-es">Las imágenes son orientativas. Reemplaza los archivos en <code>assets/</code> con tus propias capturas.</span>
-            <span class="lang-en" style="display:none;">Images are for guidance. Replace files in <code>assets/</code> with your own screenshots.</span>
-        </p>
+        <p class="text-center" style="color:#6a7a8a; font-size:0.9rem;"><i class="fas fa-info-circle"></i> <span class="lang-es">Las imágenes son orientativas. Reemplaza los archivos en <code>assets/</code> con tus propias capturas.</span><span class="lang-en" style="display:none;">Images are for guidance. Replace files in <code>assets/</code> with your own screenshots.</span></p>
     </section>
 
-    <!-- MENU OPTIONS (TABLE) -->
+    <!-- ===== OPCIONES DEL MENÚ (MEJORADA) ===== -->
     <section id="menu" class="container">
         <h2><i class="fas fa-bars"></i> <span class="lang-es">Opciones del menú</span><span class="lang-en" style="display:none;">Menu options</span></h2>
-        <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Todas las opciones disponibles:</span>
-           <span class="lang-en" style="display:none;">Open the menu with <strong>right-click</strong> or <strong>ESC</strong> key. All available options:</span></p>
-
+        <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Estas son las secciones principales:</span>
+           <span class="lang-en" style="display:none;">Open the menu with <strong>right-click</strong> or <strong>ESC</strong> key. These are the main sections:</span></p>
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr><th><span class="lang-es">Sección</span><span class="lang-en" style="display:none;">Section</span></th>
-                        <th><span class="lang-es">Opciones (ejemplos)</span><span class="lang-en" style="display:none;">Options (examples)</span></th>
+                        <th><span class="lang-es">Ejemplos de opciones</span><span class="lang-en" style="display:none;">Example options</span></th>
                         <th><span class="lang-es">Descripción</span><span class="lang-en" style="display:none;">Description</span></th></tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td><strong><span class="lang-es">Shaders</span><span class="lang-en" style="display:none;">Shaders</span></strong></td>
-                        <td id="shaders-list">Loading...</td>
-                        <td><span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian.</span><span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it.</span></td>
+                        <td><strong>🎬 SHADERS</strong></td>
+                        <td>4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), VideoGame (Handheld, GBA, Arcade), Special (Broken LCD, Dust, Inverted), Only Sharpen, Clean</td>
+                        <td><span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian. Puedes cargar varios a la vez.</span><span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it. You can load several at once.</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Shapes</span><span class="lang-en" style="display:none;">Shapes</span></strong></td>
-                        <td>CRT Curved, Flat</td>
-                        <td><span class="lang-es">Cambian la geometría de la pantalla (curvatura, plano).</span><span class="lang-en" style="display:none;">Change screen geometry (curved, flat).</span></td>
+                        <td><strong>⬒ SHAPES</strong></td>
+                        <td>CRT Curvature, Wide Barrel, Super Curvature, Rounded Corners, Keystone, Pinball Perspective, Inward Keystone, Clean</td>
+                        <td><span class="lang-es">Cambian la geometría de la pantalla (curvatura, perspectiva, etc.).</span><span class="lang-en" style="display:none;">Change screen geometry (curvature, perspective, etc.).</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Crop</span><span class="lang-en" style="display:none;">Crop</span></strong></td>
-                        <td>NSO - GBA, NES, SNES, Clear Crop</td>
-                        <td><span class="lang-es">Recortan la ventana al tamaño exacto de un sistema NSO.</span><span class="lang-en" style="display:none;">Crop the window to exact NSO system size.</span></td>
+                        <td><strong>✂ CROPS</strong></td>
+                        <td>NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Clear Crop</td>
+                        <td><span class="lang-es">Recortan la ventana al tamaño exacto de un sistema NSO (GBA, NES, SNES, etc.).</span><span class="lang-en" style="display:none;">Crop the window to exact NSO system size (GBA, NES, SNES, etc.).</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Bezels</span><span class="lang-en" style="display:none;">Bezels</span></strong></td>
-                        <td id="bezels-list">Loading...</td>
-                        <td><span class="lang-es">Superponen bordes decorativos para un aspecto auténtico.</span><span class="lang-en" style="display:none;">Overlay decorative borders for an authentic look.</span></td>
+                        <td><strong>🖼 BEZELS</strong></td>
+                        <td>NES BG ⌗1 (80s TV), SNES BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Clear Bezels</td>
+                        <td><span class="lang-es">Superponen bordes decorativos para un aspecto auténtico de consola clásica.</span><span class="lang-en" style="display:none;">Overlay decorative borders for an authentic classic console look.</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Ventana</span><span class="lang-en" style="display:none;">Window</span></strong></td>
-                        <td><span class="lang-es">Tamaño (0.5x–2.0x), Always on Top, Stretch, Mini Mode</span><span class="lang-en" style="display:none;">Size (0.5x–2.0x), Always on Top, Stretch, Mini Mode</span></td>
-                        <td><span class="lang-es">Opciones de redimensionado, posición y fijación de la ventana.</span><span class="lang-en" style="display:none;">Resize, reposition and pin window options.</span></td>
+                        <td><strong>▶ WINDOW</strong></td>
+                        <td>Tamaño (0.5x–2.0x), Fullscreen, Posición (Top Left, Center, Bottom Right, etc.), Rotación, Always on Top, Stretch, Mini Mode</td>
+                        <td><span class="lang-es">Redimensiona, reposiciona, rota o fija la ventana. Incluye modo mini y pantalla completa.</span><span class="lang-en" style="display:none;">Resize, reposition, rotate or pin the window. Includes mini mode and fullscreen.</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Captura</span><span class="lang-en" style="display:none;">Capture</span></strong></td>
-                        <td>Screenshot, Record 30/60/90/120s</td>
-                        <td><span class="lang-es">Captura imágenes o graba vídeos con calidad ajustada.</span><span class="lang-en" style="display:none;">Take screenshots or record videos with adjusted quality.</span></td>
+                        <td><strong>▶ CAPTURE</strong></td>
+                        <td>Screenshot, Record Video (30/60/90/120s)</td>
+                        <td><span class="lang-es">Captura imágenes o graba clips de hasta 120 segundos con calidad ajustada.</span><span class="lang-en" style="display:none;">Take screenshots or record clips up to 120 seconds with adjusted quality.</span></td>
                     </tr>
                     <tr>
-                        <td><strong><span class="lang-es">Audio</span><span class="lang-en" style="display:none;">Audio</span></strong></td>
-                        <td><span class="lang-es">Volumen +10/-10, Mute</span><span class="lang-en" style="display:none;">Volume +10/-10, Mute</span></td>
+                        <td><strong>🔊 AUDIO</strong></td>
+                        <td>Vol +10%, Vol -10%, Mute/Unmute, Vol 100%, Vol 50%</td>
                         <td><span class="lang-es">Control de volumen desde el menú (también con rueda del ratón).</span><span class="lang-en" style="display:none;">Volume control from the menu (also with mouse wheel).</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>▶ OTHERS</strong></td>
+                        <td>Clean ALL (resetea todo), Info Stream, Close MPV-SW-Capture</td>
+                        <td><span class="lang-es">Restablece todos los shaders, shapes, crops y bezels, muestra información del stream o cierra MPV.</span><span class="lang-en" style="display:none;">Reset all shaders, shapes, crops and bezels, show stream info or close MPV.</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -633,128 +361,73 @@
         </p>
     </section>
 
-    <!-- CUSTOMIZATION -->
+    <!-- CUSTOMIZATION (igual) -->
     <section id="personalizacion" class="container">
         <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
         <div class="card-grid">
-            <div class="card">
-                <i class="fas fa-image"></i>
-                <h3><span class="lang-es">Bezels personalizados</span><span class="lang-en" style="display:none;">Custom bezels</span></h3>
-                <p><span class="lang-es">Crea tus propios bordes en 1920x1080 con coordenadas exactas para NSO.</span><span class="lang-en" style="display:none;">Create your own borders in 1920x1080 with exact NSO coordinates.</span></p>
-                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels" target="_blank"><span class="lang-es">Guía de bezels →</span><span class="lang-en" style="display:none;">Bezels guide →</span></a>
-            </div>
-            <div class="card">
-                <i class="fas fa-cube"></i>
-                <h3><span class="lang-es">Shaders y shapes</span><span class="lang-en" style="display:none;">Shaders and shapes</span></h3>
-                <p><span class="lang-es">Añade shaders en formato .glsl a la carpeta <code>shaders/</code> y edita <code>menu.conf</code>.</span>
-                   <span class="lang-en" style="display:none;">Add .glsl shaders to the <code>shaders/</code> folder and edit <code>menu.conf</code>.</span></p>
-            </div>
-            <div class="card">
-                <i class="fas fa-edit"></i>
-                <h3><span class="lang-es">Modificar el menú</span><span class="lang-en" style="display:none;">Modify the menu</span></h3>
-                <p><span class="lang-es">Edita <code>menu.conf</code> para añadir, quitar o reordenar opciones fácilmente.</span>
-                   <span class="lang-en" style="display:none;">Edit <code>menu.conf</code> to add, remove or reorder options easily.</span></p>
-            </div>
+            <div class="card"><i class="fas fa-image"></i><h3><span class="lang-es">Bezels personalizados</span><span class="lang-en" style="display:none;">Custom bezels</span></h3><p><span class="lang-es">Crea tus propios bordes en 1920x1080 con coordenadas exactas para NSO.</span><span class="lang-en" style="display:none;">Create your own borders in 1920x1080 with exact NSO coordinates.</span></p><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels" target="_blank"><span class="lang-es">Guía de bezels →</span><span class="lang-en" style="display:none;">Bezels guide →</span></a></div>
+            <div class="card"><i class="fas fa-cube"></i><h3><span class="lang-es">Shaders y shapes</span><span class="lang-en" style="display:none;">Shaders and shapes</span></h3><p><span class="lang-es">Añade shaders en formato .glsl a la carpeta <code>shaders/</code> y edita <code>menu.conf</code>.</span><span class="lang-en" style="display:none;">Add .glsl shaders to the <code>shaders/</code> folder and edit <code>menu.conf</code>.</span></p></div>
+            <div class="card"><i class="fas fa-edit"></i><h3><span class="lang-es">Modificar el menú</span><span class="lang-en" style="display:none;">Modify the menu</span></h3><p><span class="lang-es">Edita <code>menu.conf</code> para añadir, quitar o reordenar opciones fácilmente.</span><span class="lang-en" style="display:none;">Edit <code>menu.conf</code> to add, remove or reorder options easily.</span></p></div>
         </div>
     </section>
 
-    <!-- FAQ (summary) -->
+    <!-- FAQ (igual) -->
     <section id="faq" class="container">
         <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
         <div class="card-grid">
-            <div class="card">
-                <h3><span class="lang-es">¿Por qué usar MPV y no OBS?</span><span class="lang-en" style="display:none;">Why use MPV instead of OBS?</span></h3>
-                <p><span class="lang-es">MPV ofrece menor latencia y una personalización más profunda (shaders, bezels, crops) pensada para jugar, no para emitir.</span>
-                   <span class="lang-en" style="display:none;">MPV offers lower latency and deeper customization (shaders, bezels, crops) designed for gaming, not streaming.</span></p>
-            </div>
-            <div class="card">
-                <h3><span class="lang-es">¿Necesito USB 3.0?</span><span class="lang-en" style="display:none;">Do I need USB 3.0?</span></h3>
-                <p><span class="lang-es">Recomendado para mejor calidad y estabilidad. USB 2.0 funciona pero con rendimiento inferior.</span>
-                   <span class="lang-en" style="display:none;">Recommended for better quality and stability. USB 2.0 works but with lower performance.</span></p>
-            </div>
-            <div class="card">
-                <h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3>
-                <p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span>
-                   <span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p>
-            </div>
-            <div class="card">
-                <h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3>
-                <p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span>
-                   <span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p>
-            </div>
+            <div class="card"><h3><span class="lang-es">¿Por qué usar MPV y no OBS?</span><span class="lang-en" style="display:none;">Why use MPV instead of OBS?</span></h3><p><span class="lang-es">MPV ofrece menor latencia y una personalización más profunda (shaders, bezels, crops) pensada para jugar, no para emitir.</span><span class="lang-en" style="display:none;">MPV offers lower latency and deeper customization (shaders, bezels, crops) designed for gaming, not streaming.</span></p></div>
+            <div class="card"><h3><span class="lang-es">¿Necesito USB 3.0?</span><span class="lang-en" style="display:none;">Do I need USB 3.0?</span></h3><p><span class="lang-es">Recomendado para mejor calidad y estabilidad. USB 2.0 funciona pero con rendimiento inferior.</span><span class="lang-en" style="display:none;">Recommended for better quality and stability. USB 2.0 works but with lower performance.</span></p></div>
+            <div class="card"><h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3><p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span><span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p></div>
+            <div class="card"><h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3><p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span><span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p></div>
         </div>
-        <p class="text-center mt-2">
-            <a href="#" onclick="openFaq(); return false;" class="btn btn-outline">
-                <span class="lang-es">Ver FAQ completa →</span>
-                <span class="lang-en" style="display:none;">View full FAQ →</span>
-            </a>
-        </p>
+        <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
     </section>
 
-    <!-- NEWS (dynamic from releases.json) -->
+    <!-- NEWS -->
     <section id="novedades" class="container">
         <h2><i class="fas fa-rocket"></i> <span class="lang-es">Novedades</span><span class="lang-en" style="display:none;">News</span></h2>
-        <div id="releases-container">
-            <p class="text-center" style="color:#6a7a8a;">Loading latest releases...</p>
-        </div>
-        <p class="text-center mt-2">
-            <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline">
-                <i class="fas fa-history"></i>
-                <span class="lang-es">Ver todas las versiones</span>
-                <span class="lang-en" style="display:none;">View all versions</span>
-            </a>
-        </p>
+        <div id="releases-container"><p class="text-center" style="color:#6a7a8a;">Loading latest releases...</p></div>
+        <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
     </section>
 
     <!-- FOOTER -->
     <footer>
         <div class="container">
-            <p>
-                <i class="fas fa-gamepad"></i> MPV-SW-Capture · <span class="lang-es">Proyecto de</span><span class="lang-en" style="display:none;">Project by</span>
-                <a href="https://github.com/TyRaS-SW" target="_blank">TyRaS-SW</a> ·
-                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/LICENSE.md" target="_blank">MIT License</a>
-            </p>
-            <p style="font-size:0.8rem;">
-                <span class="lang-es">Nintendo Switch y Nintendo Switch 2 son marcas de Nintendo Co., Ltd. Este proyecto no está afiliado ni respaldado por Nintendo.</span>
-                <span class="lang-en" style="display:none;">Nintendo Switch and Nintendo Switch 2 are trademarks of Nintendo Co., Ltd. This project is not affiliated with or endorsed by Nintendo.</span>
-            </p>
+            <p><i class="fas fa-gamepad"></i> MPV-SW-Capture · <span class="lang-es">Proyecto de</span><span class="lang-en" style="display:none;">Project by</span> <a href="https://github.com/TyRaS-SW" target="_blank">TyRaS-SW</a> · <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/LICENSE.md" target="_blank">MIT License</a></p>
+            <p style="font-size:0.8rem;"><span class="lang-es">Nintendo Switch y Nintendo Switch 2 son marcas de Nintendo Co., Ltd. Este proyecto no está afiliado ni respaldado por Nintendo.</span><span class="lang-en" style="display:none;">Nintendo Switch and Nintendo Switch 2 are trademarks of Nintendo Co., Ltd. This project is not affiliated with or endorsed by Nintendo.</span></p>
+            <div class="social-links">
+                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-icon" aria-label="Discord"><i class="fab fa-discord"></i></a>
+            </div>
         </div>
     </footer>
 
-    <!-- MODAL FOR EXTERNAL CONTENT -->
+    <!-- BOTÓN VOLVER ARRIBA -->
+    <button id="scroll-top" class="scroll-top" aria-label="Volver arriba"><i class="fas fa-arrow-up"></i></button>
+
+    <!-- MODAL -->
     <div id="modal-overlay">
         <div class="modal-content">
-            <button class="modal-close" id="modal-close">&times;</button>
-            <h2 id="modal-title">Title</h2>
-            <div id="modal-body">Loading...</div>
-            <div class="modal-footer">
-                <a id="modal-github-link" href="#" target="_blank">View on GitHub &rarr;</a>
+            <div class="modal-header">
+                <span class="modal-title" id="modal-title">Title</span>
+                <div class="modal-actions">
+                    <a id="modal-github-link" href="#" target="_blank" class="btn-source"><i class="fab fa-github"></i> <span id="github-link-text">View on GitHub</span></a>
+                    <button class="close-btn" id="modal-close">&times;</button>
+                </div>
             </div>
+            <div id="modal-body" class="modal-body">Loading...</div>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script>
-        // ------------------------------------------------------------------
-        // 1. LANGUAGE: Detect from URL, localStorage, and button toggle
-        // ------------------------------------------------------------------
+        // ===== IDIOMA =====
         document.addEventListener('DOMContentLoaded', function() {
             const toggle = document.getElementById('lang-toggle');
-            let currentLang = 'en'; // Default language is English
-
-            function getIdiomaDesdeURL() {
-                const params = new URLSearchParams(window.location.search);
-                const lang = params.get('lang');
-                if (lang === 'es' || lang === 'en') return lang;
-                return null;
-            }
-
+            let currentLang = 'en';
+            function getIdiomaDesdeURL() { const params = new URLSearchParams(window.location.search); const lang = params.get('lang'); if (lang === 'es' || lang === 'en') return lang; return null; }
             function setLanguage(lang) {
-                // Show/hide language-specific blocks
                 document.querySelectorAll('.lang-es').forEach(el => el.style.display = (lang === 'es') ? '' : 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = (lang === 'en') ? '' : 'none');
-
-                // Update navigation texts using data-i18n attributes
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     const translations = {
@@ -764,31 +437,20 @@
                         'nav-custom': { es: 'Personalización', en: 'Customization' },
                         'nav-readme': { es: 'LEEME', en: 'README' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
-                        'nav-download': { es: 'Descargar', en: 'Download' }
+                        'nav-download': { es: 'Descargar', en: 'Download' },
+                        'nav-discord': { es: 'Discord', en: 'Discord' }
                     };
-                    if (translations[key] && translations[key][lang]) {
-                        el.textContent = translations[key][lang];
-                    }
+                    if (translations[key] && translations[key][lang]) el.textContent = translations[key][lang];
                 });
-
-                // Update toggle button text
                 toggle.textContent = (lang === 'es') ? '🇬🇧 EN' : '🇪🇸 ES';
-                // Save preference
                 localStorage.setItem('mpv-lang', lang);
-                // Update URL without reload
                 const url = new URL(window.location);
                 url.searchParams.set('lang', lang);
                 window.history.replaceState({}, '', url);
                 currentLang = lang;
-                window.currentLang = lang; // Make global for openReadme
+                window.currentLang = lang;
             }
-
-            toggle.addEventListener('click', function() {
-                const newLang = (currentLang === 'es') ? 'en' : 'es';
-                setLanguage(newLang);
-            });
-
-            // Determine initial language: URL > localStorage > 'en' (default)
+            toggle.addEventListener('click', function() { const newLang = (currentLang === 'es') ? 'en' : 'es'; setLanguage(newLang); });
             const langURL = getIdiomaDesdeURL();
             const langGuardado = localStorage.getItem('mpv-lang');
             let idiomaInicial = langURL || langGuardado || 'en';
@@ -796,55 +458,41 @@
             setLanguage(idiomaInicial);
         });
 
-        // ------------------------------------------------------------------
-        // 2. VERSION AND RELEASES (load from releases.json)
-        // ------------------------------------------------------------------
+        // ===== RELEASES =====
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
             try {
                 const response = await fetch('releases.json');
                 if (!response.ok) throw new Error('Could not load releases file');
                 let releases = await response.json();
-
-                // Sort releases by date (newest first) to ensure latest is on top
                 releases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-
                 if (releases.length > 0) {
                     const version = releases[0].tag;
                     document.querySelectorAll('#version-number, #version-number-en').forEach(el => el.textContent = version);
                 }
-
                 mostrarReleases(releases);
             } catch (error) {
                 contenedor.innerHTML = `<p style="color:#ff6b6b;">Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.</p>`;
             }
         }
-
         function mostrarReleases(releases) {
             const contenedor = document.getElementById('releases-container');
             const ultimas = releases.slice(0, 5);
-
             let html = '<ul style="list-style: none; padding-left:0;">';
             ultimas.forEach((release, index) => {
                 const fecha = new Date(release.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 const descripcion = marked.parse(release.descripcion || 'No description');
                 const colorBorde = index === 0 ? '#1f8bff' : (index === 1 ? '#6bc7ff' : '#6a7a8a');
-                html += `
-                    <li style="margin-bottom:0.8rem; background:#141a24; padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
-                        <strong>${release.tag}</strong> (${fecha})
-                        <div style="margin-top:0.5rem; font-size:0.95rem; color:#b0bccf;">
-                            ${descripcion}
-                        </div>
-                    </li>
-                `;
+                html += `<li style="margin-bottom:0.8rem; background:#141a24; padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
+                    <strong>${release.tag}</strong> (${fecha})
+                    <div style="margin-top:0.5rem; font-size:0.95rem; color:#b0bccf;">${descripcion}</div>
+                </li>`;
             });
             html += '</ul>';
             contenedor.innerHTML = html;
         }
 
-        // ------------------------------------------------------------------
-        // 3. SHADERS AND BEZELS (load from shaders.json and bezels.json)
-        // ------------------------------------------------------------------
+        // ===== SHADERS Y BEZELS =====
         async function cargarShaders() {
             try {
                 const response = await fetch('shaders.json');
@@ -855,7 +503,6 @@
                 document.getElementById('shaders-list').textContent = 'Error loading';
             }
         }
-
         async function cargarBezels() {
             try {
                 const response = await fetch('bezels.json');
@@ -867,109 +514,69 @@
             }
         }
 
-        // ------------------------------------------------------------------
-        // 4. MODAL FOR EXTERNAL CONTENT (README, FAQ, etc.)
-        // ------------------------------------------------------------------
+        // ===== MODAL =====
         async function openModal(title, url, githubUrl) {
             const overlay = document.getElementById('modal-overlay');
             const body = document.getElementById('modal-body');
             const titleEl = document.getElementById('modal-title');
             const githubLink = document.getElementById('modal-github-link');
-
+            const githubText = document.getElementById('github-link-text');
+            const lang = window.currentLang || 'en';
+            githubText.textContent = (lang === 'es') ? 'Ver en GitHub' : 'View on GitHub';
             overlay.classList.add('active');
             titleEl.textContent = title;
             githubLink.href = githubUrl;
             body.innerHTML = 'Loading...';
-
             try {
                 const response = await fetch(url);
                 if (!response.ok) throw new Error('Error loading file');
                 let text = await response.text();
-
-                // --- CONVERT IMAGE PATHS TO RAW URLs ---
-                // 1. Convert GitHub blob URLs to raw URLs
-                // Example: https://github.com/user/repo/blob/main/path/file.jpg -> https://raw.githubusercontent.com/user/repo/main/path/file.jpg
-                text = text.replace(
-                    /!\[([^\]]*)\]\((https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^)]+))\)/g,
-                    (match, alt, fullUrl, user, repo, path) => {
-                        const rawUrl = `https://raw.githubusercontent.com/${user}/${repo}/${path}`;
-                        return `![${alt}](${rawUrl})`;
-                    }
-                );
-
-                // 2. Convert relative paths (for other Markdown files) to absolute URLs
+                text = text.replace(/!\[([^\]]*)\]\((https?:\/\/github\.com\/([^\/]+)\/([^\/]+)\/blob\/([^)]+))\)/g, (match, alt, fullUrl, user, repo, path) => {
+                    return `![${alt}](https://raw.githubusercontent.com/${user}/${repo}/${path})`;
+                });
                 const baseRawUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/';
                 text = text.replace(/!\[([^\]]*)\]\((?!https?:\/\/)([^)]+)\)/g, (match, alt, src) => {
                     let cleanSrc = src.replace(/^\.\//, '').replace(/^\//, '');
-                    const fullUrl = baseRawUrl + cleanSrc;
-                    return `![${alt}](${fullUrl})`;
+                    return `![${alt}](${baseRawUrl}${cleanSrc})`;
                 });
-
                 const html = marked.parse(text);
                 body.innerHTML = html;
             } catch (error) {
                 body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
             }
         }
-
-        // Function to open README or LEEME based on current language
         function openReadme() {
             const lang = window.currentLang || 'en';
-            if (lang === 'es') {
-                // Use LEEME from the wiki (raw URL)
-                const leemeUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md';
-                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME';
-                openModal('LEEME', leemeUrl, githubUrl);
-            } else {
-                // Use README from the root
-                const readmeUrl = 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md';
-                const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md';
-                openModal('README', readmeUrl, githubUrl);
-            }
+            if (lang === 'es') openModal('LEEME', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME');
+            else openModal('README', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md');
         }
-
-// Function to open Installation Guide based on current language
-function openInstallationGuide() {
-    const lang = window.currentLang || 'en';
-    if (lang === 'es') {
-        const esUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90de%E2%80%90Instalaci%C3%B3n.md';
-        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guía-de-Instalación';
-        openModal('Guía de instalación', esUrl, githubUrl);
-    } else {
-        const enUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Installation%E2%80%90Guide.md';
-        const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Installation-Guide';
-        openModal('Installation Guide', enUrl, githubUrl);
-    }
-}
-
-        // Function to open FAQ (from the wiki raw URL)
+        function openInstallationGuide() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') openModal('Guía de instalación', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90de%E2%80%90Instalaci%C3%B3n.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guía-de-Instalación');
+            else openModal('Installation Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Installation%E2%80%90Guide.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Installation-Guide');
+        }
         function openFaq() {
-            const faqUrl = 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md';
-            const githubUrl = 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ';
-            openModal('FAQ', faqUrl, githubUrl);
+            openModal('FAQ', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ');
         }
+        document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('modal-overlay').classList.remove('active'); });
+        document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active'); });
 
-        // Close modal
-        document.getElementById('modal-close').addEventListener('click', function() {
-            document.getElementById('modal-overlay').classList.remove('active');
-        });
-        document.getElementById('modal-overlay').addEventListener('click', function(e) {
-            if (e.target === this) this.classList.remove('active');
-        });
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.getElementById('modal-overlay').classList.remove('active');
-            }
-        });
+        // ===== MENÚ HAMBURGUESA =====
+        document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
-        // ------------------------------------------------------------------
-        // 5. RUN ON PAGE LOAD
-        // ------------------------------------------------------------------
-        document.addEventListener('DOMContentLoaded', function() {
-            cargarReleases();
-            cargarShaders();
-            cargarBezels();
-        });
+        // ===== BOTÓN VOLVER ARRIBA =====
+        const scrollBtn = document.getElementById('scroll-top');
+        window.addEventListener('scroll', function() { scrollBtn.style.display = (window.scrollY > 300) ? 'flex' : 'none'; });
+        scrollBtn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+
+        // ===== FADE-IN =====
+        const elementos = document.querySelectorAll('.card, .compare-item, .hero, .table-wrap, .modal-content');
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); }); }, { threshold: 0.15 });
+        elementos.forEach(el => observer.observe(el));
+
+        // ===== INICIALIZAR =====
+        document.addEventListener('DOMContentLoaded', function() { cargarReleases(); cargarShaders(); cargarBezels(); });
     </script>
 
 </body>
