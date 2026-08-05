@@ -2,8 +2,8 @@ name: Actualizar datos (releases, shaders, bezels)
 
 on:
   schedule:
-    - cron: '0 10 * * *'   # Todos los días a las 10:00 UTC
-  workflow_dispatch:      # Ejecución manual desde la interfaz de GitHub
+    - cron: '0 10 * * *'
+  workflow_dispatch:
 
 jobs:
   update-data:
@@ -15,30 +15,40 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Obtener releases (últimos 5)
+        id: get_releases
         run: |
           curl -H "Accept: application/vnd.github.v3+json" \
+               -H "Authorization: Bearer ${{ github.token }}" \
                https://api.github.com/repos/${{ github.repository }}/releases?per_page=5 \
                | jq '[.[] | {tag: .tag_name, fecha: .published_at, descripcion: .body}]' > docs/releases.json
+          echo "Contenido de docs/releases.json:"
+          cat docs/releases.json
 
       - name: Obtener shaders (archivos .glsl)
         run: |
           if [ -d "shaders" ]; then
             curl -H "Accept: application/vnd.github.v3+json" \
+                 -H "Authorization: Bearer ${{ github.token }}" \
                  https://api.github.com/repos/${{ github.repository }}/contents/shaders \
                  | jq '[.[] | select(.name | endswith(".glsl")) | .name]' > docs/shaders.json
           else
             echo '[]' > docs/shaders.json
           fi
+          echo "Contenido de docs/shaders.json:"
+          cat docs/shaders.json
 
       - name: Obtener bezels (archivos .png)
         run: |
           if [ -d "bezels" ]; then
             curl -H "Accept: application/vnd.github.v3+json" \
+                 -H "Authorization: Bearer ${{ github.token }}" \
                  https://api.github.com/repos/${{ github.repository }}/contents/bezels \
                  | jq '[.[] | select(.name | endswith(".png")) | .name]' > docs/bezels.json
           else
             echo '[]' > docs/bezels.json
           fi
+          echo "Contenido de docs/bezels.json:"
+          cat docs/bezels.json
 
       - name: Validar JSON generado
         run: |
@@ -55,5 +65,6 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/releases.json docs/shaders.json docs/bezels.json
+          # Forzamos commit incluso si no hay cambios (para depuración)
           git commit -m "Actualización automática de datos $(date +'%Y-%m-%d %H:%M')" || echo "ℹ️ No hay cambios para commit"
           git push
