@@ -1,141 +1,122 @@
 # MPV‑SW‑Capture
-Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** Video Game Console (such as SW/2, or any other) with minimal lag/latency and with many extra features.
+
+Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** video game console (such as Switch/2, or any other) with **minimal lag/latency** and many extra features.
 
 ![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.jpg)
 
 ---
 
 ## 📋 Features
-- **Play any console** (Switch/2/PS/XB/Retro or any other HDMI compatible console) through your USB capture card using MPV.
-- **With minimal lag/latency** – play your real console with minimal lag/latency. Nearly the same as connect it directly to TV.
-- **Portable** – copy/move and use the whole folder in any location; it will work there without reinstallation.
-- **Custom menu** (accessible via right‑click or a hotkey) with:
-  - **Shaders** – load shaders to improve image quality up to 4K or switch to retro looks (CRT TV, VHS, CRT arcade, etc.).
-  - **Shapes** – change the shape of how screen looks (CRT TV, VHS, CRT arcade, etc.).
-  - **Crop** – crop the window to the exact size of a NSO system (GBA, NES, SNES, etc.).
-  - **Bezels** – overlay special border images (e.g., SNES NSO bezel) for an authentic feel.
-  - **Window options** – resize, reposition, set Always on Top, and more.
-  - **Screenshots** – automatically save screenshots to your MPV folder.
-  - **Video recording** – record 30/60/90/120 seconds of good‑quality, small‑size video.
-- **Customize** the menu, replace and add your own bezels and shaders.
 
-## ⚙️ How it works (minimal lag/latency audio + video)
+- **Play any console** (Switch/2, PS, Xbox, Retro or any HDMI‑compatible console) through your USB capture card using MPV.
+- **Minimal lag/latency** – play your real console with lag almost as low as connecting it directly to a TV.
+- **Portable** – copy the whole folder anywhere and it will work without reinstallation.
+- **Custom menu** (right‑click or `ESC`) with:
+  - **Shaders** – improve image quality up to 4K or apply retro looks (CRT, VHS, Arcade, etc.).
+  - **Shapes** – change the screen geometry (curvature, keystone, etc.).
+  - **Crop** – crop the window to the exact size of an NSO system (GBA, NES, SNES, etc.).
+  - **Bezels** – overlay decorative borders (e.g., SNES NSO bezel) for an authentic feel.
+  - **Window options** – resize, reposition, always on top, and more.
+  - **Screenshots** – automatically save screenshots to your MPV folder.
+  - **Video recording** – record 30/60/90/120 second clips with good quality and small file size.
+- **Fully customizable** – add your own bezels, shaders, and menu entries.
+
+---
+
+## ⚙️ How it works (minimal lag/latency)
+
 MPV alone can introduce noticeable latency when handling both audio and video from a capture card.  
 This setup **splits the workload**:
-- MPV handles the video stream only.
-- `ffplay` (from the ffmpeg bundle) handles the audio stream only.
 
-Both programs run silently, stay in sync, and together deliver minimal lag/latency gameplay with audio and video.
+- **MPV** handles the video stream only.
+- **`ffplay`** (from the ffmpeg bundle) handles the audio stream only.
+
+Both programs run silently, stay in sync, and together deliver minimal‑lag gameplay with audio and video.
+
+---
 
 ## 📦 Requirements
 
-- A PC with USB 3.0 (USB 2.0 works but performance will be noticeably worse).
-- A capture card that supports 1080p60 and provides loop‑through (input + output) – e.g., “4K Ultra HD USB 3.0 HD Video Capture (MS 2131)” or any similar device.
+- A PC with **USB 3.0** (USB 2.0 works but performance will be noticeably worse).
+- A capture card that supports **1080p60** and provides loop‑through (input + output) – e.g., “4K Ultra HD USB 3.0 HD Video Capture (MS 2131)” or any similar device.
 - Your own official video game console.
-- mpv player: **not** distributed in this repository. Download an appropriate build (for example, the official Windows builds by zhongfly: https://github.com/zhongfly/mpv-winbuild/releases, or your distro’s packages).
-- ffmpeg/ffplay: **not** distributed in this repository. Download from the official project or a trusted build provider (for example, the Essentials build from https://www.gyan.dev/ffmpeg/builds/).
+- **mpv player**: not distributed in this repository. Download a suitable build (e.g., the official Windows builds by [zhongfly](https://github.com/zhongfly/mpv-winbuild/releases), or your distro’s packages).
+- **ffmpeg/ffplay**: not distributed in this repository. Download from the official project or a trusted provider (e.g., the Essentials build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)).
 
-Note: mpv and ffmpeg/ffplay are third‑party dependencies with their own licenses (LGPL/GPL, etc.). They are required to use this project but are not bundled in this repository or its release assets.
+> **Note:** mpv and ffmpeg/ffplay are third‑party dependencies with their own licenses (LGPL/GPL, etc.). They are required to use this project but are not bundled in this repository or its release assets.
 
-## 🛠️ Installation v3.0.0+ (step‑by‑step)
+---
 
-1. **Download files**
-   - Get MPV‑SW‑Capture (v3.0.0 or more):
-     - Download the [latest release of this repository (ZIP)](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) in "**_Assets_**". Only the file with the name **`MPV-SW-Capture-v.`X.Y.Z`.zip`**.
+## 🛠️ Installation
 
-2. **Prepare the folder**
-   - Create a folder (e.g. `MPV-SW-Capture`) anywhere you like.
-   - Open the latest MPV‑SW‑Capture release and extract **all the files** into this same folder.
+For a complete, step‑by‑step installation guide, please visit:
 
-   You should end up with something like:
+👉 **[Installation Guide](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Installation%E2%80%90Guide)**
 
-   ```text
-   MPV-SW-Capture/
-   ├── bezels/
-   ├── data/
-   ├── scripts/
-   ├── shaders/
-   ├── tools/
-   ├── Installer_MPV-SW-Capture.exe
-   ├── Setup_MPV-SW-Capture.exe
-   ├── input.conf
-   ├── menu.conf
-   └── mpv.conf
-   ```
+> The guide covers everything from downloading the release, running the Installer and Setup tools, to launching MPV‑SW‑Capture for the first time.
 
-3. **First setup**
+If you prefer the older manual installation method, you can find it here:  
+**[MANUAL Install](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)**
 
-   **Connection**
-   - Connect your capture card to your PC using USB 3.0 (or USB 2.0).
-   - Connect HDMI from your console to the **input** of the capture card.
-
-   **INSTALL file**
-    - Inside the folder, run `Installer_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_installer.jpg)</div>
-      Change anything you want in any options, or use the default ones.
-    - Press **"Install / Update ALL"** and wait the Installer do the job.
-      
-   **SETUP file**
-    - Now, inside the folder, run `Setup_MPV-SW-Capture.exe`. You will find a GUI window similar to this: <div align="center">![MPV‑SW‑Capture Setup](assets/mpv-sw-capture_setup.jpg)</div>
-      _If you want to change your GUI Language to Spanish, press the **ES** button. You can swap wherever you want._
-    - Press **"Scan Device"**, it will list all audio and video devices currently attached.
-     (If nothing is connected, the list will be empty. Connect your devices, and try pressing the button again.)
-    - Choose the video device in the list and then the audio device (must be the same type as the capture card).
-    - Choose Date Format, Auto Start Special Shaders, Default Record Video Time, Create Desktop Shorcut, to set your preferences.
-   - When you are ready, press the green **"Apply Setup"** button.
-   - If all is okay, you will receive a message with the changes.
-  - *OPTIONAL: You can translate the MENU tu Spanish if you want. You must press **"MENU: English <- -> Espanol"**. You can do it without using the main options (It's independent)*
-4. **Launch the stream in MPV-SW-Capture**
-   - Run `MPV.exe` (you can create a desktop shortcut for convenience).
-   - If everything is set correctly, you will see your console with audio and video.
-   - To access the menu, right‑click inside the window or press `ESC`. Double‑click toggles full screen.
-   
-## MANUAL Install
-If you want to use the old way to install MPV-SW-Capture (that still works), you are having problems, or anything else, you can find it here: **[MANUAL Install](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)**
+---
 
 ## 🖼️ Screenshots / Examples
-Some visual examples of MPV‑SW‑Capture in action:
 
-| <center>Custom Menu</center> | <center>Shader+Shape example</center> |
-|----------|----------|
+| Custom Menu | Shader + Shape example |
+|-------------|------------------------|
 | ![Custom Menu](assets/mpv-sw-capture2.jpg) | ![Shader example](assets/mpv-sw-capture3.jpg) |
-| <center><small>*Right‑click / ESC menu with shaders, bezels, crop, window and capture options.*</small></center> | <center><small>*Example of a CRT‑style shader+CRT Curved Shape applied through MPV‑SW‑Capture.*</small></center> |
+| *Right‑click / ESC menu with shaders, bezels, crop, window and capture options.* | *Example of a CRT‑style shader + CRT Curved Shape applied through MPV‑SW‑Capture.* |
 
-| <center>Bezel example</center> | <center>Crop example</center> |
-|----------|----------|
+| Bezel example | Crop example |
+|---------------|--------------|
 | ![Bezel example](assets/mpv-sw-capture4.jpg) | ![Crop example](assets/mpv-sw-capture5.jpg) |
-| <center><small>*Example bezel applied around the captured image for a more authentic look.*</small></center> | <center><small>*Window cropped to match a GB resolution in NSO, using the crop presets. Perfect if you don't want the normal borders.*</small></center> |
+| *Example bezel applied around the captured image for a more authentic look.* | *Window cropped to match a GB resolution in NSO, using the crop presets. Perfect if you don't want the normal borders.* |
 
-| <center>Stretch window example</center> | <center>Combination example</center> |
-|----------|----------|
+| Stretch window example | Combination example |
+|------------------------|---------------------|
 | ![Stretch window example](assets/mpv-sw-capture6.jpg) | ![Combination example](assets/mpv-sw-capture7.jpg) |
-| <center><small>*Stretch Window option enabled to fill more of the screen while keeping the capture visible.*</small></center> | <center><small>*Example of a Combination of Shader+Crop (to 4:3)+Stretch. Crop cannot mix with Bezel.*</small></center> |
+| *Stretch Window option enabled to fill more of the screen while keeping the capture visible.* | *Example of a combination of Shader + Crop (to 4:3) + Stretch. Crop cannot be mixed with Bezel.* |
 
-Bezel images included in this project are generic CRT/handheld-style frames (created/edited for this project) and are not official assets from any console or game. They are decorative overlays only.
+> Bezel images included in this project are generic CRT/handheld‑style frames (created/edited for this project) and are not official assets from any console or game. They are decorative overlays only.
 
-## ❓ FAQ (Frequently Asked Questions)
+---
 
-You can find the FAQ here: [FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ)
+## ❓ FAQ
+
+You can find the Frequently Asked Questions here:  
+**[FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ)**
+
+---
 
 ## 📄 LEEME en Español (Spanish README)
 
-Puedes encontrar este README en Español aquí: [LEEME](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME)
+Puedes encontrar este README en Español aquí:  
+**[LEEME](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME)**
+
+---
 
 ## 💖 Sponsors
 
-If MPV-SW-Capture is useful to you, consider supporting development through [GitHub Sponsors](https://github.com/sponsors/TyRaS-SW).  
+If MPV‑SW‑Capture is useful to you, consider supporting development through [GitHub Sponsors](https://github.com/sponsors/TyRaS-SW).  
 Sponsors help keep the project maintained and make new features possible.
 
-You can also support me in Ko-fi: [![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tyras_sw)
+You can also support me on Ko‑fi:  
+[![Support me on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/tyras_sw)
+
+---
 
 ## 📄 License
 
-This project (Lua scripts, batch files, bezels, documentation, and original shaders authored by TyRaS-SW) is licensed under the MIT License – see the `LICENSE` file.
+This project (Lua scripts, batch files, bezels, documentation, and original shaders authored by TyRaS‑SW) is licensed under the **MIT License** – see the `LICENSE` file.
 
-This repository also bundles third‑party shaders under their own licenses (BSD‑style permissive licenses, the GNU Lesser General Public License (LGPL), vendor‑specific licenses such as the AMD FidelityFX SDK license, and other upstream terms).
+This repository also bundles third‑party shaders under their own licenses (BSD‑style permissive licenses, the GNU Lesser General Public License (LGPL), vendor‑specific licenses such as the AMD FidelityFX SDK license, and other upstream terms).  
 See `NOTICE.md` and the headers of individual shader files for details.
 
-The MIT License in this repository applies only to original code authored by TyRaS-SW. It does **not** relicense or override the terms of third‑party shaders or external binaries (mpv, ffmpeg, etc.), which remain under their respective upstream licenses.
+The MIT License in this repository applies **only** to original code authored by TyRaS‑SW. It does **not** relicense or override the terms of third‑party shaders or external binaries (mpv, ffmpeg, etc.), which remain under their respective upstream licenses.
+
+---
 
 ## 🏷️ Trademark disclaimer
+
 Nintendo Switch and Nintendo Switch 2 are trademarks of Nintendo Co., Ltd.  
 This project is not affiliated with, endorsed by, or sponsored by Nintendo.
