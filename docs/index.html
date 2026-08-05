@@ -160,6 +160,16 @@
             background: #4752c4;
             border-color: #4752c4;
         }
+        /* Botón Support/Apoyar */
+        .btn-support {
+            border-color: #ea4aaa;
+            color: #ea4aaa;
+        }
+        .btn-support:hover {
+            background: rgba(234, 74, 170, 0.15);
+            border-color: #ea4aaa;
+            color: #ea4aaa;
+        }
 
         /* CARDS */
         .card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.8rem; margin:2rem 0; }
@@ -232,6 +242,7 @@
         footer .social-links a { color:#6a7a8a; font-size:1.4rem; transition:0.2s; }
         footer .social-links a:hover { color:#fff; text-decoration:none; }
         footer .social-links a.discord-icon:hover { color:#5865F2; }
+        footer .social-links a.support-icon:hover { color:#ea4aaa; }
 
         @media (max-width:768px) {
             .hero h1 { font-size:2.4rem; }
@@ -306,6 +317,12 @@
                     </a>
                     <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="btn btn-discord">
                         <i class="fab fa-discord"></i> Discord
+                    </a>
+                    <!-- ===== BOTÓN DE DONACIONES (NUEVO) ===== -->
+                    <a href="#" onclick="openDonate(); return false;" class="btn btn-outline btn-support">
+                        <i class="fas fa-heart"></i>
+                        <span class="lang-es">Apoyar</span>
+                        <span class="lang-en" style="display:none;">Support</span>
                     </a>
                 </div>
             </div>
@@ -627,6 +644,9 @@
             <div class="social-links">
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
                 <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-icon" aria-label="Discord"><i class="fab fa-discord"></i></a>
+                <!-- ===== ENLACE A DONACIONES EN FOOTER (OPCIONAL) ===== -->
+                <a href="https://github.com/sponsors/TyRaS-SW" target="_blank" class="support-icon" aria-label="GitHub Sponsors"><i class="fas fa-heart"></i></a>
+                <a href="https://ko-fi.com/tyras_sw" target="_blank" class="support-icon" aria-label="Ko-fi"><i class="fas fa-mug-hot"></i></a>
             </div>
         </div>
     </footer>
@@ -691,7 +711,7 @@
                 // Actualizar la URL con el parámetro lang (sin recargar)
                 const url = new URL(window.location);
                 if (lang === 'en') {
-                    // Si es el idioma por defecto, podemos eliminar el parámetro para URLs más limpias
+                    // Si es el idioma por defecto, eliminar el parámetro para URLs más limpias
                     url.searchParams.delete('lang');
                 } else {
                     url.searchParams.set('lang', lang);
@@ -716,7 +736,6 @@
             setLanguage(idiomaInicial);
         });
 
-        // ===== RESTO DE SCRIPTS (sin cambios) =====
         // ===== RELEASES =====
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
@@ -804,6 +823,8 @@
                 body.innerHTML = `<p style="color:#ff6b6b;">Error: ${error.message}. Try opening it directly on GitHub.</p>`;
             }
         }
+
+        // Funciones para abrir contenido
         function openReadme() {
             const lang = window.currentLang || 'en';
             if (lang === 'es') openModal('LEEME', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME');
@@ -817,6 +838,18 @@
         function openFaq() {
             openModal('FAQ', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ');
         }
+
+        // ===== NUEVA FUNCIÓN PARA DONACIONES =====
+        function openDonate() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Apoyar el proyecto', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/docs/DONATE_es.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/docs/DONATE_es.md');
+            } else {
+                openModal('Support the project', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/docs/DONATE.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/docs/DONATE.md');
+            }
+        }
+
+        // ===== CIERRE DEL MODAL =====
         document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('modal-overlay').classList.remove('active'); });
         document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active'); });
