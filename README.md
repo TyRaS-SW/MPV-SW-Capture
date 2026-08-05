@@ -40,10 +40,14 @@ Both programs run silently, stay in sync, and together deliver minimal‑lag gam
 - A PC with **USB 3.0** (USB 2.0 works but performance will be noticeably worse).
 - A capture card that supports **1080p60** and provides loop‑through (input + output) – e.g., “4K Ultra HD USB 3.0 HD Video Capture (MS 2131)” or any similar device.
 - Your own official video game console.
-- **mpv player**: not distributed in this repository. Download a suitable build (e.g., the official Windows builds by [zhongfly](https://github.com/zhongfly/mpv-winbuild/releases), or your distro’s packages).
-- **ffmpeg/ffplay**: not distributed in this repository. Download from the official project or a trusted provider (e.g., the Essentials build from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/)).
+- **mpv player** and **ffmpeg/ffplay** (see note below).
 
-> **Note:** mpv and ffmpeg/ffplay are third‑party dependencies with their own licenses (LGPL/GPL, etc.). They are required to use this project but are not bundled in this repository or its release assets.
+> **✨ Note on dependencies:**  
+> While this project does not bundle mpv or ffmpeg/ffplay due to licensing and size constraints, the included **`Installer_MPV-SW-Capture.exe`** tool can download and place the correct versions automatically.  
+> For most users, this is the simplest way to get started.  
+> If you prefer, you can also obtain them manually from their official sources:
+> - [mpv (zhongfly builds)](https://github.com/zhongfly/mpv-winbuild/releases)
+> - [ffmpeg (gyan.dev Essentials)](https://www.gyan.dev/ffmpeg/builds/)
 
 ---
 
