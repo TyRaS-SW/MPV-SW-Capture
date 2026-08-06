@@ -504,7 +504,7 @@
         </div>
     </section>
 
-    <!-- ===== DEMOSTRACIÓN INTERACTIVA (11 modos) ===== -->
+    <!-- ===== DEMOSTRACIÓN INTERACTIVA ===== -->
     <section class="interactive-demo container">
         <div class="demo-header">
             <h2>
@@ -834,7 +834,7 @@
                 // Actualizar demo
                 actualizarDemoIdioma(lang);
                 actualizarBotonAuto(lang);
-                generarControles(); // regenera botones con etiquetas traducidas
+                generarControles();
             }
 
             langButtons.forEach(btn => {
@@ -1136,11 +1136,9 @@
 
         function actualizarDemoIdioma(lang) {
             const data = demoData[currentMode];
-            // Actualizar imagen
             const imageUrl = lang === 'es' ? data.image_es : data.image_en;
             demoImage.src = imageUrl;
             demoImage.alt = data.title_es;
-            // Actualizar textos
             demoTitle.textContent = lang === 'es' ? data.title_es : data.title_en;
             demoText.textContent = lang === 'es' ? data.desc_es : data.desc_en;
         }
@@ -1170,7 +1168,6 @@
             demoTitle.textContent = lang === 'es' ? data.title_es : data.title_en;
             demoText.textContent = lang === 'es' ? data.desc_es : data.desc_en;
 
-            // Actualizar botones y puntos activos
             const allBtns = modeContainer.querySelectorAll('button');
             const allDots = dotContainer.querySelectorAll('.dot');
             allBtns.forEach((btn, i) => btn.classList.toggle('active-mode', i === index));
