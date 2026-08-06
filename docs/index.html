@@ -655,7 +655,7 @@
         <p class="text-center" style="color:#6a7a8a; font-size:0.9rem;"><i class="fas fa-info-circle"></i> <span class="lang-es">Las imágenes son orientativas. Reemplaza los archivos en <code>assets/</code> con tus propias capturas.</span><span class="lang-en" style="display:none;">Images are for guidance. Replace files in <code>assets/</code> with your own screenshots.</span></p>
     </section>
 
-    <!-- ===== OPCIONES DEL MENÚ ===== -->
+    <!-- ===== OPCIONES DEL MENÚ (con shaders-list y bezels-list) ===== -->
     <section id="menu" class="container">
         <h2><i class="fas fa-bars"></i> <span class="lang-es">Opciones del menú</span><span class="lang-en" style="display:none;">Menu options</span></h2>
         <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Estas son las secciones principales:</span>
@@ -672,22 +672,22 @@
                 <tbody>
                     <tr>
                         <td><strong><span class="lang-es">🎬 SHADERS</span><span class="lang-en" style="display:none;">🎬 SHADERS</span></strong></td>
-                        <td><span class="lang-es">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), Videojuegos (Handheld, GBA, Arcade), Especial (Broken LCD, Dust, Invertido), Solo Nitidez, Limpiar Shaders</span><span class="lang-en" style="display:none;">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), VideoGame (Handheld, GBA, Arcade), Special (Broken LCD, Dust, Inverted), Only Sharpen, Clean Shaders</span></td>
+                        <td id="shaders-list">Loading...</td>
                         <td><span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian. Puedes cargar varios a la vez.</span><span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it. You can load several at once.</span></td>
                     </tr>
                     <tr>
                         <td><strong><span class="lang-es">⬒ FORMAS</span><span class="lang-en" style="display:none;">⬒ SHAPES</span></strong></td>
-                        <td><span class="lang-es">Curvatura CRT, CRT Wide Barrel, Super Curvatura CRT, Esquinas Redondeadas, Keystone, Perspectiva Pinball, Keystone Hacia Adentro, Limpiar Forma</span><span class="lang-en" style="display:none;">CRT Curvature, Wide Barrel, Super Curvature, Rounded Corners, Keystone, Pinball Perspective, Inward Keystone, Clean Shape</span></td>
+                        <td>CRT Curvature, Wide Barrel, Super Curvature, Rounded Corners, Keystone, Pinball Perspective, Inward Keystone, Clean Shape</td>
                         <td><span class="lang-es">Cambian la geometría de la pantalla (curvatura, perspectiva, etc.).</span><span class="lang-en" style="display:none;">Change screen geometry (curvature, perspective, etc.).</span></td>
                     </tr>
                     <tr>
                         <td><strong><span class="lang-es">✂ RECORTES</span><span class="lang-en" style="display:none;">✂ CROPS</span></strong></td>
-                        <td><span class="lang-es">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Borrar Recorte</span><span class="lang-en" style="display:none;">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Clear Crop</span></td>
+                        <td>NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Clear Crop</td>
                         <td><span class="lang-es">Recortan la ventana al tamaño exacto de un sistema NSO (GBA, NES, SNES, etc.).</span><span class="lang-en" style="display:none;">Crop the window to exact NSO system size (GBA, NES, SNES, etc.).</span></td>
                     </tr>
                     <tr>
                         <td><strong><span class="lang-es">🖼 MARCOS</span><span class="lang-en" style="display:none;">🖼 BEZELS</span></strong></td>
-                        <td><span class="lang-es">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Borrar Marcos</span><span class="lang-en" style="display:none;">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Clear Bezels</span></td>
+                        <td id="bezels-list">Loading...</td>
                         <td><span class="lang-es">Superponen bordes decorativos para un aspecto auténtico de consola clásica.</span><span class="lang-en" style="display:none;">Overlay decorative borders for an authentic classic console look.</span></td>
                     </tr>
                     <tr>
@@ -901,16 +901,18 @@
         }
 
         // ========================================================
-        // 4. SHADERS Y BEZELS
+        // 4. SHADERS Y BEZELS (con verificación de existencia)
         // ========================================================
         async function cargarShaders() {
             try {
                 const response = await fetch('shaders.json');
                 if (!response.ok) throw new Error('Could not load shaders.json');
                 const shaders = await response.json();
-                document.getElementById('shaders-list').textContent = shaders.join(', ') || 'None';
+                const el = document.getElementById('shaders-list');
+                if (el) el.textContent = shaders.join(', ') || 'None';
             } catch (error) {
-                document.getElementById('shaders-list').textContent = 'Error loading';
+                const el = document.getElementById('shaders-list');
+                if (el) el.textContent = 'Error loading';
             }
         }
         async function cargarBezels() {
@@ -918,9 +920,11 @@
                 const response = await fetch('bezels.json');
                 if (!response.ok) throw new Error('Could not load bezels.json');
                 const bezels = await response.json();
-                document.getElementById('bezels-list').textContent = bezels.join(', ') || 'None';
+                const el = document.getElementById('bezels-list');
+                if (el) el.textContent = bezels.join(', ') || 'None';
             } catch (error) {
-                document.getElementById('bezels-list').textContent = 'Error loading';
+                const el = document.getElementById('bezels-list');
+                if (el) el.textContent = 'Error loading';
             }
         }
 
@@ -1106,14 +1110,13 @@
         let isAutoPlaying = false;
         const AUTO_DELAY = 10000; // 10 segundos
 
-        // Función para generar botones y puntos dinámicamente
         function generarControles() {
             const lang = window.currentLang || 'en';
             modeContainer.innerHTML = '';
             dotContainer.innerHTML = '';
 
             demoData.forEach((item, index) => {
-                // Botón de modo
+                // Botón
                 const btn = document.createElement('button');
                 btn.dataset.mode = index;
                 btn.className = index === 0 ? 'active-mode' : '';
@@ -1207,7 +1210,6 @@
             }
         }
 
-        // Evento del botón Auto
         autoToggle.addEventListener('click', toggleAutoSlide);
 
         // Inicializar demo
@@ -1235,6 +1237,5 @@
             cargarBezels();
         });
     </script>
-
 </body>
 </html>
