@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* ===== ESTILOS ===== */
+        /* ===== ESTILOS GLOBALES ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family:'Inter',sans-serif; background:#0b0e14; color:#e8edf2; line-height:1.6; scroll-behavior:smooth; }
         .container { max-width:1280px; margin:0 auto; padding:0 24px; }
@@ -30,10 +30,18 @@
         h2 { font-size:2rem; margin:2rem 0 1.5rem; border-bottom:2px solid #2a313c; padding-bottom:0.5rem; display:flex; align-items:center; gap:10px; }
         h2 i { color:#6bc7ff; font-size:1.6rem; }
 
-        /* NAV */
+        /* ===== NAVEGACIÓN ===== */
         nav { position:sticky; top:0; z-index:100; background:rgba(11,14,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid #2a313c; padding:0.8rem 0; }
         nav .container { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
-        .nav-logo { font-size:1.4rem; font-weight:700; color:#fff; }
+        .nav-logo {
+            font-size:1.4rem;
+            font-weight:700;
+            color:#fff;
+            cursor:pointer;
+            transition: opacity 0.2s;
+            user-select: none;
+        }
+        .nav-logo:hover { opacity:0.8; }
         .nav-logo i { color:#6bc7ff; margin-right:8px; }
         .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:500; font-size:0.95rem; align-items:center; }
         .nav-links a { color:#b0bccf; }
@@ -41,7 +49,7 @@
         .nav-links .discord-link { color:#5865F2; }
         .nav-links .discord-link:hover { color:#8ea1ff; }
 
-        /* ===== BOTÓN DE IDIOMA MEJORADO ===== */
+        /* ===== SELECTOR DE IDIOMA ===== */
         .lang-selector {
             display: flex;
             gap: 4px;
@@ -80,8 +88,8 @@
             .lang-selector { width:100%; justify-content:center; }
         }
 
-        /* HERO */
-        .hero { padding:4rem 0 3rem; text-align:center; border-bottom:1px solid #1f2630; }
+        /* ===== HERO ===== */
+        .hero { padding:4rem 0 2rem; text-align:center; border-bottom:1px solid #1f2630; }
         .hero h1 {
             font-size: 3.2rem;
             font-weight: 700;
@@ -98,7 +106,7 @@
             max-width: 720px;
             margin: 0.5rem auto 1.5rem;
         }
-        /* ===== BOTÓN DOWNLOAD DESTACADO ===== */
+
         .hero-buttons {
             display: flex;
             flex-direction: column;
@@ -160,7 +168,6 @@
             background: #4752c4;
             border-color: #4752c4;
         }
-        /* Botón Support/Apoyar */
         .btn-support {
             border-color: #ea4aaa;
             color: #ea4aaa;
@@ -171,7 +178,7 @@
             color: #ea4aaa;
         }
 
-        /* CARDS */
+        /* ===== CARDS ===== */
         .card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.8rem; margin:2rem 0; }
         .card { background:#141a24; border:1px solid #2a313c; border-radius:16px; padding:1.8rem; transition:0.2s; }
         .card:hover { border-color:#3d4a5a; transform:translateY(-4px); }
@@ -179,7 +186,7 @@
         .card h3 { font-size:1.2rem; margin-bottom:0.5rem; }
         .card p { color:#b0bccf; font-size:0.95rem; }
 
-        /* TABLAS */
+        /* ===== TABLAS ===== */
         .table-wrap { overflow-x:auto; margin:1.5rem 0; border-radius:12px; border:1px solid #2a313c; }
         table { width:100%; border-collapse:collapse; font-size:0.95rem; }
         th { background:#1f2630; color:#c8d0dc; font-weight:600; text-align:left; padding:0.8rem 1rem; }
@@ -187,13 +194,13 @@
         tr:hover td { background:#141a24; }
         kbd { background:#1f2630; padding:0.1rem 0.6rem; border-radius:4px; font-size:0.85rem; border:1px solid #3d4a5a; }
 
-        /* COMPARE GRID */
+        /* ===== COMPARATIVAS VISUALES ===== */
         .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin:1.5rem 0; }
         .compare-item { background:#141a24; border-radius:12px; padding:1rem; text-align:center; border:1px solid #2a313c; }
         .compare-item img { max-width:100%; border-radius:8px; background:#0b0e14; height:auto; aspect-ratio:16/9; object-fit:cover; }
         .compare-item .label { display:block; margin-top:0.5rem; font-weight:600; color:#b0bccf; }
 
-        /* MODAL */
+        /* ===== MODAL ===== */
         #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:1000; justify-content:center; align-items:center; }
         #modal-overlay.active { display:flex; }
         .modal-content { background:#0d1117; width:90%; max-width:900px; height:85vh; border-radius:12px; border:1px solid #30363d; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.8); overflow:hidden; }
@@ -216,27 +223,27 @@
         .modal-body th,.modal-body td { border:1px solid #30363d; padding:0.5rem 1rem; text-align:left; }
         .modal-body th { background:#1f2630; }
 
-        /* RELEASES */
+        /* ===== RELEASES ===== */
         #releases-container { max-height:400px; overflow-y:auto; padding-right:8px; scrollbar-width:thin; scrollbar-color:#3d4a5a #141a24; }
         #releases-container::-webkit-scrollbar { width:6px; }
         #releases-container::-webkit-scrollbar-track { background:#141a24; border-radius:8px; }
         #releases-container::-webkit-scrollbar-thumb { background:#3d4a5a; border-radius:8px; }
         #releases-container::-webkit-scrollbar-thumb:hover { background:#6a7a8a; }
 
-        /* BOTÓN VOLVER ARRIBA */
+        /* ===== BOTÓN VOLVER ARRIBA ===== */
         .scroll-top { position:fixed; bottom:30px; right:30px; background:#1f8bff; color:#fff; border:none; border-radius:50%; width:50px; height:50px; font-size:1.5rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:0.3s; z-index:999; display:none; align-items:center; justify-content:center; }
         .scroll-top:hover { transform:scale(1.1); background:#3d9eff; }
 
-        /* FADE-IN */
+        /* ===== FADE-IN ===== */
         .card, .compare-item, .hero, .table-wrap, .modal-content { opacity:0; transform:translateY(30px); transition:opacity 0.6s ease, transform 0.6s ease; }
         .card.visible, .compare-item.visible, .hero.visible, .table-wrap.visible, .modal-content.visible { opacity:1; transform:translateY(0); }
 
-        /* UTILITIES */
+        /* ===== UTILITIES ===== */
         .text-center { text-align:center; }
         .mt-2 { margin-top:2rem; }
         .mb-1 { margin-bottom:0.5rem; }
 
-        /* FOOTER */
+        /* ===== FOOTER ===== */
         footer { margin-top:4rem; padding:2rem 0; border-top:1px solid #1f2630; color:#6a7a8a; font-size:0.9rem; text-align:center; }
         footer .social-links { display:flex; justify-content:center; gap:1.5rem; margin-top:0.8rem; flex-wrap:wrap; }
         footer .social-links a { color:#6a7a8a; font-size:1.4rem; transition:0.2s; }
@@ -244,7 +251,170 @@
         footer .social-links a.discord-icon:hover { color:#5865F2; }
         footer .social-links a.support-icon:hover { color:#ea4aaa; }
 
-        @media (max-width:768px) {
+        /* ===== DEMOSTRACIÓN INTERACTIVA ===== */
+        .interactive-demo {
+            padding: 1.5rem 0 0.5rem;
+            margin-bottom: 1.5rem;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+        }
+        .interactive-demo .demo-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 0.3rem;
+        }
+        .interactive-demo .demo-header h2 {
+            margin: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+            font-size: 1.8rem;
+        }
+        .interactive-demo .demo-header h2 i {
+            color: #6bc7ff;
+            font-size: 1.6rem;
+        }
+        .demo-subtitle {
+            color: #b0bccf;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .monitor-wrapper {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+        .monitor-screen {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            width: 50%;
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 2px solid #2a313c;
+        }
+        .monitor-screen img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: opacity 0.3s ease;
+        }
+
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .demo-controls button {
+            background: transparent;
+            border: 1.5px solid #3d4a5a;
+            color: #b0bccf;
+            padding: 0.3rem 0.7rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+        .demo-controls button:hover {
+            border-color: #6bc7ff;
+            color: #fff;
+        }
+        .demo-controls button.active-mode {
+            background: #1f8bff;
+            border-color: #1f8bff;
+            color: #fff;
+        }
+
+        .btn-auto {
+            background: transparent;
+            border: 1.5px solid #f0ad4e;
+            color: #f0ad4e;
+            padding: 0.35rem 0.9rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            font-size: 0.8rem;
+        }
+        .btn-auto:hover {
+            background: rgba(240, 173, 78, 0.15);
+            border-color: #f0ad4e;
+            color: #fff;
+        }
+        .btn-auto.active {
+            background: #f0ad4e;
+            color: #0b0e14;
+        }
+
+        .dot-controls {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3d4a5a;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 0;
+        }
+        .dot.active-dot {
+            background: #1f8bff;
+            transform: scale(1.2);
+        }
+        .dot:hover {
+            background: #6bc7ff;
+        }
+
+        .demo-description {
+            text-align: center;
+            padding: 0 0.5rem;
+            margin-top: 0.5rem;
+        }
+        .demo-description h3 {
+            color: #e8edf2;
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+        }
+        .demo-description p {
+            color: #b0bccf;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .monitor-screen {
+                width: 80%;
+            }
+            .demo-controls button {
+                font-size: 0.65rem;
+                padding: 0.2rem 0.5rem;
+            }
+            .interactive-demo .demo-header h2 {
+                font-size: 1.4rem;
+            }
             .hero h1 { font-size:2.4rem; }
             .compare-grid { grid-template-columns:1fr; }
             .modal-content { width:95%; height:90vh; }
@@ -252,14 +422,23 @@
             .scroll-top { width:42px; height:42px; font-size:1.2rem; bottom:20px; right:20px; }
             .hero-buttons .btn-download { font-size:1rem; padding:0.7rem 1.8rem; }
         }
+        @media (max-width: 500px) {
+            .demo-controls button {
+                flex: 1 1 80px;
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <!-- NAVEGACIÓN -->
+    <!-- ===== NAVEGACIÓN ===== -->
     <nav>
         <div class="container">
-            <div class="nav-logo"><i class="fas fa-gamepad"></i> MPV-SW-Capture</div>
+            <div class="nav-logo" onclick="scrollToTop();" title="Volver arriba">
+                <i class="fas fa-gamepad"></i> MPV-SW-Capture
+            </div>
             <button class="menu-toggle" id="menu-toggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
             <div class="nav-links" id="nav-links">
                 <a href="#features" data-i18n="nav-features">Features</a>
@@ -270,7 +449,6 @@
                 <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
                 <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-link" data-i18n="nav-discord"><i class="fab fa-discord"></i> Discord</a>
-                <!-- ===== SELECTOR DE IDIOMA MEJORADO ===== -->
                 <div class="lang-selector" id="lang-selector">
                     <button class="lang-btn" data-lang="es">ES</button>
                     <button class="lang-btn active" data-lang="en">EN</button>
@@ -279,7 +457,7 @@
         </div>
     </nav>
 
-    <!-- HERO -->
+    <!-- ===== HERO ===== -->
     <section class="hero" id="hero">
         <div class="container">
             <h1>
@@ -287,17 +465,15 @@
                 <span class="lang-en" style="display:none;">MPV-SW-Capture</span>
             </h1>
             <p class="subtitle">
-                <span class="lang-es">Un programa completo con configuraciones listas para MPV en Windows, optimizado para tarjetas de captura USB 3.0. Juega a tu Nintendo Switch, PS, Xbox o cualquier consola HDMI con latencia casi nula y un sinfín de opciones.</span>
-                <span class="lang-en" style="display:none;">A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB 3.0 capture cards. Play your Nintendo Switch, PS, Xbox or any HDMI console with near‑zero latency and endless options.</span>
+                <span class="lang-es">Un programa completo con configuraciones listas para MPV en Windows, optimizado para tarjetas de captura USB 3.0. Juega con cualquier consola HDMI con latencia casi nula y un sinfín de opciones.</span>
+                <span class="lang-en" style="display:none;">A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB 3.0 capture cards. Play with any HDMI video game console with near‑zero latency and endless options.</span>
             </p>
             <div class="hero-buttons">
-                <!-- ===== BOTÓN DOWNLOAD DESTACADO ARRIBA ===== -->
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn-download">
                     <i class="fas fa-download"></i>
                     <span class="lang-es">Descargar <span id="version-number">vX.X.X</span></span>
                     <span class="lang-en" style="display:none;">Download <span id="version-number-en">vX.X.X</span></span>
                 </a>
-                <!-- ===== RESTO DE BOTONES ===== -->
                 <div class="btn-row">
                     <a href="#" id="btn-readme" class="btn btn-outline" onclick="openReadme(); return false;">
                         <i class="fas fa-book"></i> <span class="lang-es">LEEME</span><span class="lang-en" style="display:none;">README</span>
@@ -318,7 +494,6 @@
                     <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="btn btn-discord">
                         <i class="fab fa-discord"></i> Discord
                     </a>
-                    <!-- ===== BOTÓN DE DONACIONES (NUEVO) ===== -->
                     <a href="#" onclick="openDonate(); return false;" class="btn btn-outline btn-support">
                         <i class="fas fa-heart"></i>
                         <span class="lang-es">Apoyar</span>
@@ -329,8 +504,45 @@
         </div>
     </section>
 
-    <!-- ===== RESTO DE LA PÁGINA (sin cambios) ===== -->
-    <!-- FEATURES -->
+    <!-- ===== DEMOSTRACIÓN INTERACTIVA (11 modos) ===== -->
+    <section class="interactive-demo container">
+        <div class="demo-header">
+            <h2>
+                <i class="fas fa-play"></i>
+                <span class="lang-es">MPV-SW-Capture en acción</span>
+                <span class="lang-en" style="display:none;">MPV-SW-Capture in action</span>
+            </h2>
+            <button id="autoToggle" class="btn-auto active">
+                <span class="lang-es">⏸ Pausar</span>
+                <span class="lang-en" style="display:none;">⏸ Pause</span>
+            </button>
+        </div>
+        <p class="demo-subtitle">
+            <span class="lang-es">Haz clic en los botones para ver las diferentes funcionalidades, o pausa el modo automático.</span>
+            <span class="lang-en" style="display:none;">Click the buttons to explore the different features, or pause the auto-slideshow.</span>
+        </p>
+
+        <!-- Monitor -->
+        <div class="monitor-wrapper">
+            <div class="monitor-screen" id="monitorScreen">
+                <img id="demoImage" src="assets/demo/1_menu.jpg" alt="Demostración de MPV-SW-Capture">
+            </div>
+        </div>
+
+        <!-- Controles de modo (generados dinámicamente) -->
+        <div class="demo-controls" id="modeButtons"></div>
+
+        <!-- Puntos (generados dinámicamente) -->
+        <div class="dot-controls" id="dotControls"></div>
+
+        <!-- Descripción -->
+        <div class="demo-description" id="demoDescription">
+            <h3 id="demoTitle"></h3>
+            <p id="demoText"></p>
+        </div>
+    </section>
+
+    <!-- ===== FEATURES ===== -->
     <section id="features" class="container">
         <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
         <div class="card-grid">
@@ -430,7 +642,7 @@
         </p>
     </section>
 
-    <!-- VISUAL COMPARISONS -->
+    <!-- ===== VISUAL COMPARISONS ===== -->
     <section id="modos" class="container">
         <h2><i class="fas fa-images"></i> <span class="lang-es">Comparativas visuales</span><span class="lang-en" style="display:none;">Visual comparisons</span></h2>
         <p class="mb-1"><span class="lang-es">Ejemplos de lo que puedes lograr con shaders, bezels y crops.</span><span class="lang-en" style="display:none;">Examples of what you can achieve with shaders, bezels and crops.</span></p>
@@ -458,141 +670,45 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <!-- SHADERS -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">🎬 SHADERS</span>
-                                <span class="lang-en" style="display:none;">🎬 SHADERS</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), Videojuegos (Handheld, GBA, Arcade), Especial (Broken LCD, Dust, Invertido), Solo Nitidez, Limpiar Shaders</span>
-                            <span class="lang-en" style="display:none;">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), VideoGame (Handheld, GBA, Arcade), Special (Broken LCD, Dust, Inverted), Only Sharpen, Clean Shaders</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian. Puedes cargar varios a la vez.</span>
-                            <span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it. You can load several at once.</span>
-                        </td>
+                        <td><strong><span class="lang-es">🎬 SHADERS</span><span class="lang-en" style="display:none;">🎬 SHADERS</span></strong></td>
+                        <td><span class="lang-es">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), Videojuegos (Handheld, GBA, Arcade), Especial (Broken LCD, Dust, Invertido), Solo Nitidez, Limpiar Shaders</span><span class="lang-en" style="display:none;">4K (Fast, Adaptive, NVScaler), TV (VHS, CRT Aperture, CRT Trinitron), VideoGame (Handheld, GBA, Arcade), Special (Broken LCD, Dust, Inverted), Only Sharpen, Clean Shaders</span></td>
+                        <td><span class="lang-es">Mejoran la imagen (nitidez, retro, etc.) o la limpian. Puedes cargar varios a la vez.</span><span class="lang-en" style="display:none;">Enhance image (sharpness, retro, etc.) or clear it. You can load several at once.</span></td>
                     </tr>
-                    <!-- FORMAS / SHAPES -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">⬒ FORMAS</span>
-                                <span class="lang-en" style="display:none;">⬒ SHAPES</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">Curvatura CRT, CRT Wide Barrel, Super Curvatura CRT, Esquinas Redondeadas, Keystone, Perspectiva Pinball, Keystone Hacia Adentro, Limpiar Forma</span>
-                            <span class="lang-en" style="display:none;">CRT Curvature, Wide Barrel, Super Curvature, Rounded Corners, Keystone, Pinball Perspective, Inward Keystone, Clean Shape</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Cambian la geometría de la pantalla (curvatura, perspectiva, etc.).</span>
-                            <span class="lang-en" style="display:none;">Change screen geometry (curvature, perspective, etc.).</span>
-                        </td>
+                        <td><strong><span class="lang-es">⬒ FORMAS</span><span class="lang-en" style="display:none;">⬒ SHAPES</span></strong></td>
+                        <td><span class="lang-es">Curvatura CRT, CRT Wide Barrel, Super Curvatura CRT, Esquinas Redondeadas, Keystone, Perspectiva Pinball, Keystone Hacia Adentro, Limpiar Forma</span><span class="lang-en" style="display:none;">CRT Curvature, Wide Barrel, Super Curvature, Rounded Corners, Keystone, Pinball Perspective, Inward Keystone, Clean Shape</span></td>
+                        <td><span class="lang-es">Cambian la geometría de la pantalla (curvatura, perspectiva, etc.).</span><span class="lang-en" style="display:none;">Change screen geometry (curvature, perspective, etc.).</span></td>
                     </tr>
-                    <!-- RECORTES / CROPS -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">✂ RECORTES</span>
-                                <span class="lang-en" style="display:none;">✂ CROPS</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Borrar Recorte</span>
-                            <span class="lang-en" style="display:none;">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Clear Crop</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Recortan la ventana al tamaño exacto de un sistema NSO (GBA, NES, SNES, etc.).</span>
-                            <span class="lang-en" style="display:none;">Crop the window to exact NSO system size (GBA, NES, SNES, etc.).</span>
-                        </td>
+                        <td><strong><span class="lang-es">✂ RECORTES</span><span class="lang-en" style="display:none;">✂ CROPS</span></strong></td>
+                        <td><span class="lang-es">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Borrar Recorte</span><span class="lang-en" style="display:none;">NSO N64/GC (4:3), NSO NES (4:3/CRT, Pixel Perfect), NSO SNES (4:3/CRT, Pixel Perfect), NSO GameBoy Color, NSO GameBoy (Small), NSO GameBoy Advance, NSO Genesis (Pixel Perfect), Clear Crop</span></td>
+                        <td><span class="lang-es">Recortan la ventana al tamaño exacto de un sistema NSO (GBA, NES, SNES, etc.).</span><span class="lang-en" style="display:none;">Crop the window to exact NSO system size (GBA, NES, SNES, etc.).</span></td>
                     </tr>
-                    <!-- MARCOS / BEZELS -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">🖼 MARCOS</span>
-                                <span class="lang-en" style="display:none;">🖼 BEZELS</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Borrar Marcos</span>
-                            <span class="lang-en" style="display:none;">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Clear Bezels</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Superponen bordes decorativos para un aspecto auténtico de consola clásica.</span>
-                            <span class="lang-en" style="display:none;">Overlay decorative borders for an authentic classic console look.</span>
-                        </td>
+                        <td><strong><span class="lang-es">🖼 MARCOS</span><span class="lang-en" style="display:none;">🖼 BEZELS</span></strong></td>
+                        <td><span class="lang-es">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Borrar Marcos</span><span class="lang-en" style="display:none;">NES BG ⌗1 (80s TV), CRT 4:3 BG ⌗1 (90s TV), GB Generic, GBA Generic, Full 4:3 BG ⌗1, Clear Bezels</span></td>
+                        <td><span class="lang-es">Superponen bordes decorativos para un aspecto auténtico de consola clásica.</span><span class="lang-en" style="display:none;">Overlay decorative borders for an authentic classic console look.</span></td>
                     </tr>
-                    <!-- VENTANA / WINDOW -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">▶ VENTANA</span>
-                                <span class="lang-en" style="display:none;">▶ WINDOW</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">Tamaño (0.5x–2.0x), Pantalla Completa, Posición (Arriba Izquierda, Centro, Abajo Derecha, etc.), Rotación, Siempre Visible, Estirar Ventana, Modo Mini</span>
-                            <span class="lang-en" style="display:none;">Size (0.5x–2.0x), Fullscreen, Position (Top Left, Center, Bottom Right, etc.), Rotation, Always on Top, Stretch, Mini Mode</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Redimensiona, reposiciona, rota o fija la ventana. Incluye modo mini y pantalla completa.</span>
-                            <span class="lang-en" style="display:none;">Resize, reposition, rotate or pin the window. Includes mini mode and fullscreen.</span>
-                        </td>
+                        <td><strong><span class="lang-es">▶ VENTANA</span><span class="lang-en" style="display:none;">▶ WINDOW</span></strong></td>
+                        <td><span class="lang-es">Tamaño (0.5x–2.0x), Pantalla Completa, Posición (Arriba Izquierda, Centro, Abajo Derecha, etc.), Rotación, Siempre Visible, Estirar Ventana, Modo Mini</span><span class="lang-en" style="display:none;">Size (0.5x–2.0x), Fullscreen, Position (Top Left, Center, Bottom Right, etc.), Rotation, Always on Top, Stretch, Mini Mode</span></td>
+                        <td><span class="lang-es">Redimensiona, reposiciona, rota o fija la ventana. Incluye modo mini y pantalla completa.</span><span class="lang-en" style="display:none;">Resize, reposition, rotate or pin the window. Includes mini mode and fullscreen.</span></td>
                     </tr>
-                    <!-- CAPTURA / CAPTURE -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">▶ CAPTURA</span>
-                                <span class="lang-en" style="display:none;">▶ CAPTURE</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">Capturar Imagen, Grabar Video (120 segundos)</span>
-                            <span class="lang-en" style="display:none;">Screenshot, Record Video (120 seconds)</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Captura imágenes o graba clips de hasta 120 segundos con calidad ajustada.</span>
-                            <span class="lang-en" style="display:none;">Take screenshots or record clips up to 120 seconds with adjusted quality.</span>
-                        </td>
+                        <td><strong><span class="lang-es">▶ CAPTURA</span><span class="lang-en" style="display:none;">▶ CAPTURE</span></strong></td>
+                        <td><span class="lang-es">Capturar Imagen, Grabar Video (120 segundos)</span><span class="lang-en" style="display:none;">Screenshot, Record Video (120 seconds)</span></td>
+                        <td><span class="lang-es">Captura imágenes o graba clips de hasta 120 segundos con calidad ajustada.</span><span class="lang-en" style="display:none;">Take screenshots or record clips up to 120 seconds with adjusted quality.</span></td>
                     </tr>
-                    <!-- AUDIO -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">🔊 AUDIO</span>
-                                <span class="lang-en" style="display:none;">🔊 AUDIO</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">Vol +10%, Vol -10%, Silenciar/Activar sonido, Vol 100%, Vol 50%</span>
-                            <span class="lang-en" style="display:none;">Vol +10%, Vol -10%, Mute/Unmute, Vol 100%, Vol 50%</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Control de volumen desde el menú (también con rueda del ratón).</span>
-                            <span class="lang-en" style="display:none;">Volume control from the menu (also with mouse wheel).</span>
-                        </td>
+                        <td><strong><span class="lang-es">🔊 AUDIO</span><span class="lang-en" style="display:none;">🔊 AUDIO</span></strong></td>
+                        <td><span class="lang-es">Vol +10%, Vol -10%, Silenciar/Activar sonido, Vol 100%, Vol 50%</span><span class="lang-en" style="display:none;">Vol +10%, Vol -10%, Mute/Unmute, Vol 100%, Vol 50%</span></td>
+                        <td><span class="lang-es">Control de volumen desde el menú (también con rueda del ratón).</span><span class="lang-en" style="display:none;">Volume control from the menu (also with mouse wheel).</span></td>
                     </tr>
-                    <!-- OTROS / OTHERS -->
                     <tr>
-                        <td>
-                            <strong>
-                                <span class="lang-es">▶ OTROS</span>
-                                <span class="lang-en" style="display:none;">▶ OTHERS</span>
-                            </strong>
-                        </td>
-                        <td>
-                            <span class="lang-es">Limpiar TODO (resetea todo), Información de Stream, Cerrar MPV-SW-Capture</span>
-                            <span class="lang-en" style="display:none;">Clean ALL (reset everything), Info Stream, Close MPV-SW-Capture</span>
-                        </td>
-                        <td>
-                            <span class="lang-es">Restablece todos los shaders, formas, recortes y marcos, muestra información del stream o cierra MPV.</span>
-                            <span class="lang-en" style="display:none;">Reset all shaders, shapes, crops and bezels, show stream info or close MPV.</span>
-                        </td>
+                        <td><strong><span class="lang-es">▶ OTROS</span><span class="lang-en" style="display:none;">▶ OTHERS</span></strong></td>
+                        <td><span class="lang-es">Limpiar TODO (resetea todo), Información de Stream, Cerrar MPV-SW-Capture</span><span class="lang-en" style="display:none;">Clean ALL (reset everything), Info Stream, Close MPV-SW-Capture</span></td>
+                        <td><span class="lang-es">Restablece todos los shaders, formas, recortes y marcos, muestra información del stream o cierra MPV.</span><span class="lang-en" style="display:none;">Reset all shaders, shapes, crops and bezels, show stream info or close MPV.</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -604,7 +720,7 @@
         </p>
     </section>
 
-    <!-- CUSTOMIZATION -->
+    <!-- ===== CUSTOMIZATION ===== -->
     <section id="personalizacion" class="container">
         <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
         <div class="card-grid">
@@ -614,7 +730,7 @@
         </div>
     </section>
 
-    <!-- FAQ -->
+    <!-- ===== FAQ ===== -->
     <section id="faq" class="container">
         <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
         <div class="card-grid">
@@ -626,14 +742,14 @@
         <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
     </section>
 
-    <!-- NEWS -->
+    <!-- ===== NEWS ===== -->
     <section id="novedades" class="container">
         <h2><i class="fas fa-rocket"></i> <span class="lang-es">Novedades</span><span class="lang-en" style="display:none;">News</span></h2>
         <div id="releases-container"><p class="text-center" style="color:#6a7a8a;">Loading latest releases...</p></div>
         <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
     </section>
 
-    <!-- FOOTER -->
+    <!-- ===== FOOTER ===== -->
     <footer>
         <div class="container">
             <p><i class="fas fa-gamepad"></i> MPV-SW-Capture · <span class="lang-es">Proyecto de</span><span class="lang-en" style="display:none;">Project by</span> <a href="https://github.com/TyRaS-SW" target="_blank">TyRaS-SW</a> · <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/LICENSE.md" target="_blank">MIT License</a></p>
@@ -644,17 +760,16 @@
             <div class="social-links">
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
                 <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-icon" aria-label="Discord"><i class="fab fa-discord"></i></a>
-                <!-- ===== ENLACE A DONACIONES EN FOOTER (OPCIONAL) ===== -->
                 <a href="https://github.com/sponsors/TyRaS-SW" target="_blank" class="support-icon" aria-label="GitHub Sponsors"><i class="fas fa-heart"></i></a>
                 <a href="https://ko-fi.com/tyras_sw" target="_blank" class="support-icon" aria-label="Ko-fi"><i class="fas fa-mug-hot"></i></a>
             </div>
         </div>
     </footer>
 
-    <!-- BOTÓN VOLVER ARRIBA -->
+    <!-- ===== BOTÓN VOLVER ARRIBA ===== -->
     <button id="scroll-top" class="scroll-top" aria-label="Volver arriba"><i class="fas fa-arrow-up"></i></button>
 
-    <!-- MODAL -->
+    <!-- ===== MODAL ===== -->
     <div id="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
@@ -669,7 +784,9 @@
     </div>
 
     <script>
-        // ===== IDIOMA (SOLO DESDE URL, SIN LOCALSTORAGE) =====
+        // ========================================================
+        // 1. IDIOMA (solo desde URL, sin localStorage)
+        // ========================================================
         document.addEventListener('DOMContentLoaded', function() {
             const langButtons = document.querySelectorAll('.lang-btn');
 
@@ -681,16 +798,13 @@
             }
 
             function setLanguage(lang) {
-                // Mostrar/ocultar bloques de idioma
                 document.querySelectorAll('.lang-es').forEach(el => el.style.display = (lang === 'es') ? '' : 'none');
                 document.querySelectorAll('.lang-en').forEach(el => el.style.display = (lang === 'en') ? '' : 'none');
 
-                // Actualizar botones de idioma
                 langButtons.forEach(btn => {
                     btn.classList.toggle('active', btn.dataset.lang === lang);
                 });
 
-                // Actualizar textos de navegación
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     const translations = {
@@ -708,19 +822,21 @@
                     }
                 });
 
-                // Actualizar la URL con el parámetro lang (sin recargar)
                 const url = new URL(window.location);
                 if (lang === 'en') {
-                    // Si es el idioma por defecto, eliminar el parámetro para URLs más limpias
                     url.searchParams.delete('lang');
                 } else {
                     url.searchParams.set('lang', lang);
                 }
                 window.history.replaceState({}, '', url);
                 window.currentLang = lang;
+
+                // Actualizar demo
+                actualizarDemoIdioma(lang);
+                actualizarBotonAuto(lang);
+                generarControles(); // regenera botones con etiquetas traducidas
             }
 
-            // Event listeners para los botones de idioma
             langButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
                     const lang = this.dataset.lang;
@@ -730,13 +846,27 @@
                 });
             });
 
-            // Determinar idioma inicial: solo desde la URL
             const langURL = getIdiomaDesdeURL();
-            let idiomaInicial = langURL || 'en'; // por defecto inglés
+            let idiomaInicial = langURL || 'en';
             setLanguage(idiomaInicial);
         });
 
-        // ===== RELEASES =====
+        // ========================================================
+        // 2. VOLVER ARRIBA
+        // ========================================================
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const scrollBtn = document.getElementById('scroll-top');
+        window.addEventListener('scroll', function() {
+            scrollBtn.style.display = (window.scrollY > 300) ? 'flex' : 'none';
+        });
+        scrollBtn.addEventListener('click', scrollToTop);
+
+        // ========================================================
+        // 3. RELEASES
+        // ========================================================
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
             try {
@@ -770,7 +900,9 @@
             contenedor.innerHTML = html;
         }
 
-        // ===== SHADERS Y BEZELS =====
+        // ========================================================
+        // 4. SHADERS Y BEZELS
+        // ========================================================
         async function cargarShaders() {
             try {
                 const response = await fetch('shaders.json');
@@ -792,7 +924,9 @@
             }
         }
 
-        // ===== MODAL =====
+        // ========================================================
+        // 5. MODAL
+        // ========================================================
         async function openModal(title, url, githubUrl) {
             const overlay = document.getElementById('modal-overlay');
             const body = document.getElementById('modal-body');
@@ -824,7 +958,6 @@
             }
         }
 
-        // Funciones para abrir contenido
         function openReadme() {
             const lang = window.currentLang || 'en';
             if (lang === 'es') openModal('LEEME', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME');
@@ -838,8 +971,6 @@
         function openFaq() {
             openModal('FAQ', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ');
         }
-
-        // ===== NUEVA FUNCIÓN PARA DONACIONES =====
         function openDonate() {
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
@@ -849,26 +980,263 @@
             }
         }
 
-        // ===== CIERRE DEL MODAL =====
         document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('modal-overlay').classList.remove('active'); });
         document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active'); });
 
-        // ===== MENÚ HAMBURGUESA =====
+        // ========================================================
+        // 6. MENÚ HAMBURGUESA
+        // ========================================================
         document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
-        // ===== BOTÓN VOLVER ARRIBA =====
-        const scrollBtn = document.getElementById('scroll-top');
-        window.addEventListener('scroll', function() { scrollBtn.style.display = (window.scrollY > 300) ? 'flex' : 'none'; });
-        scrollBtn.addEventListener('click', function() { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        // ========================================================
+        // 7. DEMOSTRACIÓN INTERACTIVA (11 modos)
+        // ========================================================
+        const demoData = [{
+            image_es: 'assets/demo/1_menu_es.jpg',
+            image_en: 'assets/demo/1_menu.jpg',
+            label_es: '1️⃣ Menú',
+            label_en: '1️⃣ Menu',
+            title_es: 'Menú Personalizado',
+            title_en: 'Custom Menu',
+            desc_es: 'Accede a todas las opciones con un clic derecho o ESC. Gestiona shaders, formas, recortes y más.',
+            desc_en: 'Access all options with a right-click or ESC. Manage shaders, shapes, crops and more.'
+        }, {
+            image_es: 'assets/demo/2_shader.jpg',
+            image_en: 'assets/demo/2_shader.jpg',
+            label_es: '2️⃣ Shaders',
+            label_en: '2️⃣ Shaders',
+            title_es: 'Shaders',
+            title_en: 'Shaders',
+            desc_es: 'Aplica efectos visuales únicos: CRT, VHS, y más para darle un toque retro o cinematográfico.',
+            desc_en: 'Apply unique visual effects: CRT, VHS, and more for a retro or cinematic look.'
+        }, {
+            image_es: 'assets/demo/3_shape.jpg',
+            image_en: 'assets/demo/3_shape.jpg',
+            label_es: '3️⃣ Formas',
+            label_en: '3️⃣ Shapes',
+            title_es: 'Formas',
+            title_en: 'Shapes',
+            desc_es: 'Cambia la forma de la ventana para darle un estilo único.',
+            desc_en: 'Change the window shape to give it a unique style.'
+        }, {
+            image_es: 'assets/demo/4_crop.jpg',
+            image_en: 'assets/demo/4_crop.jpg',
+            label_es: '4️⃣ Recortes',
+            label_en: '4️⃣ Crops',
+            title_es: 'Recortes',
+            title_en: 'Crops',
+            desc_es: 'Recorta parte de la ventana para ajustar el tamaño deseado, basado en NSO u otros.',
+            desc_en: 'Crop part of the window to adjust the desired size, based on NSO or others.'
+        }, {
+            image_es: 'assets/demo/5_bezel.jpg',
+            image_en: 'assets/demo/5_bezel.jpg',
+            label_es: '5️⃣ Marcos',
+            label_en: '5️⃣ Bezels',
+            title_es: 'Marcos',
+            title_en: 'Bezels',
+            desc_es: 'Superpone bordes decorativos para un aspecto auténtico de sistemas clásicos (GBA, NES, SNES).',
+            desc_en: 'Overlay decorative borders for an authentic classic system look (GBA, NES, SNES).'
+        }, {
+            image_es: 'assets/demo/6_shaderbezel.jpg',
+            image_en: 'assets/demo/6_shaderbezel.jpg',
+            label_es: '6️⃣ Shader+Marco',
+            label_en: '6️⃣ Shader+Bezel',
+            title_es: 'Shader + Marco',
+            title_en: 'Shader + Bezel',
+            desc_es: 'Combina shaders con marcos para un efecto visual más completo.',
+            desc_en: 'Combine shaders with bezels for a more complete visual effect.'
+        }, {
+            image_es: 'assets/demo/7_shadercrop.jpg',
+            image_en: 'assets/demo/7_shadercrop.jpg',
+            label_es: '7️⃣ Shader+Recorte',
+            label_en: '7️⃣ Shader+Crop',
+            title_es: 'Shader + Recorte',
+            title_en: 'Shader + Crop',
+            desc_es: 'Combina shaders con recortes para ajustar la imagen y el efecto visual.',
+            desc_en: 'Combine shaders with crops to adjust the image and visual effect.'
+        }, {
+            image_es: 'assets/demo/8_shadercropform.jpg',
+            image_en: 'assets/demo/8_shadercropform.jpg',
+            label_es: '8️⃣ Shader+Recorte+Forma',
+            label_en: '8️⃣ Shader+Crop+Shape',
+            title_es: 'Shader + Recorte + Forma',
+            title_en: 'Shader + Crop + Shape',
+            desc_es: 'Combina shaders, recortes y formas para la máxima personalización.',
+            desc_en: 'Combine shaders, crops and shapes for maximum customization.'
+        }, {
+            image_es: 'assets/demo/9_stretchwin.jpg',
+            image_en: 'assets/demo/9_stretchwin.jpg',
+            label_es: '9️⃣ Estirar Ventana',
+            label_en: '9️⃣ Stretch Window',
+            title_es: 'Estirar Ventana',
+            title_en: 'Stretch Window',
+            desc_es: 'Aumenta el ancho de la ventana de 16:9 a 21:9, estirando la imagen.',
+            desc_en: 'Widen the window from 16:9 to 21:9, stretching the image.'
+        }, {
+            image_es: 'assets/demo/10_record_es.jpg',
+            image_en: 'assets/demo/10_record.jpg',
+            label_es: '🔟 Grabación',
+            label_en: '🔟 Recording',
+            title_es: 'Grabación',
+            title_en: 'Recording',
+            desc_es: 'Graba tu juego en cualquier momento, con el tiempo definido en el Setup.',
+            desc_en: 'Record your gameplay at any time, with the time set in the Setup.'
+        }, {
+            image_es: 'assets/demo/11_rotation.jpg',
+            image_en: 'assets/demo/11_rotation.jpg',
+            label_es: '1️⃣1️⃣ Rotación',
+            label_en: '1️⃣1️⃣ Rotation',
+            title_es: 'Rotación',
+            title_en: 'Rotation',
+            desc_es: 'Rota la ventana en sentido horario o antihorario.',
+            desc_en: 'Rotate the window clockwise or counterclockwise.'
+        }];
 
-        // ===== FADE-IN =====
+        // Elementos de la demo
+        const demoImage = document.getElementById('demoImage');
+        const demoTitle = document.getElementById('demoTitle');
+        const demoText = document.getElementById('demoText');
+        const modeContainer = document.getElementById('modeButtons');
+        const dotContainer = document.getElementById('dotControls');
+        const autoToggle = document.getElementById('autoToggle');
+
+        let currentMode = 0;
+        let autoInterval = null;
+        let isAutoPlaying = false;
+        const AUTO_DELAY = 10000; // 10 segundos
+
+        // Función para generar botones y puntos dinámicamente
+        function generarControles() {
+            const lang = window.currentLang || 'en';
+            modeContainer.innerHTML = '';
+            dotContainer.innerHTML = '';
+
+            demoData.forEach((item, index) => {
+                // Botón de modo
+                const btn = document.createElement('button');
+                btn.dataset.mode = index;
+                btn.className = index === 0 ? 'active-mode' : '';
+                btn.textContent = lang === 'es' ? item.label_es : item.label_en;
+                btn.addEventListener('click', function() {
+                    setDemoMode(index);
+                });
+                modeContainer.appendChild(btn);
+
+                // Punto
+                const dot = document.createElement('button');
+                dot.className = `dot ${index === 0 ? 'active-dot' : ''}`;
+                dot.dataset.mode = index;
+                dot.addEventListener('click', function() {
+                    setDemoMode(index);
+                });
+                dotContainer.appendChild(dot);
+            });
+        }
+
+        function actualizarDemoIdioma(lang) {
+            const data = demoData[currentMode];
+            // Actualizar imagen
+            const imageUrl = lang === 'es' ? data.image_es : data.image_en;
+            demoImage.src = imageUrl;
+            demoImage.alt = data.title_es;
+            // Actualizar textos
+            demoTitle.textContent = lang === 'es' ? data.title_es : data.title_en;
+            demoText.textContent = lang === 'es' ? data.desc_es : data.desc_en;
+        }
+
+        function actualizarBotonAuto(lang) {
+            if (isAutoPlaying) {
+                autoToggle.innerHTML = lang === 'es' ? '⏸ Pausar' : '⏸ Pause';
+                autoToggle.classList.add('active');
+            } else {
+                autoToggle.innerHTML = lang === 'es' ? '▶ Auto' : '▶ Auto';
+                autoToggle.classList.remove('active');
+            }
+        }
+
+        function setDemoMode(index) {
+            if (isAutoPlaying) {
+                stopAutoSlide();
+            }
+            if (index < 0 || index >= demoData.length) return;
+
+            const data = demoData[index];
+            const lang = window.currentLang || 'en';
+            const imageUrl = lang === 'es' ? data.image_es : data.image_en;
+
+            demoImage.src = imageUrl;
+            demoImage.alt = data.title_es;
+            demoTitle.textContent = lang === 'es' ? data.title_es : data.title_en;
+            demoText.textContent = lang === 'es' ? data.desc_es : data.desc_en;
+
+            // Actualizar botones y puntos activos
+            const allBtns = modeContainer.querySelectorAll('button');
+            const allDots = dotContainer.querySelectorAll('.dot');
+            allBtns.forEach((btn, i) => btn.classList.toggle('active-mode', i === index));
+            allDots.forEach((dot, i) => dot.classList.toggle('active-dot', i === index));
+
+            currentMode = index;
+        }
+
+        function startAutoSlide() {
+            if (autoInterval) return;
+            autoInterval = setInterval(() => {
+                const nextMode = (currentMode + 1) % demoData.length;
+                setDemoMode(nextMode);
+            }, AUTO_DELAY);
+            isAutoPlaying = true;
+            const lang = window.currentLang || 'en';
+            autoToggle.innerHTML = lang === 'es' ? '⏸ Pausar' : '⏸ Pause';
+            autoToggle.classList.add('active');
+        }
+
+        function stopAutoSlide() {
+            if (autoInterval) {
+                clearInterval(autoInterval);
+                autoInterval = null;
+            }
+            isAutoPlaying = false;
+            const lang = window.currentLang || 'en';
+            autoToggle.innerHTML = lang === 'es' ? '▶ Auto' : '▶ Auto';
+            autoToggle.classList.remove('active');
+        }
+
+        function toggleAutoSlide() {
+            if (isAutoPlaying) {
+                stopAutoSlide();
+            } else {
+                startAutoSlide();
+            }
+        }
+
+        // Evento del botón Auto
+        autoToggle.addEventListener('click', toggleAutoSlide);
+
+        // Inicializar demo
+        generarControles();
+        setDemoMode(0);
+        startAutoSlide();
+
+        // ========================================================
+        // 8. FADE-IN
+        // ========================================================
         const elementos = document.querySelectorAll('.card, .compare-item, .hero, .table-wrap, .modal-content');
-        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); }); }, { threshold: 0.15 });
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.15 });
         elementos.forEach(el => observer.observe(el));
 
-        // ===== INICIALIZAR =====
-        document.addEventListener('DOMContentLoaded', function() { cargarReleases(); cargarShaders(); cargarBezels(); });
+        // ========================================================
+        // 9. INICIALIZAR
+        // ========================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarReleases();
+            cargarShaders();
+            cargarBezels();
+        });
     </script>
 
 </body>
