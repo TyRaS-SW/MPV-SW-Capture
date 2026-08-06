@@ -296,7 +296,7 @@
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            width: 50%;
+            width: 80%;
             aspect-ratio: 16 / 9;
             display: flex;
             align-items: center;
@@ -406,7 +406,7 @@
 
         @media (max-width: 768px) {
             .monitor-screen {
-                width: 80%;
+                width: 95%;
             }
             .demo-controls button {
                 font-size: 0.65rem;
@@ -504,7 +504,7 @@
         </div>
     </section>
 
-    <!-- ===== DEMOSTRACIÓN INTERACTIVA ===== -->
+    <!-- ===== DEMOSTRACIÓN INTERACTIVA (10 modos reordenados) ===== -->
     <section class="interactive-demo container">
         <div class="demo-header">
             <h2>
@@ -655,7 +655,7 @@
         <p class="text-center" style="color:#6a7a8a; font-size:0.9rem;"><i class="fas fa-info-circle"></i> <span class="lang-es">Las imágenes son orientativas. Reemplaza los archivos en <code>assets/</code> con tus propias capturas.</span><span class="lang-en" style="display:none;">Images are for guidance. Replace files in <code>assets/</code> with your own screenshots.</span></p>
     </section>
 
-    <!-- ===== OPCIONES DEL MENÚ (con shaders-list y bezels-list) ===== -->
+    <!-- ===== OPCIONES DEL MENÚ ===== -->
     <section id="menu" class="container">
         <h2><i class="fas fa-bars"></i> <span class="lang-es">Opciones del menú</span><span class="lang-en" style="display:none;">Menu options</span></h2>
         <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Estas son las secciones principales:</span>
@@ -901,7 +901,7 @@
         }
 
         // ========================================================
-        // 4. SHADERS Y BEZELS (con verificación de existencia)
+        // 4. SHADERS Y BEZELS
         // ========================================================
         async function cargarShaders() {
             try {
@@ -994,108 +994,112 @@
         document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
         // ========================================================
-        // 7. DEMOSTRACIÓN INTERACTIVA (11 modos)
+        // 7. DEMOSTRACIÓN INTERACTIVA (10 modos reordenados)
         // ========================================================
-        const demoData = [{
-            image_es: 'assets/demo/1_menu_es.jpg',
-            image_en: 'assets/demo/1_menu.jpg',
-            label_es: '1️⃣ Menú',
-            label_en: '1️⃣ Menu',
-            title_es: 'Menú Personalizado',
-            title_en: 'Custom Menu',
-            desc_es: 'Accede a todas las opciones con un clic derecho o ESC. Gestiona shaders, formas, recortes y más.',
-            desc_en: 'Access all options with a right-click or ESC. Manage shaders, shapes, crops and more.'
-        }, {
-            image_es: 'assets/demo/2_shader.jpg',
-            image_en: 'assets/demo/2_shader.jpg',
-            label_es: '2️⃣ Shaders',
-            label_en: '2️⃣ Shaders',
-            title_es: 'Shaders',
-            title_en: 'Shaders',
-            desc_es: 'Aplica efectos visuales únicos: CRT, VHS, y más para darle un toque retro o cinematográfico.',
-            desc_en: 'Apply unique visual effects: CRT, VHS, and more for a retro or cinematic look.'
-        }, {
-            image_es: 'assets/demo/3_shape.jpg',
-            image_en: 'assets/demo/3_shape.jpg',
-            label_es: '3️⃣ Formas',
-            label_en: '3️⃣ Shapes',
-            title_es: 'Formas',
-            title_en: 'Shapes',
-            desc_es: 'Cambia la forma de la ventana para darle un estilo único.',
-            desc_en: 'Change the window shape to give it a unique style.'
-        }, {
-            image_es: 'assets/demo/4_crop.jpg',
-            image_en: 'assets/demo/4_crop.jpg',
-            label_es: '4️⃣ Recortes',
-            label_en: '4️⃣ Crops',
-            title_es: 'Recortes',
-            title_en: 'Crops',
-            desc_es: 'Recorta parte de la ventana para ajustar el tamaño deseado, basado en NSO u otros.',
-            desc_en: 'Crop part of the window to adjust the desired size, based on NSO or others.'
-        }, {
-            image_es: 'assets/demo/5_bezel.jpg',
-            image_en: 'assets/demo/5_bezel.jpg',
-            label_es: '5️⃣ Marcos',
-            label_en: '5️⃣ Bezels',
-            title_es: 'Marcos',
-            title_en: 'Bezels',
-            desc_es: 'Superpone bordes decorativos para un aspecto auténtico de sistemas clásicos (GBA, NES, SNES).',
-            desc_en: 'Overlay decorative borders for an authentic classic system look (GBA, NES, SNES).'
-        }, {
-            image_es: 'assets/demo/6_shaderbezel.jpg',
-            image_en: 'assets/demo/6_shaderbezel.jpg',
-            label_es: '6️⃣ Shader+Marco',
-            label_en: '6️⃣ Shader+Bezel',
-            title_es: 'Shader + Marco',
-            title_en: 'Shader + Bezel',
-            desc_es: 'Combina shaders con marcos para un efecto visual más completo.',
-            desc_en: 'Combine shaders with bezels for a more complete visual effect.'
-        }, {
-            image_es: 'assets/demo/7_shadercrop.jpg',
-            image_en: 'assets/demo/7_shadercrop.jpg',
-            label_es: '7️⃣ Shader+Recorte',
-            label_en: '7️⃣ Shader+Crop',
-            title_es: 'Shader + Recorte',
-            title_en: 'Shader + Crop',
-            desc_es: 'Combina shaders con recortes para ajustar la imagen y el efecto visual.',
-            desc_en: 'Combine shaders with crops to adjust the image and visual effect.'
-        }, {
-            image_es: 'assets/demo/8_shadercropform.jpg',
-            image_en: 'assets/demo/8_shadercropform.jpg',
-            label_es: '8️⃣ Shader+Recorte+Forma',
-            label_en: '8️⃣ Shader+Crop+Shape',
-            title_es: 'Shader + Recorte + Forma',
-            title_en: 'Shader + Crop + Shape',
-            desc_es: 'Combina shaders, recortes y formas para la máxima personalización.',
-            desc_en: 'Combine shaders, crops and shapes for maximum customization.'
-        }, {
-            image_es: 'assets/demo/9_stretchwin.jpg',
-            image_en: 'assets/demo/9_stretchwin.jpg',
-            label_es: '9️⃣ Estirar Ventana',
-            label_en: '9️⃣ Stretch Window',
-            title_es: 'Estirar Ventana',
-            title_en: 'Stretch Window',
-            desc_es: 'Aumenta el ancho de la ventana de 16:9 a 21:9, estirando la imagen.',
-            desc_en: 'Widen the window from 16:9 to 21:9, stretching the image.'
-        }, {
-            image_es: 'assets/demo/10_record_es.jpg',
-            image_en: 'assets/demo/10_record.jpg',
-            label_es: '🔟 Grabación',
-            label_en: '🔟 Recording',
-            title_es: 'Grabación',
-            title_en: 'Recording',
-            desc_es: 'Graba tu juego en cualquier momento, con el tiempo definido en el Setup.',
-            desc_en: 'Record your gameplay at any time, with the time set in the Setup.'
-        }, {
-            image_es: 'assets/demo/11_rotation.jpg',
-            image_en: 'assets/demo/11_rotation.jpg',
-            label_es: '1️⃣1️⃣ Rotación',
-            label_en: '1️⃣1️⃣ Rotation',
-            title_es: 'Rotación',
-            title_en: 'Rotation',
-            desc_es: 'Rota la ventana en sentido horario o antihorario.',
-            desc_en: 'Rotate the window clockwise or counterclockwise.'
-        }];
+        const demoData = [
+            // Fila 1: Menu, Stretch Window, Recording, Rotation
+            {
+                image_es: 'assets/demo/1_menu_es.jpg',
+                image_en: 'assets/demo/1_menu.jpg',
+                label_es: '1️⃣ Menú',
+                label_en: '1️⃣ Menu',
+                title_es: 'Menú Personalizado',
+                title_en: 'Custom Menu',
+                desc_es: 'Accede a todas las opciones con un clic derecho o ESC. Gestiona shaders, formas, recortes y más.',
+                desc_en: 'Access all options with a right-click or ESC. Manage shaders, shapes, crops and more.'
+            },
+            {
+                image_es: 'assets/demo/9_stretchwin.jpg',
+                image_en: 'assets/demo/9_stretchwin.jpg',
+                label_es: '9️⃣ Estirar Ventana',
+                label_en: '9️⃣ Stretch Window',
+                title_es: 'Estirar Ventana',
+                title_en: 'Stretch Window',
+                desc_es: 'Aumenta el ancho de la ventana de 16:9 a 21:9, estirando la imagen.',
+                desc_en: 'Widen the window from 16:9 to 21:9, stretching the image.'
+            },
+            {
+                image_es: 'assets/demo/10_record_es.jpg',
+                image_en: 'assets/demo/10_record.jpg',
+                label_es: '🔟 Grabación',
+                label_en: '🔟 Recording',
+                title_es: 'Grabación',
+                title_en: 'Recording',
+                desc_es: 'Graba tu juego en cualquier momento, con el tiempo definido en el Setup.',
+                desc_en: 'Record your gameplay at any time, with the time set in the Setup.'
+            },
+            {
+                image_es: 'assets/demo/11_rotation.jpg',
+                image_en: 'assets/demo/11_rotation.jpg',
+                label_es: '1️⃣1️⃣ Rotación',
+                label_en: '1️⃣1️⃣ Rotation',
+                title_es: 'Rotación',
+                title_en: 'Rotation',
+                desc_es: 'Rota la ventana en sentido horario o antihorario.',
+                desc_en: 'Rotate the window clockwise or counterclockwise.'
+            },
+            // Fila 2: Shaders, Shapes, Crops, Bezels, Shader+Crop, Shader+Crop+Shape
+            {
+                image_es: 'assets/demo/2_shader.jpg',
+                image_en: 'assets/demo/2_shader.jpg',
+                label_es: '2️⃣ Shaders',
+                label_en: '2️⃣ Shaders',
+                title_es: 'Shaders',
+                title_en: 'Shaders',
+                desc_es: 'Aplica efectos visuales únicos: CRT, VHS, y más para darle un toque retro o cinematográfico.',
+                desc_en: 'Apply unique visual effects: CRT, VHS, and more for a retro or cinematic look.'
+            },
+            {
+                image_es: 'assets/demo/3_shape.jpg',
+                image_en: 'assets/demo/3_shape.jpg',
+                label_es: '3️⃣ Formas',
+                label_en: '3️⃣ Shapes',
+                title_es: 'Formas',
+                title_en: 'Shapes',
+                desc_es: 'Cambia la forma de la ventana para darle un estilo único.',
+                desc_en: 'Change the window shape to give it a unique style.'
+            },
+            {
+                image_es: 'assets/demo/4_crop.jpg',
+                image_en: 'assets/demo/4_crop.jpg',
+                label_es: '4️⃣ Recortes',
+                label_en: '4️⃣ Crops',
+                title_es: 'Recortes',
+                title_en: 'Crops',
+                desc_es: 'Recorta parte de la ventana para ajustar el tamaño deseado, basado en NSO u otros.',
+                desc_en: 'Crop part of the window to adjust the desired size, based on NSO or others.'
+            },
+            {
+                image_es: 'assets/demo/5_bezel.jpg',
+                image_en: 'assets/demo/5_bezel.jpg',
+                label_es: '5️⃣ Marcos',
+                label_en: '5️⃣ Bezels',
+                title_es: 'Marcos',
+                title_en: 'Bezels',
+                desc_es: 'Superpone bordes decorativos para un aspecto auténtico de sistemas clásicos (GBA, NES, SNES).',
+                desc_en: 'Overlay decorative borders for an authentic classic system look (GBA, NES, SNES).'
+            },
+            {
+                image_es: 'assets/demo/7_shadercrop.jpg',
+                image_en: 'assets/demo/7_shadercrop.jpg',
+                label_es: '7️⃣ Shader+Recorte',
+                label_en: '7️⃣ Shader+Crop',
+                title_es: 'Shader + Recorte',
+                title_en: 'Shader + Crop',
+                desc_es: 'Combina shaders con recortes para ajustar la imagen y el efecto visual.',
+                desc_en: 'Combine shaders with crops to adjust the image and visual effect.'
+            },
+            {
+                image_es: 'assets/demo/8_shadercropform.jpg',
+                image_en: 'assets/demo/8_shadercropform.jpg',
+                label_es: '8️⃣ Shader+Recorte+Forma',
+                label_en: '8️⃣ Shader+Crop+Shape',
+                title_es: 'Shader + Recorte + Forma',
+                title_en: 'Shader + Crop + Shape',
+                desc_es: 'Combina shaders, recortes y formas para la máxima personalización.',
+                desc_en: 'Combine shaders, crops and shapes for maximum customization.'
+            }
+        ];
 
         // Elementos de la demo
         const demoImage = document.getElementById('demoImage');
@@ -1237,5 +1241,6 @@
             cargarBezels();
         });
     </script>
+
 </body>
 </html>
