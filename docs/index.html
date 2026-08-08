@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPV-SW-Capture · Play your console with minimal lag</title>
-    <meta name="description" content="MPV-SW-Capture: Play your console (Switch, PS, Xbox) with minimal lag using MPV and a USB capture card. Ready-to-use setup, shaders, bezels and more.">
+    <meta name="description" content="MPV-SW-Capture: Play your HDMI console with minimal as possible latency using MPV and a USB capture card. Ready-to-use setup, shaders, bezels and more.">
     <meta property="og:title" content="MPV-SW-Capture · Play your console with minimal lag">
-    <meta property="og:description" content="Ready-to-use MPV configuration for Windows, adapted for USB capture cards.">
+    <meta property="og:description" content="A complete program with ready-to-use MPV configurations for Windows, adapted for USB capture cards.">
     <meta property="og:image" content="https://tyras-sw.github.io/MPV-SW-Capture/assets/og-image.jpg">
     <meta property="og:url" content="https://tyras-sw.github.io/MPV-SW-Capture/">
     <meta name="twitter:card" content="summary_large_image">
@@ -53,9 +53,29 @@
             cursor:pointer;
             transition: opacity 0.2s;
             user-select: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
         }
         .nav-logo:hover { opacity:0.8; }
-        .nav-logo i { color:var(--accent-gold); margin-right:8px; }
+        .nav-logo i {
+            color: var(--accent-gold);
+        }
+        /* ===== ESTILO DEL TEXTO DEL LOGO (como botón Download) ===== */
+        .logo-text {
+            background: var(--accent-primary);
+            color: var(--text-primary);
+            padding: 0.1rem 0.6rem;
+            border-radius: 40px;
+            font-size: inherit;
+            font-weight: inherit;
+            transition: background 0.2s;
+            line-height: 1.4;
+        }
+        .logo-text:hover {
+            background: var(--accent-primary-light);
+        }
+
         .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:500; font-size:0.95rem; align-items:center; }
         .nav-links a { color:var(--text-secondary); }
         .nav-links a:hover { color:var(--text-primary); text-decoration:none; }
@@ -426,7 +446,7 @@
             border-color: var(--accent-primary);
             color: var(--text-primary);
         }
-        .demo-row button i {
+        .demo-row button i, .demo-row button span {
             font-size: 0.8rem;
         }
 
@@ -540,7 +560,7 @@
     <nav>
         <div class="container">
             <div class="nav-logo" onclick="scrollToTop();" title="Volver arriba">
-                <i class="fas fa-gamepad"></i> MPV-SW-Capture
+                <i class="fas fa-gamepad"></i> <span class="logo-text">MPV-SW-Capture</span>
             </div>
             <button class="menu-toggle" id="menu-toggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
             <div class="nav-links" id="nav-links">
@@ -866,9 +886,18 @@
     <section id="faq" class="container">
         <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
         <div class="card-grid">
+            <!-- Card 1 -->
             <div class="card"><h3><span class="lang-es">¿Por qué usar MPV y no OBS?</span><span class="lang-en" style="display:none;">Why use MPV instead of OBS?</span></h3><p><span class="lang-es">MPV ofrece menor latencia y una personalización más profunda (shaders, bezels, crops) pensada para jugar, no para emitir.</span><span class="lang-en" style="display:none;">MPV offers lower latency and deeper customization (shaders, bezels, crops) designed for gaming, not streaming.</span></p></div>
+            <!-- Card 2 -->
             <div class="card"><h3><span class="lang-es">¿Necesito USB 3.0?</span><span class="lang-en" style="display:none;">Do I need USB 3.0?</span></h3><p><span class="lang-es">Recomendado para mejor calidad y estabilidad. USB 2.0 funciona pero con rendimiento inferior.</span><span class="lang-en" style="display:none;">Recommended for better quality and stability. USB 2.0 works but with lower performance.</span></p></div>
+            <!-- Card 3 (nueva) -->
+            <div class="card">
+                <h3><span class="lang-es">¿Cómo abro el menú cuando el programa se inicia?</span><span class="lang-en" style="display:none;">How do I open the menu when the program starts?</span></h3>
+                <p><span class="lang-es">Haz clic derecho en la ventana y se abrirá el menú. También puedes presionar ESC en tu teclado. Asegúrate que el mouse esté sobre la ventana y el programa esté enfocado.</span><span class="lang-en" style="display:none;">Just right‑click on the window and the menu will open. Also you can press the ESC key on your keyboard, but make sure the mouse is over the window and the program is focused.</span></p>
+            </div>
+            <!-- Card 4 -->
             <div class="card"><h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3><p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span><span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p></div>
+            <!-- Card 5 -->
             <div class="card"><h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3><p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span><span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p></div>
         </div>
         <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
@@ -1180,8 +1209,8 @@
                 label_en: 'Fullscreen',
                 title_es: 'Pantalla Completa',
                 title_en: 'Fullscreen',
-                desc_es: 'Cambia de Ventana a Pantalla Completa, tan solo haciendo doble clic o en las opciones del menú.',
-                desc_en: 'Switch from Window to Fullscreen, just by double-clicking or in the menu options.'
+                desc_es: 'Cambia de ventana a Pantalla Completa, tan solo haciendo doble clic o en las opciones del menú.',
+                desc_en: 'Switch from window to Fullscreen, just by double-clicking or in the menu options.'
             },
             {
                 icon: 'fa-window-minimize',
@@ -1192,11 +1221,11 @@
                 label_en: 'Mini Mode',
                 title_es: 'Modo Mini',
                 title_en: 'Mini Mode',
-                desc_es: 'Cambia a Ventana de un 30% de la imagen + Siempre Visible. Ideal para tener la pantalla en miniatura activa.',
+                desc_es: 'Cambia la ventana a un 30% de la imagen + Siempre Visible. Ideal para tener la pantalla en miniatura activa.',
                 desc_en: 'Switch to a 30% window + Always on Top. Ideal for keeping an active mini preview.'
             },
             {
-                icon: 'fa-arrows-alt-h',
+                icon: '🪞',
                 color: '#f0ad4e',
                 image_es: 'assets/demo/14_mirrormode.jpg',
                 image_en: 'assets/demo/14_mirrormode.jpg',
@@ -1377,7 +1406,13 @@
             btn.dataset.mode = index;
             btn.className = index === 0 ? 'active-mode' : '';
             const label = lang === 'es' ? item.label_es : item.label_en;
-            btn.innerHTML = `<i class="fas ${item.icon}" style="color:${item.color};"></i> ${label}`;
+            // Si el icono empieza con 'fa-', usamos <i>, si no, usamos <span> para emojis
+            const isFa = item.icon && item.icon.startsWith('fa-');
+            if (isFa) {
+                btn.innerHTML = `<i class="fas ${item.icon}" style="color:${item.color};"></i> ${label}`;
+            } else {
+                btn.innerHTML = `<span style="font-size: 1.1rem;">${item.icon}</span> ${label}`;
+            }
             btn.addEventListener('click', function() {
                 setDemoMode(index);
             });
