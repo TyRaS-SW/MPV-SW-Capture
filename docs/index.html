@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPV-SW-Capture · Play your console with minimal lag</title>
-    <meta name="description" content="MPV-SW-Capture: Play your console (Switch, PS, Xbox) with minimal lag using MPV and a USB 3.0 capture card. Ready-to-use setup, shaders, bezels and more.">
+    <meta name="description" content="MPV-SW-Capture: Play your console (Switch, PS, Xbox) with minimal lag using MPV and a USB capture card. Ready-to-use setup, shaders, bezels and more.">
     <meta property="og:title" content="MPV-SW-Capture · Play your console with minimal lag">
-    <meta property="og:description" content="Ready-to-use MPV configuration for Windows, adapted for USB 3.0 capture cards.">
+    <meta property="og:description" content="Ready-to-use MPV configuration for Windows, adapted for USB capture cards.">
     <meta property="og:image" content="https://tyras-sw.github.io/MPV-SW-Capture/assets/og-image.jpg">
     <meta property="og:url" content="https://tyras-sw.github.io/MPV-SW-Capture/">
     <meta name="twitter:card" content="summary_large_image">
@@ -20,32 +20,45 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
+        /* ===== PALETA SUAVE (basada en #401000 como acento) ===== */
+        :root {
+            --bg-primary: #0d1117;
+            --bg-card: #161b22;
+            --border-color: #30363d;
+            --accent-primary: #401000;
+            --accent-primary-light: #6a1e00;
+            --accent-gold: #c8963e;
+            --accent-gold-light: #e8c06e;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+        }
+
         /* ===== ESTILOS GLOBALES ===== */
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Inter',sans-serif; background:#0b0e14; color:#e8edf2; line-height:1.6; scroll-behavior:smooth; }
+        body { font-family:'Inter',sans-serif; background:var(--bg-primary); color:var(--text-primary); line-height:1.6; scroll-behavior:smooth; }
         .container { max-width:1280px; margin:0 auto; padding:0 24px; }
-        a { color:#6bc7ff; text-decoration:none; }
-        a:hover { color:#a8daff; text-decoration:underline; }
+        a { color:var(--accent-gold); text-decoration:none; }
+        a:hover { color:var(--accent-gold-light); text-decoration:underline; }
         h1,h2,h3 { font-weight:700; letter-spacing:-0.02em; }
-        h2 { font-size:2rem; margin:2rem 0 1.5rem; border-bottom:2px solid #2a313c; padding-bottom:0.5rem; display:flex; align-items:center; gap:10px; }
-        h2 i { color:#6bc7ff; font-size:1.6rem; }
+        h2 { font-size:2rem; margin:2rem 0 1.5rem; border-bottom:2px solid var(--border-color); padding-bottom:0.5rem; display:flex; align-items:center; gap:10px; }
+        h2 i { color:var(--accent-gold); font-size:1.6rem; }
 
         /* ===== NAVEGACIÓN ===== */
-        nav { position:sticky; top:0; z-index:100; background:rgba(11,14,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid #2a313c; padding:0.8rem 0; }
+        nav { position:sticky; top:0; z-index:100; background:rgba(13,17,23,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-color); padding:0.8rem 0; }
         nav .container { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
         .nav-logo {
             font-size:1.4rem;
             font-weight:700;
-            color:#fff;
+            color:var(--text-primary);
             cursor:pointer;
             transition: opacity 0.2s;
             user-select: none;
         }
         .nav-logo:hover { opacity:0.8; }
-        .nav-logo i { color:#6bc7ff; margin-right:8px; }
+        .nav-logo i { color:var(--accent-gold); margin-right:8px; }
         .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:500; font-size:0.95rem; align-items:center; }
-        .nav-links a { color:#b0bccf; }
-        .nav-links a:hover { color:#fff; text-decoration:none; }
+        .nav-links a { color:var(--text-secondary); }
+        .nav-links a:hover { color:var(--text-primary); text-decoration:none; }
         .nav-links .discord-link { color:#5865F2; }
         .nav-links .discord-link:hover { color:#8ea1ff; }
 
@@ -53,15 +66,15 @@
         .lang-selector {
             display: flex;
             gap: 4px;
-            background: #1f2630;
+            background: var(--bg-card);
             border-radius: 20px;
             padding: 3px;
-            border: 1px solid #3d4a5a;
+            border: 1px solid var(--border-color);
         }
         .lang-btn {
             background: none;
             border: none;
-            color: #b0bccf;
+            color: var(--text-secondary);
             padding: 4px 12px;
             border-radius: 18px;
             cursor: pointer;
@@ -70,39 +83,39 @@
             transition: 0.2s;
         }
         .lang-btn:hover {
-            color: #fff;
+            color: var(--text-primary);
             background: rgba(255,255,255,0.05);
         }
         .lang-btn.active {
-            background: #1f8bff;
-            color: #fff;
+            background: var(--accent-primary);
+            color: var(--text-primary);
         }
 
-        .menu-toggle { display:none; background:none; border:none; color:#b0bccf; font-size:1.8rem; cursor:pointer; padding:0 8px; }
-        .menu-toggle:hover { color:#fff; }
+        .menu-toggle { display:none; background:none; border:none; color:var(--text-secondary); font-size:1.8rem; cursor:pointer; padding:0 8px; }
+        .menu-toggle:hover { color:var(--text-primary); }
         @media (max-width:820px) {
             .menu-toggle { display:block; }
-            .nav-links { display:none; flex-direction:column; width:100%; gap:0.5rem; padding:1rem 0 0.5rem; border-top:1px solid #2a313c; margin-top:0.5rem; }
+            .nav-links { display:none; flex-direction:column; width:100%; gap:0.5rem; padding:1rem 0 0.5rem; border-top:1px solid var(--border-color); margin-top:0.5rem; }
             .nav-links.open { display:flex; }
             .nav-links a { width:100%; padding:0.3rem 0; }
             .lang-selector { width:100%; justify-content:center; }
         }
 
         /* ===== HERO ===== */
-        .hero { padding:4rem 0 2rem; text-align:center; border-bottom:1px solid #1f2630; }
+        .hero { padding:2.5rem 0 2rem; text-align:center; border-bottom:1px solid var(--border-color); }
         .hero h1 {
             font-size: 3.2rem;
             font-weight: 700;
             letter-spacing: -0.02em;
             margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #fff 60%, #6bc7ff);
+            background: linear-gradient(135deg, var(--text-primary) 60%, var(--accent-gold));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         .hero .subtitle {
             font-size: 1.25rem;
-            color: #b0bccf;
+            color: var(--text-secondary);
             max-width: 720px;
             margin: 0.5rem auto 1.5rem;
         }
@@ -116,18 +129,18 @@
         .hero-buttons .btn-download {
             font-size: 1.2rem;
             padding: 0.9rem 2.5rem;
-            background: #1f8bff;
-            color: #fff;
+            background: var(--accent-primary);
+            color: var(--text-primary);
             border-radius: 40px;
             font-weight: 700;
             transition: 0.2s;
-            box-shadow: 0 4px 20px rgba(31, 139, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(64, 16, 0, 0.3);
         }
         .hero-buttons .btn-download:hover {
-            background: #3d9eff;
+            background: var(--accent-primary-light);
             transform: scale(1.04);
             text-decoration: none;
-            box-shadow: 0 6px 30px rgba(31, 139, 255, 0.5);
+            box-shadow: 0 6px 30px rgba(64, 16, 0, 0.5);
         }
         .hero-buttons .btn-row {
             display: flex;
@@ -137,27 +150,27 @@
         }
         .btn {
             display: inline-block;
-            background: #1f8bff;
-            color: #fff;
+            background: var(--accent-primary);
+            color: var(--text-primary);
             padding: 0.7rem 1.8rem;
             border-radius: 40px;
             font-weight: 600;
             transition: 0.2s;
         }
         .btn:hover {
-            background: #3d9eff;
+            background: var(--accent-primary-light);
             text-decoration: none;
             transform: scale(1.02);
         }
         .btn-outline {
             background: transparent;
-            border: 1.5px solid #3d4a5a;
-            color: #b0bccf;
+            border: 1.5px solid var(--border-color);
+            color: var(--text-secondary);
         }
         .btn-outline:hover {
-            background: #1f2630;
-            border-color: #6bc7ff;
-            color: #fff;
+            background: var(--bg-card);
+            border-color: var(--accent-gold);
+            color: var(--text-primary);
         }
         .btn-discord {
             background: #5865F2;
@@ -177,56 +190,124 @@
             border-color: #ea4aaa;
             color: #ea4aaa;
         }
+        .btn-github-hero {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .btn-github-hero:hover {
+            background: rgba(200, 150, 62, 0.15);
+            border-color: var(--accent-gold-light);
+            color: var(--accent-gold-light);
+        }
 
         /* ===== CARDS ===== */
-        .card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.8rem; margin:2rem 0; }
-        .card { background:#141a24; border:1px solid #2a313c; border-radius:16px; padding:1.8rem; transition:0.2s; }
-        .card:hover { border-color:#3d4a5a; transform:translateY(-4px); }
-        .card i { font-size:2rem; color:#6bc7ff; margin-bottom:0.8rem; }
-        .card h3 { font-size:1.2rem; margin-bottom:0.5rem; }
-        .card p { color:#b0bccf; font-size:0.95rem; }
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.9rem;
+            margin: 2rem 0;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.8rem;
+            transition: 0.2s;
+        }
+        .card:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-4px);
+        }
+        .card i {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin-bottom: 0.8rem;
+        }
+        .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* ===== ADVANCED CUSTOMIZATION CARDS ===== */
+        .custom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.8rem;
+            margin: 2rem 0;
+            justify-items: center;
+        }
+        .custom-grid .card {
+            max-width: 380px;
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.8rem;
+            transition: 0.2s;
+        }
+        .custom-grid .card:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-4px);
+        }
+        .custom-grid .card i {
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin-bottom: 0.8rem;
+        }
+        .custom-grid .card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .custom-grid .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
 
         /* ===== TABLAS ===== */
-        .table-wrap { overflow-x:auto; margin:1.5rem 0; border-radius:12px; border:1px solid #2a313c; }
+        .table-wrap { overflow-x:auto; margin:1.5rem 0; border-radius:12px; border:1px solid var(--border-color); }
         table { width:100%; border-collapse:collapse; font-size:0.95rem; }
-        th { background:#1f2630; color:#c8d0dc; font-weight:600; text-align:left; padding:0.8rem 1rem; }
-        td { padding:0.8rem 1rem; border-top:1px solid #1f2630; }
-        tr:hover td { background:#141a24; }
-        kbd { background:#1f2630; padding:0.1rem 0.6rem; border-radius:4px; font-size:0.85rem; border:1px solid #3d4a5a; }
+        th { background:var(--bg-card); color:var(--text-primary); font-weight:600; text-align:left; padding:0.8rem 1rem; }
+        td { padding:0.8rem 1rem; border-top:1px solid var(--border-color); }
+        tr:hover td { background:var(--bg-card); }
+        kbd { background:var(--bg-card); padding:0.1rem 0.6rem; border-radius:4px; font-size:0.85rem; border:1px solid var(--border-color); }
 
         /* ===== MODAL ===== */
-        #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); z-index:1000; justify-content:center; align-items:center; }
+        #modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); z-index:1000; justify-content:center; align-items:center; }
         #modal-overlay.active { display:flex; }
-        .modal-content { background:#0d1117; width:90%; max-width:900px; height:85vh; border-radius:12px; border:1px solid #30363d; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.8); overflow:hidden; }
-        .modal-header { padding:15px 25px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:#0d1117; }
-        .modal-title { font-size:1.2rem; font-weight:bold; color:#fff; margin:0; }
+        .modal-content { background:var(--bg-primary); width:90%; max-width:900px; height:85vh; border-radius:12px; border:1px solid var(--border-color); display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.8); overflow:hidden; }
+        .modal-header { padding:15px 25px; border-bottom:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-shrink:0; background:var(--bg-primary); }
+        .modal-title { font-size:1.2rem; font-weight:bold; color:var(--text-primary); margin:0; }
         .modal-actions { display:flex; align-items:center; gap:15px; }
-        .btn-source { font-size:0.8rem; padding:6px 12px; background:rgba(56,139,253,0.15); color:#58a6ff; text-decoration:none; border-radius:6px; border:1px solid transparent; transition:0.2s; display:inline-flex; align-items:center; gap:6px; }
-        .btn-source:hover { background:rgba(56,139,253,0.3); text-decoration:none; }
-        .close-btn { background:none; border:none; color:#8b949e; font-size:2rem; cursor:pointer; line-height:1; padding:0 5px; }
-        .close-btn:hover { color:#fff; }
-        .modal-body { flex:1; padding:40px; overflow-y:auto; color:#c9d1d9; font-size:1rem; line-height:1.7; }
-        .modal-body h1,.modal-body h2,.modal-body h3 { margin:1rem 0 0.5rem; color:#e8edf2; }
+        .btn-source { font-size:0.8rem; padding:6px 12px; background:rgba(200,150,62,0.15); color:var(--accent-gold); text-decoration:none; border-radius:6px; border:1px solid transparent; transition:0.2s; display:inline-flex; align-items:center; gap:6px; }
+        .btn-source:hover { background:rgba(200,150,62,0.3); text-decoration:none; }
+        .close-btn { background:none; border:none; color:var(--text-secondary); font-size:2rem; cursor:pointer; line-height:1; padding:0 5px; }
+        .close-btn:hover { color:var(--text-primary); }
+        .modal-body { flex:1; padding:40px; overflow-y:auto; color:var(--text-secondary); font-size:1rem; line-height:1.7; }
+        .modal-body h1,.modal-body h2,.modal-body h3 { margin:1rem 0 0.5rem; color:var(--text-primary); }
         .modal-body ul,.modal-body ol { padding-left:1.5rem; }
-        .modal-body code { background:#1f2630; padding:0.1rem 0.4rem; border-radius:4px; font-size:0.9rem; }
-        .modal-body pre { background:#0b0e14; padding:1rem; border-radius:8px; overflow-x:auto; }
-        .modal-body a { color:#6bc7ff; }
+        .modal-body code { background:var(--bg-card); padding:0.1rem 0.4rem; border-radius:4px; font-size:0.9rem; }
+        .modal-body pre { background:var(--bg-primary); padding:1rem; border-radius:8px; overflow-x:auto; }
+        .modal-body a { color:var(--accent-gold); }
         .modal-body img { max-width:100%; height:auto; border-radius:6px; margin:0.5rem 0; }
-        .modal-body blockquote { border-left:4px solid #30363d; padding-left:1rem; margin:1rem 0; color:#8b949e; }
+        .modal-body blockquote { border-left:4px solid var(--border-color); padding-left:1rem; margin:1rem 0; color:var(--text-secondary); }
         .modal-body table { width:100%; border-collapse:collapse; margin:1rem 0; }
-        .modal-body th,.modal-body td { border:1px solid #30363d; padding:0.5rem 1rem; text-align:left; }
-        .modal-body th { background:#1f2630; }
+        .modal-body th,.modal-body td { border:1px solid var(--border-color); padding:0.5rem 1rem; text-align:left; }
+        .modal-body th { background:var(--bg-card); }
 
         /* ===== RELEASES ===== */
-        #releases-container { max-height:400px; overflow-y:auto; padding-right:8px; scrollbar-width:thin; scrollbar-color:#3d4a5a #141a24; }
+        #releases-container { max-height:400px; overflow-y:auto; padding-right:8px; scrollbar-width:thin; scrollbar-color:var(--border-color) var(--bg-card); }
         #releases-container::-webkit-scrollbar { width:6px; }
-        #releases-container::-webkit-scrollbar-track { background:#141a24; border-radius:8px; }
-        #releases-container::-webkit-scrollbar-thumb { background:#3d4a5a; border-radius:8px; }
-        #releases-container::-webkit-scrollbar-thumb:hover { background:#6a7a8a; }
+        #releases-container::-webkit-scrollbar-track { background:var(--bg-card); border-radius:8px; }
+        #releases-container::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:8px; }
+        #releases-container::-webkit-scrollbar-thumb:hover { background:var(--accent-gold); }
 
         /* ===== BOTÓN VOLVER ARRIBA ===== */
-        .scroll-top { position:fixed; bottom:30px; right:30px; background:#1f8bff; color:#fff; border:none; border-radius:50%; width:50px; height:50px; font-size:1.5rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:0.3s; z-index:999; display:none; align-items:center; justify-content:center; }
-        .scroll-top:hover { transform:scale(1.1); background:#3d9eff; }
+        .scroll-top { position:fixed; bottom:30px; right:30px; background:var(--accent-primary); color:var(--text-primary); border:none; border-radius:50%; width:50px; height:50px; font-size:1.5rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,0.4); transition:0.3s; z-index:999; display:none; align-items:center; justify-content:center; }
+        .scroll-top:hover { transform:scale(1.1); background:var(--accent-primary-light); }
 
         /* ===== FADE-IN ===== */
         .card, .compare-item, .hero, .table-wrap, .modal-content { opacity:0; transform:translateY(30px); transition:opacity 0.6s ease, transform 0.6s ease; }
@@ -238,10 +319,10 @@
         .mb-1 { margin-bottom:0.5rem; }
 
         /* ===== FOOTER ===== */
-        footer { margin-top:4rem; padding:2rem 0; border-top:1px solid #1f2630; color:#6a7a8a; font-size:0.9rem; text-align:center; }
+        footer { margin-top:4rem; padding:2rem 0; border-top:1px solid var(--border-color); color:var(--text-secondary); font-size:0.9rem; text-align:center; }
         footer .social-links { display:flex; justify-content:center; gap:1.5rem; margin-top:0.8rem; flex-wrap:wrap; }
-        footer .social-links a { color:#6a7a8a; font-size:1.4rem; transition:0.2s; }
-        footer .social-links a:hover { color:#fff; text-decoration:none; }
+        footer .social-links a { color:var(--text-secondary); font-size:1.4rem; transition:0.2s; }
+        footer .social-links a:hover { color:var(--text-primary); text-decoration:none; }
         footer .social-links a.discord-icon:hover { color:#5865F2; }
         footer .social-links a.support-icon:hover { color:#ea4aaa; }
 
@@ -268,11 +349,11 @@
             font-size: 1.8rem;
         }
         .interactive-demo .demo-header h2 i {
-            color: #6bc7ff;
+            color: var(--accent-gold);
             font-size: 1.6rem;
         }
         .demo-subtitle {
-            color: #b0bccf;
+            color: var(--text-secondary);
             margin-bottom: 1rem;
             font-size: 0.9rem;
             text-align: center;
@@ -297,7 +378,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
-            border: 2px solid #2a313c;
+            border: 2px solid var(--border-color);
         }
         .monitor-screen img {
             width: 100%;
@@ -307,7 +388,6 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Botones divididos en dos filas */
         .demo-controls {
             display: flex;
             flex-direction: column;
@@ -323,8 +403,8 @@
         }
         .demo-row button {
             background: transparent;
-            border: 1.5px solid #3d4a5a;
-            color: #b0bccf;
+            border: 1.5px solid var(--border-color);
+            color: var(--text-secondary);
             padding: 0.3rem 0.7rem;
             border-radius: 40px;
             font-weight: 600;
@@ -338,13 +418,13 @@
             gap: 0.3rem;
         }
         .demo-row button:hover {
-            border-color: #6bc7ff;
-            color: #fff;
+            border-color: var(--accent-gold);
+            color: var(--text-primary);
         }
         .demo-row button.active-mode {
-            background: #1f8bff;
-            border-color: #1f8bff;
-            color: #fff;
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
         }
         .demo-row button i {
             font-size: 0.8rem;
@@ -352,8 +432,8 @@
 
         .btn-auto {
             background: transparent;
-            border: 1.5px solid #f0ad4e;
-            color: #f0ad4e;
+            border: 1.5px solid var(--accent-gold);
+            color: var(--accent-gold);
             padding: 0.35rem 0.9rem;
             border-radius: 40px;
             font-weight: 600;
@@ -363,13 +443,13 @@
             font-size: 0.8rem;
         }
         .btn-auto:hover {
-            background: rgba(240, 173, 78, 0.15);
-            border-color: #f0ad4e;
-            color: #fff;
+            background: rgba(200, 150, 62, 0.15);
+            border-color: var(--accent-gold-light);
+            color: var(--accent-gold-light);
         }
         .btn-auto.active {
-            background: #f0ad4e;
-            color: #0b0e14;
+            background: var(--accent-gold);
+            color: var(--bg-primary);
         }
 
         .dot-controls {
@@ -383,18 +463,18 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            background: #3d4a5a;
+            background: var(--border-color);
             border: none;
             cursor: pointer;
             transition: 0.2s;
             padding: 0;
         }
         .dot.active-dot {
-            background: #1f8bff;
+            background: var(--accent-gold);
             transform: scale(1.2);
         }
         .dot:hover {
-            background: #6bc7ff;
+            background: var(--accent-gold-light);
         }
 
         .demo-description {
@@ -403,15 +483,24 @@
             margin-top: 0.5rem;
         }
         .demo-description h3 {
-            color: #e8edf2;
+            color: var(--text-primary);
             font-size: 1.1rem;
             margin-bottom: 0.2rem;
         }
         .demo-description p {
-            color: #b0bccf;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
+        @media (max-width: 1024px) {
+            .card-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            }
+            .custom-grid {
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                justify-items: center;
+            }
+        }
         @media (max-width: 768px) {
             .monitor-screen {
                 width: 95%;
@@ -428,6 +517,13 @@
             .modal-body { padding:20px; }
             .scroll-top { width:42px; height:42px; font-size:1.2rem; bottom:20px; right:20px; }
             .hero-buttons .btn-download { font-size:1rem; padding:0.7rem 1.8rem; }
+            .custom-grid {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
+            .custom-grid .card {
+                max-width: 100%;
+            }
         }
         @media (max-width: 500px) {
             .demo-row button {
@@ -455,6 +551,7 @@
                 <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
                 <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
+                <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" class="github-link" data-i18n="nav-github"><i class="fab fa-github"></i> GitHub</a>
                 <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-link" data-i18n="nav-discord"><i class="fab fa-discord"></i> Discord</a>
                 <div class="lang-selector" id="lang-selector">
                     <button class="lang-btn" data-lang="es">ES</button>
@@ -472,8 +569,8 @@
                 <span class="lang-en" style="display:none;">MPV-SW-Capture</span>
             </h1>
             <p class="subtitle">
-                <span class="lang-es">Un programa completo con configuraciones listas para MPV en Windows, optimizado para tarjetas de captura USB 3.0. Juega con cualquier consola HDMI con latencia casi nula y un sinfín de opciones.</span>
-                <span class="lang-en" style="display:none;">A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB 3.0 capture cards. Play with any HDMI video game console with near‑zero latency and endless options.</span>
+                <span class="lang-es">Un programa completo con configuraciones listas para MPV en Windows, optimizado para tarjetas de captura USB. Juega con cualquier consola HDMI con la menor latencia posible y un sinfín de opciones.</span>
+                <span class="lang-en" style="display:none;">A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB capture cards. Play with any HDMI video game console with minimal as possible latency and endless options.</span>
             </p>
             <div class="hero-buttons">
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn-download">
@@ -493,18 +590,16 @@
                     <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
                         <i class="fas fa-question-circle"></i> FAQ
                     </a>
-                    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank" class="btn btn-outline">
-                        <i class="fas fa-book"></i>
-                        <span class="lang-es">Ver Wiki</span>
-                        <span class="lang-en" style="display:none;">View Wiki</span>
-                    </a>
-                    <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="btn btn-discord">
-                        <i class="fab fa-discord"></i> Discord
-                    </a>
                     <a href="#" onclick="openDonate(); return false;" class="btn btn-outline btn-support">
                         <i class="fas fa-heart"></i>
                         <span class="lang-es">Apoyar</span>
                         <span class="lang-en" style="display:none;">Support</span>
+                    </a>
+                    <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" class="btn btn-outline btn-github-hero">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="btn btn-discord">
+                        <i class="fab fa-discord"></i> Discord
                     </a>
                 </div>
             </div>
@@ -556,13 +651,26 @@
     <section id="features" class="container">
         <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
         <div class="card-grid">
+            <!-- 1. Minimal lag -->
             <div class="card"><i class="fas fa-bolt"></i><h3><span class="lang-es">Mínima latencia</span><span class="lang-en" style="display:none;">Minimal lag</span></h3><p><span class="lang-es">MPV maneja el vídeo y ffplay el audio en paralelo, sincronizados para una respuesta casi instantánea.</span><span class="lang-en" style="display:none;">MPV handles video and ffplay handles audio in parallel, synced for near-instant response.</span></p></div>
-            <div class="card"><i class="fas fa-rocket"></i><h3><span class="lang-es">Listo para jugar</span><span class="lang-en" style="display:none;">Plug & Play</span></h3><p><span class="lang-es">Descarga, instala y juega en minutos. Sin configuraciones complejas. Conecta tu capturadora, lanza MPV-SW-Capture y disfruta de tu consola con mínima latencia.</span><span class="lang-en" style="display:none;">Download, install and play in minutes. No complex setup. Plug your capture card, launch MPV-SW-Capture and enjoy your console with minimal lag.</span></p></div>
-            <div class="card"><i class="fas fa-wand-magic-sparkles"></i><h3><span class="lang-es">Efectos visuales únicos</span><span class="lang-en" style="display:none;">Unique visual effects</span></h3><p><span class="lang-es">Convierte tu juego en una experiencia retro o cinematográfica. Shaders para VHS, TV antigua, CRT, Arcade y más. Dale un estilo único a tu partida.</span><span class="lang-en" style="display:none;">Turn your game into a retro or cinematic experience. Shaders for VHS, old TV, CRT, Arcade and more. Give a unique style to your gameplay.</span></p></div>
-            <div class="card"><i class="fas fa-arrows-alt"></i><h3><span class="lang-es">Portable</span><span class="lang-en" style="display:none;">Portable</span></h3><p><span class="lang-es">Copia la carpeta en cualquier ubicación y funciona sin reinstalación. Lleva tu configuración contigo.</span><span class="lang-en" style="display:none;">Copy the folder anywhere and it works without reinstallation. Take your config with you.</span></p></div>
+            <!-- 2. Any Capture Card -->
+            <div class="card"><i class="fas fa-usb"></i><h3><span class="lang-es">Cualquier tarjeta de captura</span><span class="lang-en" style="display:none;">Any Capture Card</span></h3><p><span class="lang-es">Compatible con cualquier tarjeta de captura conectada a tu PC.</span><span class="lang-en" style="display:none;">This is compatible with any Capture Card connected to your PC.</span></p></div>
+            <!-- 3. Plug & Play -->
+            <div class="card"><i class="fas fa-rocket"></i><h3><span class="lang-es">Listo para jugar</span><span class="lang-en" style="display:none;">Plug & Play</span></h3><p><span class="lang-es">Descarga, instala y juega en minutos. Sin configuraciones complejas. Conecta tu capturadora, ejecútalo, y disfruta de tu consola con mínima latencia.</span><span class="lang-en" style="display:none;">Download, install and play in minutes. No complex setup. Plug your capture card, launch it, and enjoy your console with minimal lag.</span></p></div>
+            <!-- 4. Custom Menu -->
             <div class="card"><i class="fas fa-palette"></i><h3><span class="lang-es">Menú personalizable</span><span class="lang-en" style="display:none;">Custom menu</span></h3><p><span class="lang-es">Accede a shaders, bezels, crops, ajustes de ventana, grabación y más con un clic o tecla.</span><span class="lang-en" style="display:none;">Access shaders, bezels, crops, window settings, recording and more with a click or key.</span></p></div>
-            <div class="card"><i class="fas fa-video"></i><h3><span class="lang-es">Grabación y capturas</span><span class="lang-en" style="display:none;">Recording and screenshots</span></h3><p><span class="lang-es">Graba clips de 30/60/90/120s con buena calidad y pequeño tamaño, o toma capturas instantáneas.</span><span class="lang-en" style="display:none;">Record 30/60/90/120s clips with good quality and small size, or take instant screenshots.</span></p></div>
-            <div class="card"><i class="fas fa-crop-alt"></i><h3><span class="lang-es">Bezels y crops para NSO</span><span class="lang-en" style="display:none;">Bezels and crops for NSO</span></h3><p><span class="lang-es">Superpone bordes decorativos o recorta la pantalla al tamaño exacto de GBA, NES, SNES y más.</span><span class="lang-en" style="display:none;">Overlay decorative borders or crop the screen to exact GBA, NES, SNES and more.</span></p></div>
+            <!-- 5. Easy to use for Stream -->
+            <div class="card"><i class="fas fa-broadcast-tower"></i><h3><span class="lang-es">Fácil de usar para Stream</span><span class="lang-en" style="display:none;">Easy to use for Stream</span></h3><p><span class="lang-es">Compatible con OBS, lo que te brinda una excelente experiencia con tus transmisiones.</span><span class="lang-en" style="display:none;">This is compatible with OBS, making a great experience with your streams.</span></p></div>
+
+            <!-- 6. Unique visual effects -->
+            <div class="card"><i class="fas fa-wand-magic-sparkles"></i><h3><span class="lang-es">Efectos visuales únicos</span><span class="lang-en" style="display:none;">Unique visual effects</span></h3><p><span class="lang-es">Dale un estilo único a tu juego. Shaders y Formas para VHS, CRT, Arcade, Videojuegos y más.</span><span class="lang-en" style="display:none;">Give a unique style to your game. Shaders and Shapes for VHS, CRT, Arcade, Video Game and more.</span></p></div>
+            <!-- 7. Portable -->
+            <div class="card"><i class="fas fa-arrows-alt"></i><h3><span class="lang-es">Portable</span><span class="lang-en" style="display:none;">Portable</span></h3><p><span class="lang-es">Copia la carpeta en cualquier ubicación y funciona sin reinstalación. Lleva tu configuración contigo.</span><span class="lang-en" style="display:none;">Copy the folder anywhere and it works without reinstallation. Take your config with you.</span></p></div>
+            <!-- 8. Recording and screenshots -->
+            <div class="card"><i class="fas fa-video"></i><h3><span class="lang-es">Grabación y capturas</span><span class="lang-en" style="display:none;">Recording and screenshots</span></h3><p><span class="lang-es">Graba 30/60/90/120s con buena calidad y pequeño tamaño, o toma capturas instantáneas.</span><span class="lang-en" style="display:none;">Record 30/60/90/120s with good quality and small size, or take instant screenshots.</span></p></div>
+            <!-- 9. Bezels and Crops -->
+            <div class="card"><i class="fas fa-crop-alt"></i><h3><span class="lang-es">Marcos y Recortes</span><span class="lang-en" style="display:none;">Bezels and Crops</span></h3><p><span class="lang-es">Superpone bordes decorativos o recorta la pantalla al tamaño deseado.</span><span class="lang-en" style="display:none;">Overlay decorative borders or crop the screen to any desired size.</span></p></div>
+            <!-- 10. Bilingual (ES/EN) -->
             <div class="card"><i class="fas fa-language"></i><h3><span class="lang-es">Bilingüe (ES/EN)</span><span class="lang-en" style="display:none;">Bilingual (ES/EN)</span></h3><p><span class="lang-es">Menú e instaladores completamente traducidos al español e inglés. Cambia con un botón.</span><span class="lang-en" style="display:none;">Menu and installers fully translated to Spanish and English. Change with one button.</span></p></div>
         </div>
     </section>
@@ -574,8 +682,8 @@
             <span class="lang-es">Elige el perfil que mejor se adapte a tu juego. Cada fila te sugiere una combinación de shader, forma, recorte y marco que puedes activar desde el menú.</span>
             <span class="lang-en" style="display:none;">Choose the profile that best fits your game. Each row suggests a combination of shader, shape, crop and bezel you can enable from the menu.</span>
         </p>
-        <div style="background: #1f2630; padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid #f0ad4e;">
-            <p style="color: #f0ad4e; font-weight: 600; margin: 0;">
+        <div style="background: var(--bg-card); padding: 0.8rem 1.2rem; border-radius: 8px; margin-bottom: 1rem; border-left: 4px solid var(--accent-gold);">
+            <p style="color: var(--accent-gold); font-weight: 600; margin: 0;">
                 <i class="fas fa-info-circle"></i>
                 <span class="lang-es">Nota: Los recortes y los marcos no se pueden combinar entre sí. Debes elegir uno u otro.</span>
                 <span class="lang-en" style="display:none;">Note: Crops and bezels cannot be combined. You must choose either one or the other.</span>
@@ -645,11 +753,48 @@
                 </tbody>
             </table>
         </div>
-        <p style="color:#6a7a8a; font-size:0.9rem;">
+        <p style="color:var(--text-secondary); font-size:0.9rem;">
             <i class="fas fa-info-circle"></i>
             <span class="lang-es">Puedes activar cada elemento por separado desde el menú. Estas combinaciones son solo sugerencias.</span>
             <span class="lang-en" style="display:none;">You can activate each element separately from the menu. These combinations are just suggestions.</span>
         </p>
+    </section>
+
+    <!-- ===== ADVANCED CUSTOMIZATION ===== -->
+    <section id="personalizacion" class="container">
+        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
+        <div class="custom-grid">
+            <!-- Video Options -->
+            <div class="card">
+                <i class="fas fa-sliders-h"></i>
+                <h3><span class="lang-es">Opciones de video personalizadas</span><span class="lang-en" style="display:none;">Customize Video Options</span></h3>
+                <p><span class="lang-es">Personaliza las opciones de video predeterminadas con los valores que desees.</span><span class="lang-en" style="display:none;">Customize default video options with the options you want.</span></p>
+                <a href="#" onclick="openVideoManager(); return false;">
+                    <span class="lang-es">Guía de opciones de video →</span>
+                    <span class="lang-en" style="display:none;">Video Options Guide →</span>
+                </a>
+            </div>
+            <!-- Bezels -->
+            <div class="card">
+                <i class="fas fa-border-all"></i>
+                <h3><span class="lang-es">Marcos personalizados</span><span class="lang-en" style="display:none;">Customize Bezels</span></h3>
+                <p><span class="lang-es">Personaliza los marcos con nuevos que desees agregar.</span><span class="lang-en" style="display:none;">Customize bezels with new ones you want to add.</span></p>
+                <a href="#" onclick="openBezelManager(); return false;">
+                    <span class="lang-es">Guía de marcos →</span>
+                    <span class="lang-en" style="display:none;">Bezels Guide →</span>
+                </a>
+            </div>
+            <!-- OBS -->
+            <div class="card">
+                <i class="fas fa-video"></i>
+                <h3><span class="lang-es">OBS con MPV-SW-Capture</span><span class="lang-en" style="display:none;">OBS with MPV-SW-Capture</span></h3>
+                <p><span class="lang-es">Usa una herramienta para una fácil compatibilidad con OBS.</span><span class="lang-en" style="display:none;">Use a tool for easy compatibility with OBS.</span></p>
+                <a href="#" onclick="openStreamManager(); return false;">
+                    <span class="lang-es">Guía de Stream Manager →</span>
+                    <span class="lang-en" style="display:none;">Stream Manager Guide →</span>
+                </a>
+            </div>
+        </div>
     </section>
 
     <!-- ===== OPCIONES DEL MENÚ ===== -->
@@ -710,21 +855,11 @@
                 </tbody>
             </table>
         </div>
-        <p style="color:#6a7a8a; font-size:0.9rem;">
+        <p style="color:var(--text-secondary); font-size:0.9rem;">
             <i class="fas fa-info-circle"></i>
             <span class="lang-es">Para una lista completa, consulta la <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank">Wiki</a>.</span>
             <span class="lang-en" style="display:none;">For a complete list, check the <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank">Wiki</a>.</span>
         </p>
-    </section>
-
-    <!-- ===== CUSTOMIZATION ===== -->
-    <section id="personalizacion" class="container">
-        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
-        <div class="card-grid">
-            <div class="card"><i class="fas fa-image"></i><h3><span class="lang-es">Marcos personalizados</span><span class="lang-en" style="display:none;">Custom bezels</span></h3><p><span class="lang-es">Crea tus propios bordes en 1920x1080 con coordenadas exactas para NSO.</span><span class="lang-en" style="display:none;">Create your own borders in 1920x1080 with exact NSO coordinates.</span></p><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels" target="_blank"><span class="lang-es">Guía de marcos →</span><span class="lang-en" style="display:none;">Bezels guide →</span></a></div>
-            <div class="card"><i class="fas fa-cube"></i><h3><span class="lang-es">Shaders y formas</span><span class="lang-en" style="display:none;">Shaders and shapes</span></h3><p><span class="lang-es">Añade shaders en formato .glsl a la carpeta <code>shaders/</code> y edita <code>menu.conf</code>.</span><span class="lang-en" style="display:none;">Add .glsl shaders to the <code>shaders/</code> folder and edit <code>menu.conf</code>.</span></p></div>
-            <div class="card"><i class="fas fa-edit"></i><h3><span class="lang-es">Modificar el menú</span><span class="lang-en" style="display:none;">Modify the menu</span></h3><p><span class="lang-es">Edita <code>menu.conf</code> para añadir, quitar o reordenar opciones fácilmente.</span><span class="lang-en" style="display:none;">Edit <code>menu.conf</code> to add, remove or reorder options easily.</span></p></div>
-        </div>
     </section>
 
     <!-- ===== FAQ ===== -->
@@ -742,7 +877,7 @@
     <!-- ===== NEWS ===== -->
     <section id="novedades" class="container">
         <h2><i class="fas fa-rocket"></i> <span class="lang-es">Novedades</span><span class="lang-en" style="display:none;">News</span></h2>
-        <div id="releases-container"><p class="text-center" style="color:#6a7a8a;">Loading latest releases...</p></div>
+        <div id="releases-container"><p class="text-center" style="color:var(--text-secondary);">Loading latest releases...</p></div>
         <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
     </section>
 
@@ -812,6 +947,7 @@
                         'nav-readme': { es: 'LEEME', en: 'README' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-download': { es: 'Descargar', en: 'Download' },
+                        'nav-github': { es: 'GitHub', en: 'GitHub' },
                         'nav-discord': { es: 'Discord', en: 'Discord' }
                     };
                     if (translations[key] && translations[key][lang]) {
@@ -887,10 +1023,10 @@
             ultimas.forEach((release, index) => {
                 const fecha = new Date(release.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
                 const descripcion = marked.parse(release.descripcion || 'No description');
-                const colorBorde = index === 0 ? '#1f8bff' : (index === 1 ? '#6bc7ff' : '#6a7a8a');
-                html += `<li style="margin-bottom:0.8rem; background:#141a24; padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
+                const colorBorde = index === 0 ? 'var(--accent-gold)' : (index === 1 ? 'var(--accent-gold-light)' : 'var(--border-color)');
+                html += `<li style="margin-bottom:0.8rem; background:var(--bg-card); padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
                     <strong>${release.tag}</strong> (${fecha})
-                    <div style="margin-top:0.5rem; font-size:0.95rem; color:#b0bccf;">${descripcion}</div>
+                    <div style="margin-top:0.5rem; font-size:0.95rem; color:var(--text-secondary);">${descripcion}</div>
                 </li>`;
             });
             html += '</ul>';
@@ -981,6 +1117,34 @@
             }
         }
 
+        // ===== FUNCIONES PARA PERSONALIZACIÓN AVANZADA =====
+        function openVideoManager() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Guía de Administrador de Video', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Video.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Video');
+            } else {
+                openModal('Video Manager Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Video-Manager.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Video-Manager');
+            }
+        }
+
+        function openBezelManager() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Guía de Administrador de Marcos', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Marcos.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Marcos');
+            } else {
+                openModal('Bezel Manager Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Bezel-Manager.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Bezel-Manager');
+            }
+        }
+
+        function openStreamManager() {
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Guía de Administrador de Stream', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Stream');
+            } else {
+                openModal('Stream Manager Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Stream-Manager.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Stream-Manager');
+            }
+        }
+
         document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('modal-overlay').classList.remove('active'); });
         document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
         document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active'); });
@@ -991,13 +1155,13 @@
         document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
         // ========================================================
-        // 7. DEMOSTRACIÓN INTERACTIVA (11 modos)
+        // 7. DEMOSTRACIÓN INTERACTIVA (14 modos)
         // ========================================================
         const demoData = [
-            // Fila 1: Menu, Stretch Window, Recording, Rotation
+            // Fila 1: Menu, Fullscreen, Mini Mode, Mirror Mode, Stretch Window, Recording, Rotation
             {
                 icon: 'fa-bars',
-                color: '#6bc7ff',
+                color: '#c8963e',
                 image_es: 'assets/demo/1_menu_es.jpg',
                 image_en: 'assets/demo/1_menu.jpg',
                 label_es: 'Menú',
@@ -1006,6 +1170,42 @@
                 title_en: 'Custom Menu',
                 desc_es: 'Accede a todas las opciones con un clic derecho o ESC. Gestiona shaders, formas, recortes y más.',
                 desc_en: 'Access all options with a right-click or ESC. Manage shaders, shapes, crops and more.'
+            },
+            {
+                icon: 'fa-expand',
+                color: '#00b894',
+                image_es: 'assets/demo/12_fullscreen.jpg',
+                image_en: 'assets/demo/12_fullscreen.jpg',
+                label_es: 'Pantalla Completa',
+                label_en: 'Fullscreen',
+                title_es: 'Pantalla Completa',
+                title_en: 'Fullscreen',
+                desc_es: 'Cambia de Ventana a Pantalla Completa, tan solo haciendo doble clic o en las opciones del menú.',
+                desc_en: 'Switch from Window to Fullscreen, just by double-clicking or in the menu options.'
+            },
+            {
+                icon: 'fa-window-minimize',
+                color: '#fdcb6e',
+                image_es: 'assets/demo/13_minimode.jpg',
+                image_en: 'assets/demo/13_minimode.jpg',
+                label_es: 'Modo Mini',
+                label_en: 'Mini Mode',
+                title_es: 'Modo Mini',
+                title_en: 'Mini Mode',
+                desc_es: 'Cambia a Ventana de un 30% de la imagen + Siempre Visible. Ideal para tener la pantalla en miniatura activa.',
+                desc_en: 'Switch to a 30% window + Always on Top. Ideal for keeping an active mini preview.'
+            },
+            {
+                icon: 'fa-arrows-alt-h',
+                color: '#f0ad4e',
+                image_es: 'assets/demo/14_mirrormode.jpg',
+                image_en: 'assets/demo/14_mirrormode.jpg',
+                label_es: 'Modo Espejo',
+                label_en: 'Mirror Mode',
+                title_es: 'Modo Espejo',
+                title_en: 'Mirror Mode',
+                desc_es: 'Invierte horizontalmente el contenido de la pantalla.',
+                desc_en: 'Horizontally mirror the screen content.'
             },
             {
                 icon: 'fa-arrows-alt-h',
@@ -1141,8 +1341,8 @@
 
         let currentMode = 0;
         let autoInterval = null;
-        let isAutoPlaying = false;
-        const AUTO_DELAY = 10000; // 10 segundos
+        let isAutoPlaying = true;
+        const AUTO_DELAY = 9000; // 9 segundos
 
         function generarControles() {
             const lang = window.currentLang || 'en';
@@ -1150,19 +1350,19 @@
             row2.innerHTML = '';
             dotContainer.innerHTML = '';
 
-            // Los primeros 4 van en row1, los 7 restantes en row2
-            const row1Data = demoData.slice(0, 4);
-            const row2Data = demoData.slice(4);
+            // Los primeros 7 van en row1, los 7 restantes en row2
+            const row1Data = demoData.slice(0, 7);
+            const row2Data = demoData.slice(7);
 
             row1Data.forEach((item, idx) => {
-                const index = idx; // 0-3
+                const index = idx; // 0-6
                 const btn = crearBoton(item, index, lang);
                 row1.appendChild(btn);
                 crearDot(index, lang);
             });
 
             row2Data.forEach((item, idx) => {
-                const index = idx + 4; // 4-10
+                const index = idx + 7; // 7-13
                 const btn = crearBoton(item, index, lang);
                 row2.appendChild(btn);
                 crearDot(index, lang);
@@ -1221,9 +1421,7 @@
         }
 
         function setDemoMode(index) {
-            if (isAutoPlaying) {
-                stopAutoSlide();
-            }
+            // No detener el auto al hacer clic manual
             if (index < 0 || index >= demoData.length) return;
 
             const data = demoData[index];
@@ -1272,7 +1470,7 @@
 
         autoToggle.addEventListener('click', toggleAutoSlide);
 
-        // Inicializar demo
+        // Inicializar demo con auto activado
         generarControles();
         setDemoMode(0);
         startAutoSlide();
