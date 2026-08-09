@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import os
 import sys
-import time
 import deepl
 
 def translate_file(input_file, output_file):
@@ -12,6 +11,7 @@ def translate_file(input_file, output_file):
 
     translator = deepl.Translator(api_key)
 
+    # Leer el archivo tal cual, preservando saltos de línea
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -22,21 +22,10 @@ def translate_file(input_file, output_file):
     print(f"📝 Traduciendo con DeepL (caracteres: {len(content)})...")
 
     try:
-        # DeepL maneja bien texto largo, pero dividimos en párrafos por seguridad
-        paragraphs = content.split('\n\n')
-        translated_paragraphs = []
-
-        for i, para in enumerate(paragraphs):
-            if para.strip():
-                print(f"🔄 Fragmento {i+1}/{len(paragraphs)}...")
-                translated = translator.translate_text(para, target_lang="ES")
-                translated_paragraphs.append(translated.text)
-                # Pequeña pausa para evitar rate limiting
-                time.sleep(0.1)
-            else:
-                translated_paragraphs.append(para)
-
-        translated_text = '\n\n'.join(translated_paragraphs)
+        # Traducir el contenido completo de una vez
+        # DeepL respeta los saltos de línea en la traducción
+        translated = translator.translate_text(content, target_lang="ES")
+        translated_text = translated.text
 
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(translated_text)
