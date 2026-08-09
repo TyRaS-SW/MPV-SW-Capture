@@ -2,14 +2,14 @@ name: Translate FAQ to Spanish
 
 on:
   push:
-    branches: [ "main" ]        # Cambia si tu rama principal tiene otro nombre
+    branches: [ "main" ]
     paths:
-      - "FAQ.md"               # Se activa cuando cambias este archivo
-  workflow_dispatch:           # Permite ejecutarlo manualmente
+      - "FAQ.md"
+  workflow_dispatch:
 
 permissions:
-  contents: write              # Para hacer commit del archivo traducido
-  models: read                 # Necesario para usar GitHub Models
+  contents: write
+  models: read
 
 jobs:
   translate:
@@ -18,19 +18,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Show current directory and files
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in root:"
+          ls -la
+
       - name: Translate FAQ to Spanish
+        id: translate
         uses: KevinRohn/gh-action-markdown-translate-ai@v1
         with:
-          source-file: "FAQ.md"
-          target-language: "Spanish"
-          target-file: "FAQ.es.md"
-          # Puedes elegir el modelo; por defecto usa gpt-4o-mini
-          model: "gpt-4o-mini"
-          # Instrucciones adicionales para mejorar la traducción
-          custom-instructions: |
-            Keep technical terms like 'OBS', 'plugin', 'stream', 'GitHub', 'API' in English.
-            Do not translate code blocks, URLs, or Markdown syntax.
-            Preserve all headings and formatting.
+          # Parámetros actualizados según la documentación de la acción
+          api_key: ${{ secrets.GITHUB_TOKEN }}  # Usamos el token de GitHub para autenticación
+          service_provider: "github"            # Usamos GitHub Models (gratuito)
+          model: "gpt-4o-mini"                  # Modelo recomendado
+          source_language: "en"                 # Idioma origen (opcional, puede auto-detectar)
+          target_language: "es"                 # Idioma destino (español)
+          file_path: "FAQ.md"                   # Archivo de origen
+          output_file_path: "FAQ.es.md"         # Archivo de salida
+          # update_mode: "replace"              # Opcional: replace, merge, etc.
+
+      - name: Check if translation file was created
+        run: |
+          echo "Checking if FAQ.es.md exists..."
+          if [ -f "FAQ.es.md" ]; then
+            echo "✅ FAQ.es.md exists"
+            echo "First 10 lines:"
+            head -n 10 FAQ.es.md
+          else
+            echo "❌ FAQ.es.md does NOT exist"
+            echo "Creating a dummy file to force commit"
+            echo "# FAQ en español (traducción automática)" > FAQ.es.md
+            echo "La traducción automática falló. Revisar logs." >> FAQ.es.md
+          fi
 
       - name: Commit and push if changed
         run: |
