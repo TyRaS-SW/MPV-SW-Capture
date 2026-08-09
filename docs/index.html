@@ -1135,8 +1135,13 @@
             else openModal('Installation Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Installation.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Installation');
         }
         function openFaq() {
-            openModal('FAQ', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/FAQ.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ');
-        }
+    const lang = window.currentLang || 'en';
+    const title = lang === 'es' ? 'Preguntas frecuentes' : 'FAQ';
+    const file = lang === 'es' ? 'FAQ.es.md' : 'FAQ.md';
+    const url = `https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/${file}`;
+    const githubUrl = `https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/${file}`;
+    openModal(title, url, githubUrl);
+}
         function openDonate() {
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
