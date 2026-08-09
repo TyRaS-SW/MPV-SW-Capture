@@ -17,15 +17,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Translate FAQ to Spanish
-        uses: francois/translate-action@v1
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          source_file: 'FAQ.md'
-          target_file: 'FAQ.es.md'
-          source_lang: 'en'
-          target_lang: 'es'
-          provider: 'libretranslate'
-          libretranslate_url: 'https://translate.argosopentech.com'
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Translate FAQ to Spanish
+        run: python .github/scripts/translate_libretranslate.py FAQ.md FAQ.es.md
 
       - name: Commit and push if changed
         run: |
