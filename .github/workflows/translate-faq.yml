@@ -23,18 +23,17 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install deep-translator
-          # También instalar requests si no está (deep-translator lo usa internamente)
-          pip install requests
+        run: pip install deepl
 
       - name: Translate FAQ to Spanish
-        run: python .github/scripts/translate_libretranslate.py FAQ.md FAQ.es.md
+        env:
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+        run: python .github/scripts/translate_deepl.py FAQ.md FAQ.es.md
 
       - name: Commit and push if changed
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add FAQ.es.md
-          git diff --staged --quiet || git commit -m "Auto-translate FAQ to Spanish"
+          git diff --staged --quiet || git commit -m "FAQ updated"
           git push
