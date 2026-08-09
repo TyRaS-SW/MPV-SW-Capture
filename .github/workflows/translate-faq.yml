@@ -2,14 +2,14 @@ name: Translate FAQ to Spanish
 
 on:
   push:
-    branches: [ "main" ]   # Cambia a tu rama principal si es otra
+    branches: [ "main" ]        # Cambia si tu rama principal tiene otro nombre
     paths:
-      - "FAQ.md"            # Se activa cuando cambia este archivo
-  workflow_dispatch:        # Permite ejecución manual
+      - "FAQ.md"               # Se activa cuando cambias este archivo
+  workflow_dispatch:           # Permite ejecutarlo manualmente
 
 permissions:
-  contents: write
-  models: read
+  contents: write              # Para hacer commit del archivo traducido
+  models: read                 # Necesario para usar GitHub Models
 
 jobs:
   translate:
@@ -19,19 +19,18 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Translate FAQ to Spanish
-        id: translate-faq
-        uses: FidelusAleksander/ai-translate-action@v1
+        uses: KevinRohn/gh-action-markdown-translate-ai@v1
         with:
-          text-file: "FAQ.md"
+          source-file: "FAQ.md"
           target-language: "Spanish"
+          target-file: "FAQ.es.md"
+          # Puedes elegir el modelo; por defecto usa gpt-4o-mini
+          model: "gpt-4o-mini"
+          # Instrucciones adicionales para mejorar la traducción
           custom-instructions: |
             Keep technical terms like 'OBS', 'plugin', 'stream', 'GitHub', 'API' in English.
-            Do not translate code blocks (text inside backticks).
-            Maintain the Markdown formatting exactly.
-
-      - name: Save translation
-        run: |
-          echo "${{ steps.translate-faq.outputs.translated-text }}" > FAQ.es.md
+            Do not translate code blocks, URLs, or Markdown syntax.
+            Preserve all headings and formatting.
 
       - name: Commit and push if changed
         run: |
