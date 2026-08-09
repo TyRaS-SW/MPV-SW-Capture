@@ -1,24 +1,24 @@
-\# ❓ FAQ
+# ❓ Preguntas frecuentes
 
 
 
-\## 🎮 General \& Concept
+\## 🎮 Generalidades y concepto
 
 
 
-\### 1. Why use MPV to play Switch/2/PS/XB/Retro or any other HDMI compatible console?
+\### 1. ¿Por qué utilizar MPV para jugar a Switch, 2, PS, XB, Retro o cualquier otra consola compatible con HDMI?
 
 
 
-MPV is a very capable and fast video player when configured correctly. It also lets you add shaders, bezels, crops and many other options, which expands it beyond “just playing” into something you can really customize for console gaming.
+MPV es un reproductor de vídeo muy potente y rápido cuando se configura correctamente. Además, te permite añadir shaders, marcos, recortes y muchas otras opciones, lo que lo convierte en algo más que «solo un reproductor» y lo transforma en una herramienta que puedes personalizar realmente para jugar en consola.
 
 
 
-\### 2. Why MPV and not another program?
+\### 2. ¿Por qué MPV y no otro programa?
 
 
 
-There are other programs that let you capture video and do something similar to this project, but they tend to be more limited and do not allow the same level of customization that MPV-SW-Capture offers on top of MPV. On top that, most tend to increase the lag, making the experience unplayable.
+Existen otros programas que permiten grabar vídeo y hacer algo similar a este proyecto, pero suelen ser más limitados y no ofrecen el mismo nivel de personalización que ofrece MPV-SW-Capture como complemento de MPV. Además, la mayoría tiende a aumentar el retraso, lo que hace que la experiencia sea insoportable.
 
 
 
@@ -26,57 +26,57 @@ There are other programs that let you capture video and do something similar to 
 
 
 
-\## 🧩 Hardware \& Capture Cards
+\## 🧩 Hardware y tarjetas de captura
 
 
 
-\### 1. Why do I need a capture card that supports 1080p60?
+\### 1. ¿Por qué necesito una tarjeta de captura compatible con 1080p60?
 
 
 
-Because 1080p60 is the current standard quality for most modern consoles and capture devices. Targeting 1080p60 ensures good image quality and smooth gameplay.
+Porque 1080p60 es el estándar de calidad actual para la mayoría de las consolas y dispositivos de captura modernos. Fijarse como objetivo 1080p60 garantiza una buena calidad de imagen y una experiencia de juego fluida.
 
 
 
-\### 2. Why do you recommend USB 3.0? What happens if I use USB 2.0?
+\### 2. ¿Por qué recomendáis el USB 3.0? ¿Qué pasa si utilizo el USB 2.0?
 
 
 
-USB 3.0 is recommended because it offers higher bandwidth, which translates into better image quality and more stable performance for high‑resolution, high‑frame‑rate video. You can still use USB 2.0, but quality and stability may be affected. If you have no other option, you can use it anyway, just keep this limitation in mind.
+Se recomienda utilizar USB 3.0, ya que ofrece un mayor ancho de banda, lo que se traduce en una mejor calidad de imagen y un rendimiento más estable para vídeos de alta resolución y alta frecuencia de fotogramas. También puedes utilizar USB 2.0, pero la calidad y la estabilidad pueden verse afectadas. Si no tienes otra opción, puedes utilizarlo de todos modos, pero ten en cuenta esta limitación.
 
 
 
-\### 3. Can I use any USB HDMI capture card?
+\### 3. ¿Puedo utilizar cualquier tarjeta de captura USB-HDMI?
 
 
 
-In theory, yes. However, for this project the recommendation is a capture card that supports 1080p60 and has loop‑through (HDMI input + HDMI output). There are relatively inexpensive options that are easy to find. One example you can search for is: “4K Ultra HD USB 3.0 HD Video Capture (MS 2131)”. These devices accept up to 4K60 input and output 1080p60. For example, if you connect a console that supports 4K60, the capture card will accept that, but the final image used by MPV‑SW‑Capture will be 1080p60.
+En teoría, sí. Sin embargo, para este proyecto se recomienda una tarjeta de captura que admita 1080p60 y cuente con salida en bucle (entrada HDMI + salida HDMI). Hay opciones relativamente económicas y fáciles de encontrar. Un ejemplo que puedes buscar es: «Captura de vídeo HD 4K Ultra HD USB 3.0 (MS 2131)». Estos dispositivos admiten entradas de hasta 4K60 y emiten en 1080p60. Por ejemplo, si conectas una consola compatible con 4K60, la tarjeta de captura la aceptará, pero la imagen final utilizada por MPV-SW-Capture será de 1080p60.
 
 
 
-\### 4. What about USB stick‑style capture cards that only have HDMI and USB, and usually support up to 720p60?
+\### 4. ¿Qué hay de las tarjetas de captura tipo memoria USB que solo tienen HDMI y USB, y que suelen admitir hasta 720p60?
 
 
 
-They should generally work, but they have not been tested with this project. If you try one and it works (or doesn’t), please share your results in the project so others can benefit from that information.
+En principio deberían funcionar, pero no se han probado con este proyecto. Si pruebas alguna y funciona (o no), por favor, comparte tus resultados en el proyecto para que otros puedan beneficiarse de esa información.
 
 
 
-\### 5. If I have a USB 3.0 capture card that can output more than 1080p60 (like 1440p60 or 4K60), will it work?
+\### 5. Si tengo una tarjeta de captura USB 3.0 capaz de generar una señal superior a 1080p60 (como 1440p60 o 4K60), ¿funcionará?
 
 
 
-This scenario has not been tested either, but in principle it should work without major issues. If you try it, please share your results.
+Este escenario tampoco se ha probado, pero, en principio, debería funcionar sin problemas importantes. Si lo pruebas, por favor, comparte tus resultados.
 
 
 
-\### 6. I have a console that only output up to 720p instead of 1080p, will it work?
+\### 6. Tengo una consola que solo admite una resolución de hasta 720p en lugar de 1080p, ¿funcionará?
 
 
 
-Yes, this will work fine. For example, this was tested with a 720p only output, the result was an automatically upscale to 1080p. With this, all worked fine, even bezels, crops and shaders.
+Sí, esto funcionará perfectamente. Por ejemplo, se probó con una salida exclusiva de 720p y el resultado fue una mejora automática de la resolución a 1080p. Con esto, todo funcionó perfectamente, incluso los biseles, los recortes y los sombreadores.
 
-Also, it was tested with older consoles that support less than 720p (480p), connected with a AV to HDMI adapter, and the result is also an upscale to 1080p.
+Además, se ha probado con consolas más antiguas que admiten una resolución inferior a 720p (480p), conectadas mediante un adaptador de AV a HDMI, y el resultado también es una mejora de la resolución a 1080p.
 
 
 
@@ -88,59 +88,59 @@ Also, it was tested with older consoles that support less than 720p (480p), conn
 
 
 
-\### 1. What are the software we need to use with MPV-SW-Capture?
+\### 1. ¿Qué programas necesitamos para utilizar el MPV-SW-Capture?
 
 
 
-There are 3 software needed: `MPV` is the central one. `ffplay` and `ffmpeg` are also need to make it work.
+Se necesitan tres programas: `MPV` es el principal. También se necesitan `ffplay` y `ffmpeg` para que funcione.
 
-That's why it needs to be downloaded and already explained in Instructions.
-
-
-
-\### 2. I followed the instructions and succesfully setup my `MPV-SW-Capture`. But, I noticed that the 3 software now have a newer version than I used before. Can I update them without breaking MPV-SW-Capture?
+Por eso hay que descargarlo y ya se explica en las instrucciones.
 
 
 
-If you are talking about `MPV`, `ffplay` and `ffmpeg`, yes, you can update/replace the 3 software without problem. You need to download their new versions and replace the older with their newer ones.
-
-That's all you need to do. And, it's always recommended have the newer version.
-
-But, if you notice some problems, you can try older versions. If that even  happen, please comment the problem in \*\*\[Issues](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)\*\*, to check and fix that.
+\### 2. He seguido las instrucciones y he configurado correctamente mi `MPV-SW-Capture`. Sin embargo, me he dado cuenta de que los tres programas tienen ahora una versión más reciente que la que utilizaba antes. ¿Puedo actualizarlos sin que el MPV-SW-Capture deje de funcionar?
 
 
 
-But, if you are talking about MPV-SW-Capture itself, the recommendation it's just replace all the files.
+Si te refieres a «MPV», «ffplay» y «ffmpeg», sí, puedes actualizar o sustituir estos tres programas sin ningún problema. Solo tienes que descargar sus nuevas versiones y sustituir las antiguas por las más recientes.
+
+Eso es todo lo que tienes que hacer. Además, siempre es recomendable tener la versión más reciente.
+
+No obstante, si detectas algún problema, puedes probar con versiones anteriores. Si eso llegara a ocurrir, por favor, describe el problema en \*\*\[Issues](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)\*\*, para que podamos revisarlo y solucionarlo.
 
 
 
-\### 3. In MPV-SW-Capture `v2.2.0` there is a new file called `Installer\_MPV-SW-Capture.exe`. What this file do?
+Pero, si te refieres al propio MPV-SW-Capture, lo mejor es simplemente sustituir todos los archivos.
 
 
 
-Since v2.2.0, this new file `Installer\_MPV-SW-Capture.exe`, it's the new way to download and install/update `MPV-SW-Capture`, `ffplay`, `ffmpeg` and `mpv`. You use the installer and the program autoinstall all needed files. This means, that you can update new future versions of MPV-SW-Capture from the installer. Also, you can update all other needed programs to their latest versions, without the need of manual download.
+\### 3. En MPV-SW-Capture `v2.2.0` hay un nuevo archivo llamado `Installer\_MPV-SW-Capture.exe`. ¿Para qué sirve este archivo?
 
 
 
-You can still update in the old way. The instructions for that are separated here: \*\*\[MANUAL Install](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)\*\*
+Desde la versión 2.2.0, este nuevo archivo `Installer\_MPV-SW-Capture.exe` es la nueva forma de descargar e instalar o actualizar `MPV-SW-Capture`, `ffplay`, `ffmpeg` y `mpv`. Al utilizar el instalador, el programa instala automáticamente todos los archivos necesarios. Esto significa que podrás actualizar futuras versiones de MPV-SW-Capture desde el propio instalador. Además, podrás actualizar todos los demás programas necesarios a sus últimas versiones sin necesidad de descargarlos manualmente.
 
 
 
-\### 4. I was using `Installer\_MPV-SW-Capture.exe` and now I cannot update. Why this happened?
+Aún puedes actualizar como antes. Las instrucciones para hacerlo se encuentran aquí: \*\*\[Instalación MANUAL](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)\*\*
 
 
 
-This is because of a limitation of Github. If you check a lot, Github limit to download again until 1 hour passed. You can only have this problem if you download, upgrade, etc.. in an exagerated quantity.
-
-Since you are just updating or installing, this shouldn't be an issue. But, if you are having this problem, wait 1 hour or do a Manual Installation.
+\### 4. Estaba utilizando `Installer\_MPV-SW-Capture.exe` y ahora no puedo actualizar. ¿A qué se debe esto?
 
 
 
-\### 5. How updates number work in MPV-SW-Capture?
+Esto se debe a una limitación de GitHub. Si realizas muchas operaciones, GitHub te impide volver a descargar hasta que haya transcurrido una hora. Solo puedes tener este problema si descargas, actualizas, etc., en cantidades excesivas.
+
+Dado que solo estás actualizando o instalando, esto no debería suponer ningún problema. No obstante, si te encuentras con este problema, espera una hora o realiza una instalación manual.
 
 
 
-When you see an update, you see 3 numbers digits, separated by dots. Here are represented in `X`, `Y`, `Z`:
+\### 5. ¿Cómo funcionan los números de actualización en MPV-SW-Capture?
+
+
+
+Cuando ves una actualización, aparecen tres números, separados por puntos. Estos se representan como `X`, `Y` y `Z`:
 
 
 
@@ -148,301 +148,171 @@ v`X`.`Y`.`Z`.
 
 
 
-`X`=Very important update that must be updated.
+`X` = Actualización muy importante que hay que realizar.
 
 
 
-`Y`=Important update.
+`Y` = Actualización importante.
 
 
 
-`Z`=Minor patch or something small added.
+`Z` = Se ha añadido una pequeña mejora o algo sin importancia.
 
 
 
 \---
 
-\## 🎨 Image, Shaders, Bezels, Crops \& Shapes
+\## 🎨 Imágenes, sombreadores, biseles, recortes y formas
 
 
 
-\### 1. Why do some shaders say 4K if I’m only using 1080p60?
+\### 1. ¿Por qué algunos shaders indican 4K si solo estoy utilizando 1080p a 60?
 
 
 
-Those shaders perform upscaling and image enhancement. If you have a 4K display, the image will better in 4K even if the input signal is 1080p60. This help to improve image in higher resolution than the original (1080p) one.
+Esos shaders se encargan de la extrapolación y la mejora de la imagen. Si tienes una pantalla 4K, la imagen se verá mejor en 4K aunque la señal de entrada sea de 1080p a 60 Hz. Esto ayuda a mejorar la imagen a una resolución superior a la original (1080p).
 
 
 
-\### 2. During setup, there is an option to auto‑enable the “👑1080p→4K Fast⚡” shader combo. Why is it recommended?
+\### 2. Durante la configuración, hay una opción para activar automáticamente la combinación de shaders «👑1080p→4K Fast⚡». ¿Por qué se recomienda?
 
 
 
-Because it's a very good combination of shaders that improve the image quality when you use fullscreen to 4K, while using very few resources. Since you have a maximum of of 1080p and you are expanding the image above that, up to 4K, this will help to have a less blurry and cleaned image.
+Porque es una combinación muy buena de shaders que mejoran la calidad de la imagen cuando se utiliza la pantalla completa a 4K, al tiempo que consumen muy pocos recursos. Dado que la resolución máxima es de 1080p y se amplía la imagen por encima de esa resolución, hasta 4K, esto ayudará a obtener una imagen menos borrosa y más nítida.
 
 
 
-\### 3. I connected a Switch and use NSO, but when I apply a bezel or crop the image looks wrong (badly cut). How do I fix this?
+\### 3. He conectado una Switch y utilizo NSO, pero cuando aplico un marco o recorto la imagen, se ve mal (mal recortada). ¿Cómo puedo solucionarlo?
 
 
 
-This is usually caused by the black bar that NSO shows at the bottom with controls and help text. You need to disable that overlay. Open any NSO app, and before selecting a game go to the right side menu → Settings → Control Display → turn off “Show controls in game”. Once that bar is gone, the image area is cleaner (bigger in some cases) and the crops and bezels will work correctly. Must be done in each NSO app.
+Esto suele deberse a la barra negra que muestra NSO en la parte inferior con los controles y el texto de ayuda. Tienes que desactivar esa superposición. Abre cualquier aplicación de NSO y, antes de seleccionar un juego, ve al menú de la derecha → Ajustes → Visualización de controles → desactiva «Mostrar controles en el juego». Una vez que desaparezca esa barra, el área de imagen quedará más despejada (en algunos casos, más grande) y los recortes y los biseles funcionarán correctamente. Hay que hacerlo en cada aplicación de NSO.
 
 
 
-\### 4. How do I disable a shader, bezel, or crop?
+\### 4. ¿Cómo desactivo un sombreador, un bisel o un recorte?
 
 
 
-\- Shader: Use the “Clean Shader” option, or simply select a different shader (it replaces the previous one, they are not stacked).
+\- Shader: Utiliza la opción «Clean Shader» o, simplemente, selecciona otro shader (este sustituirá al anterior; no se superponen).
 
-\- Bezel: Press the same bezel you selected before, or use the “Clear Bezels” option.
+\- Marco: Pulsa el mismo marco que seleccionaste antes o utiliza la opción «Borrar marcos».
 
-\- Crop: Press the same crop option you selected to toggle it off, or use the “Clear Crop” option.
+\- Recortar: Pulsa la misma opción de recorte que hayas seleccionado para desactivarla, o utiliza la opción «Borrar recorte».
 
-\- Shape: Press the same shape option you selected to toggle it off, or use the “Clear Shape” option.
-
-
-
-If you want to clear everything at once (for example, bezel, shader, shape), you can use the “Clean ALL” option.
+\- Forma: Pulsa la misma opción de forma que hayas seleccionado para desactivarla, o utiliza la opción «Borrar forma».
 
 
 
-\### 5. I want to create my own bezels but I don’t know how. How do I do it?
+Si quieres borrarlo todo de una vez (por ejemplo, el borde, el sombreador y la forma), puedes utilizar la opción «Borrar TODO».
 
 
 
-Bezels are 1920x1080 PNG images. They are mainly used with NSO to replace the default borders with whatever artwork you want. The central area is where the game image goes; you just need to design the bezel so that the game area aligns correctly and looks good. A more detailed tutorial on how to create bezels and add them to the menu, you can go here: \[Custom Bezels](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels)
+\### 5. Quiero crear mis propios biseles, pero no sé cómo. ¿Cómo lo hago?
 
 
 
-\### 6. Can I add my own shaders?
+Los marcos son imágenes PNG de 1920x1080. Se utilizan principalmente con NSO para sustituir los bordes predeterminados por el diseño que desees. La zona central es donde se coloca la imagen del juego; solo tienes que diseñar el marco de forma que el área de juego quede bien alineada y tenga un buen aspecto. Para ver un tutorial más detallado sobre cómo crear marcos y añadirlos al menú, puedes consultar esta página: \[Marcos personalizados](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels)
 
 
 
-Yes, you can. Shaders must compatible for MPV, and in .glsl format.
-
-You must put them in /shaders folder and edit menu.conf to add your shader, following the same format as other ones.
+\### 6. ¿Puedo añadir mis propios shaders?
 
 
 
-\### 7. What are SHAPES? Why they have a specific separated Submenu?
+Sí, puedes. Los shaders deben ser compatibles con MPV y estar en formato .glsl.
+
+Debes colocarlos en la carpeta /shaders y editar el archivo menu.conf para añadir tu shader, siguiendo el mismo formato que los demás.
 
 
 
-SHAPES are shaders that do the specific function of change the Shape of the screen.
+\### 7. ¿Qué son las «formas»? ¿Por qué tienen un submenú específico e independiente?
 
-For example, you can change the screen to a CRT TV shape, so the screen has a curvature.
 
-In an old version of MPV-SW-Capture, some shaders change the look to retro and change the shape of the screen, at the same time.
 
-But, the shape was specific to that shader.
+Los SHAPES son shaders que tienen la función específica de modificar la forma de la pantalla.
 
-Now, this is separated, because you can change the shape and select whatever shader you want.
+Por ejemplo, puedes cambiar la forma de la pantalla para que se parezca a la de un televisor CRT, de modo que la pantalla tenga una curvatura.
 
-You can make any combination possible, without limits!
+En una versión antigua de MPV-SW-Capture, algunos shaders cambian el aspecto a estilo retro y, al mismo tiempo, modifican la forma de la pantalla.
 
-All older shaders that had a specific shape, now are "flat". So, you can choose to have the shader "flat" or combine with a shape, it's your choice.
+Sin embargo, la forma era específica de ese shader.
+
+Ahora bien, esto está separado, ya que puedes cambiar la forma y seleccionar el shader que quieras.
+
+¡Puedes crear cualquier combinación que se te ocurra, sin límites!
+
+Todos los shaders antiguos que tenían una forma concreta ahora son «planos». Así pues, puedes elegir entre tener el shader «plano» o combinarlo con una forma; tú decides.
 
 
 
 \---
 
-\## 📹 Recording \& Screenshots
+\## 📹 Grabación y capturas de pantalla
 
 
 
-\### 1. Why is the default recording limit only 30 seconds? Isn’t that too short?
+\### 1. ¿Por qué el límite de grabación predeterminado es de solo 30 segundos? ¿No es demasiado corto?
 
 
 
-You can actually record as long as you want. The 30‑second default exists because of the way recording works: while you play, the tool needs a temporary space on disk. It can use around 7–10 GB (for 30 seconds of record, 1 minute is twice the size) of free space on your HDD to store a temporary video file and a temporary audio file. After recording, both are merged into a compressed `.mp4` file without quality loss, and the temporary 7–10 GB files are deleted automatically.
+En realidad, puedes grabar todo el tiempo que quieras. El límite predeterminado de 30 segundos se debe al funcionamiento de la grabación: mientras reproduces, la herramienta necesita espacio temporal en el disco. Puede utilizar entre 7 y 10 GB (para 30 segundos de grabación; 1 minuto ocupa el doble) de espacio libre en tu disco duro para almacenar un archivo de vídeo temporal y un archivo de audio temporal. Tras la grabación, ambos se fusionan en un archivo comprimido `.mp4` sin pérdida de calidad, y los archivos temporales de entre 7 y 10 GB se eliminan automáticamente.
 
 
 
-If disk space is not a problem and you want a longer default duration, you can edit `scripts/record.lua` and change the number in `data.max\_record\_time =` to any value you want (in seconds).
+Si el espacio en disco no supone un problema y deseas una duración predeterminada más larga, puedes editar el archivo `scripts/record.lua` y cambiar el número que aparece en `data.max\_record\_time =` por el valor que desees (en segundos).
 
 
 
-\### 2. I want to change the Default Record Video Time to more than the default 30 seconds. Can I do this without editing record.lua?
+\### 2. Quiero cambiar la duración predeterminada de la grabación de vídeo para que sea superior a los 30 segundos predeterminados. ¿Puedo hacerlo sin editar el archivo record.lua?
 
 
 
-Yes, since v2.0.0 you can freely change the Default Record Time in Setup to 30/60/90/120 seconds.
+Sí, a partir de la versión 2.0.0 puedes cambiar libremente el tiempo de grabación predeterminado en la configuración a 30, 60, 90 o 120 segundos.
 
 
 
-\### 3. Can I record less than the default time I choose?
+\### 3. ¿Puedo grabar menos tiempo del que he elegido por defecto?
 
 
 
-Yes. Start recording from the menu, and if you press the same record button again before default time is over, the recording will stop immediately at that moment.
+Sí. Empieza a grabar desde el menú y, si vuelves a pulsar el mismo botón de grabación antes de que finalice el tiempo predeterminado, la grabación se detendrá inmediatamente en ese momento.
 
 
 
-\### 4. When I record a video, does it include bezels / crops / shaders?
+\### 4. Cuando grabo un vídeo, ¿incluye los biseles, los recortes y los efectos de sombreado?
 
 
 
-No. The recorded video is captured as if none of these were active, regardless of what you are using. This is because recording happens “before” any of these effects are applied.
+No. El vídeo grabado se captura como si ninguno de estos efectos estuviera activo, independientemente de lo que estés utilizando. Esto se debe a que la grabación se realiza «antes» de que se aplique cualquiera de estos efectos.
 
 
 
-\### 5. When I take a screenshot, does it include bezels / crops / shaders?
+\### 5. Cuando hago una captura de pantalla, ¿incluye los biseles, los recortes o los efectos de sombreado?
 
 
 
-Yes. Screenshots are taken with whatever you have active at that moment. If you want a “clean” screenshot, just disable shaders (and any other overlay) before capturing.
+Sí. Las capturas de pantalla se realizan con lo que tengas activo en ese momento. Si quieres una captura de pantalla «limpia», solo tienes que desactivar los shaders (y cualquier otra superposición) antes de realizarla.
 
 
 
-\### 6. Where are videos and screenshots stored?
+\### 6. ¿Dónde se almacenan los vídeos y las capturas de pantalla?
 
 
 
-They are saved inside the `\_record` and `\_screenshots` folders, located in the same folder where you installed MPV‑SW‑Capture.
+Se guardan en las carpetas `\_record` y `\_screenshots`, situadas en la misma carpeta en la que instalaste MPV‑SW‑Capture.
 
-It's not necessary to create them, because the software creates itself after taking a screenshot or record a video.
+No es necesario crearlos, ya que el programa los genera automáticamente tras hacer una captura de pantalla o grabar un vídeo.
 
-If, for a strange reason, you cannot record video and/or take screenshots, and you didn't have these folders, you can manually create them.
+Si, por alguna extraña razón, no puedes grabar vídeos o hacer capturas de pantalla, y no tuvieras estas carpetas, puedes crearlas manualmente.
 
 
 
-\### 7. When recording a video, I see a counter with the time left to finish the record. Is that normal?
+\### 7. Cuando grabo un vídeo, veo un contador que indica el tiempo que queda para terminar la grabación. ¿Es normal?
 
 
 
-Yes, that is normal. With this you can check how much time left do you have for your video.
-
-
-
-\---
-
-
-
-\## 🧰 Menu, Window \& Controls
-
-
-
-\### 1. How do I open the menu when the program starts?
-
-
-
-Just right‑click on the window and the menu will open. Alternatively, you can press the `ESC` key on your keyboard, but make sure the mouse is over the MPV‑SW‑Capture window and the program is focused.
-
-
-
-\### 2. How do I close the program? I don’t see any “X” button to close it.
-
-
-
-To close MPV‑SW‑Capture, open the menu and select the “QUIT” option.
-
-
-
-\### 3. Why do I see a check mark next to some options in the menu?
-
-
-
-The check mark means that the option is currently enabled. Not every single option has a check mark, but most of them do. With this, you can quickly see what is active and what is not.
-
-
-
-\### 4. What is the “Info Stream” option and how do I hide it once it’s on?
-
-
-
-“Info Stream” shows statistics about the current stream (resolution, resources usage, etc.). It is useful when you want to check what is going on internally. To hide it, simply select the “Info Stream” option again and the overlay will disappear.
-
-
-
-\### 5. In the menu there are many options under WINDOW. What are they for?
-
-
-
-These options let you customize the MPV‑SW‑Capture window as you like.
-
-\- You can change the size from 0.5x to 2.0x, or go full screen. You can also set a specific position for the window.
-
-\- “Always on Top” keeps the window above other windows (press it again to disable).
-
-\- “Stretch Window” lets you stretch the current image to a wider aspect ratio (for example, from 16:9 to 21:9, or from 4:3 to 16:9). This is especially useful with NSO: if you have a 4:3 game, you can apply a crop and then “Stretch Window” to fill a 16:9 area.
-
-\- “Mini Mode” sets the window to a smaller 0.3x size and moves it to the bottom‑right corner of the screen.
-
-
-
-\### 6. How can I change the volume of MPV‑SW‑Capture independently in Windows?
-
-
-
-On Windows, click the sound icon in the system tray, open the output/mixer panel, find the `ffplay` entry and adjust its volume to the level you want. That will change the volume for MPV‑SW‑Capture specifically.
-
-
-
-In v2.1.0 you can change audio inside MPV-SW-Capture, without needing to change in output/mixer planel.
-
-You can use Mouse's Wheel, Keyboard's keys and a new Submenu called "AUDIO" in MENU, to change the audio.
-
-
-
-\### 7. You say there are two programs, one for video and one for audio. What happens to audio if I close MPV‑SW‑Capture?
-
-
-
-If you close the MPV‑SW‑Capture window, the audio closes as well. Both parts are designed to work together, so when MPV‑SW‑Capture is closed, the audio process with is also stopped and fully closed.
-
-
-
-\### 8. What happen if I use shaders/bezels/shapes/crops/any option, and I close the program?
-
-
-
-Any option, anything you choose, only keep until you close MPV-SW-Capture.
-
-So, if you open again, all will be the default options.
-
-The only options that you can save to autostart, are some options you can choose in the Setup.
-
-
-
-\### 9. For MPV‑SW‑Capture you must use mouse to control the MENU, right? But, exist some keyboard and mouse shortcuts to some functions?
-
-
-
-Yes, there are some functions that you can use with keyboard and mouse:
-
-
-
-\*\*a) Mouse:\*\*
-
-
-
-\- \*\*\_Fullscreen\_:\*\* If you double click in the screen you can cycle fullscreen \*\*ON\*\* and \*\*OFF\*\*.
-
-\- \_\*\*Access to MENU\*\*\_: Press right click in the screen to access menu.
-
-\- \*\*\_Control Audio\_\*\*: If you use the Mouse's Wheel UP, you increase Volume. Wheel DOWN, decrease volume. You can keep rotating Wheel to find your desire volume.
-
-
-
-\*\*b) Keyboard:\*\*
-
-
-
-\- \*\*\_Access to MENU\_:\*\* Press ESC key in the screen to access menu.
-
-\- \_\*\*Navigate in MENU\*\*\_: You can also use keyboard keys UP, DOWN, LEFT, RIGHT to navigate in MENU if you want.
-
-\- \*\*\_Quick Access\_\*\*: CTRL key + a key between 1 to 4, quick change to a selection of Shaders.
-
-CRTL+5 is for Clean Shaders.
-
-CRTL+0 is for Clean ALL.
-
-\- \*\*\_Control Audio\_\*\*: If you use the Keyboard's UP key, you increase Volume by +10. DOWN key, decrease volume by -10.
-
-M key is a to Mute and pressing again is to Unmute.
+Sí, eso es normal. Así podrás comprobar cuánto tiempo te queda para tu vídeo.
 
 
 
@@ -450,29 +320,129 @@ M key is a to Mute and pressing again is to Unmute.
 
 
 
-\## 📋 Language
+\## 🧰 Menú, ventana y controles
 
 
 
-\### 1. With v2.0.0, I noticed that you can change language from English and Spanish. How works?
+\### 1. ¿Cómo puedo abrir el menú al iniciar el programa?
 
 
 
-With the new GUI setup in v2.0.0 you can easily change the language only using the button \*\*"MENU: English <- -> Espanol"\*\*.
-
-You press the button and automatically updates all text from English to Spanish. If you press again, you can change from Spanish to English.
-
-Note: You can only see the changes in languages after you close MPV-SW-Capture and open it again.
+Solo tienes que hacer clic con el botón derecho del ratón en la ventana y se abrirá el menú. También puedes pulsar la tecla `ESC` del teclado, pero asegúrate de que el cursor esté sobre la ventana de MPV-SW-Capture y de que el programa tenga el foco.
 
 
 
-\### 2. What do you translate with the button?
+\### 2. ¿Cómo cierro el programa? No veo ningún botón con una «X» para cerrarlo.
 
 
 
-Nearly all. MENU is nearly complete translated to Spanish.
+Para cerrar MPV‑SW‑Capture, abre el menú y selecciona la opción «SALIR».
 
-MPV-SW-Capture messages are also translated!
+
+
+\### 3. ¿Por qué aparece una marca de verificación junto a algunas opciones del menú?
+
+
+
+La marca de verificación indica que la opción está activada actualmente. No todas las opciones tienen una marca de verificación, pero la mayoría sí. De este modo, puedes ver rápidamente cuáles están activas y cuáles no.
+
+
+
+\### 4. ¿Qué es la opción «Info Stream» y cómo puedo ocultarla una vez que está activada?
+
+
+
+«Info Stream» muestra estadísticas sobre la transmisión actual (resolución, uso de recursos, etc.). Resulta útil cuando quieres comprobar qué está ocurriendo internamente. Para ocultarlo, basta con volver a seleccionar la opción «Info Stream» y la ventana superpuesta desaparecerá.
+
+
+
+\### 5. En el menú hay muchas opciones en la sección «VENTANA». ¿Para qué sirven?
+
+
+
+Estas opciones te permiten personalizar la ventana de MPV‑SW‑Capture a tu gusto.
+
+\- Puedes cambiar el tamaño de 0,5x a 2,0x, o pasar a pantalla completa. También puedes establecer una posición concreta para la ventana.
+
+\- La opción «Siempre visible» mantiene la ventana por encima de las demás (pulsa de nuevo para desactivarla).
+
+\- La opción «Ampliar ventana» te permite ampliar la imagen actual a una relación de aspecto más ancha (por ejemplo, de 16:9 a 21:9, o de 4:3 a 16:9). Esto resulta especialmente útil con NSO: si tienes un juego en formato 4:3, puedes recortarlo y, a continuación, aplicar «Ampliar ventana» para que ocupe un área de 16:9.
+
+\- El «Modo Mini» reduce el tamaño de la ventana a 0,3x y la desplaza a la esquina inferior derecha de la pantalla.
+
+
+
+\### 6. ¿Cómo puedo ajustar el volumen de MPV‑SW‑Capture de forma independiente en Windows?
+
+
+
+En Windows, haz clic en el icono de sonido de la bandeja del sistema, abre el panel de salida/mezclador, busca la entrada «ffplay» y ajusta su volumen al nivel que desees. De este modo, cambiarás específicamente el volumen de MPV‑SW‑Capture.
+
+
+
+En la versión 2.1.0 puedes modificar el audio desde MPV-SW-Capture, sin necesidad de realizar cambios en el panel de salida o en el mezclador.
+
+Puedes utilizar la rueda del ratón, las teclas del teclado y un nuevo submenú llamado «AUDIO» en el MENÚ para ajustar el audio.
+
+
+
+\### 7. Dices que hay dos programas, uno para el vídeo y otro para el audio. ¿Qué pasa con el audio si cierro MPV‑SW‑Capture?
+
+
+
+Si cierras la ventana de MPV‑SW‑Capture, el audio también se cierra. Ambos componentes están diseñados para funcionar conjuntamente, por lo que, al cerrar MPV‑SW‑Capture, el proceso de audio asociado también se detiene y se cierra por completo.
+
+
+
+\### 8. ¿Qué ocurre si utilizo sombreadores, biseles, formas, recortes o cualquier otra opción y cierro el programa?
+
+
+
+Cualquier opción, lo que elijas, solo se mantendrá hasta que cierres MPV-SW-Capture.
+
+Así que, si lo vuelves a abrir, aparecerán todas las opciones predeterminadas.
+
+Las únicas opciones que puedes guardar para que se ejecuten al iniciar el sistema son algunas de las que puedes seleccionar en la configuración.
+
+
+
+\### 9. En MPV‑SW‑Capture hay que usar el ratón para manejar el MENÚ, ¿verdad? Pero, ¿hay algún atajo de teclado y ratón para algunas funciones?
+
+
+
+Sí, hay algunas funciones que puedes utilizar con el teclado y el ratón:
+
+
+
+\*\*a) Ratón:\*\*
+
+
+
+\- \*\*\_Pantalla completa\_:\*\* Si haces doble clic en la pantalla, puedes alternar entre el modo de pantalla completa \*\*ACTIVADO\*\* y \*\*DESACTIVADO\*\*.
+
+\- \_\*\*Acceso al MENÚ\*\*\_: Haz clic con el botón derecho del ratón en la pantalla para acceder al menú.
+
+\- \*\*\_Control de audio\_\*\*: Si giras la rueda del ratón hacia ARRIBA, subes el volumen. Si la giras hacia ABAJO, lo bajas. Puedes seguir girando la rueda hasta encontrar el volumen que desees.
+
+
+
+*b) Teclado:*
+
+
+
+\- \*\*\_Acceso al MENÚ\_:\*\* Pulsa la tecla ESC en la pantalla para acceder al menú.
+
+\- \_\*\*Navegar por el MENÚ\*\*\_: Si lo prefieres, también puedes utilizar las teclas de teclado ARRIBA, ABAJO, IZQUIERDA y DERECHA para navegar por el MENÚ.
+
+\- \*\*\_Acceso rápido\_\*\*: tecla CTRL + una tecla del 1 al 4, para cambiar rápidamente entre una selección de shaders.
+
+CRTL+5 sirve para «Clean Shaders».
+
+Ctrl+0 sirve para «Limpiar todo».
+
+\- \*\*\_Control de audio\_\*\*: Si utilizas la tecla «Arriba» del teclado, subirás el volumen en +10. Con la tecla «Abajo», lo bajarás en -10.
+
+La tecla M sirve para silenciar y, al pulsarla de nuevo, se activa el sonido.
 
 
 
@@ -480,31 +450,29 @@ MPV-SW-Capture messages are also translated!
 
 
 
-\## 📋 Request, Issues and Comments
+\## 📋 Idioma
 
 
 
-\### 1. I have some comments about this proyects. Where can I share my opinion?
+\### 1. Con la versión 2.0.0, me he dado cuenta de que se puede cambiar el idioma entre inglés y español. ¿Cómo funciona?
 
 
 
-You can share your comments here: \*\*\[Discussions](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions)\*\*
+Con la nueva configuración de la interfaz gráfica de usuario de la versión 2.0.0, puedes cambiar fácilmente el idioma con solo pulsar el botón \*\*«MENÚ: Inglés <- -> Español»\*\*.
+
+Al pulsar el botón, todo el texto se actualiza automáticamente del inglés al español. Si vuelves a pulsarlo, podrás cambiar del español al inglés.
+
+Nota: Solo podrás ver los cambios en los idiomas después de cerrar MPV-SW-Capture y volver a abrirlo.
 
 
 
-\### 2. I have some issues. Where I can comment my issues?
+\### 2. ¿Qué se traduce con el botón?
 
 
 
-You can share your issues here: \*\*\[Issues](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)\*\*
+Casi todo. El MENÚ está casi totalmente traducido al español.
 
-
-
-\### 3. I have some ideas/requests. Can I share them? And where?
-
-
-
-You can share your ideas/request here: \*\*\[Ideas](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions/categories/ideas)\*\*
+¡Los mensajes de MPV-SW-Capture también se han traducido!
 
 
 
@@ -512,37 +480,69 @@ You can share your ideas/request here: \*\*\[Ideas](https://github.com/TyRaS-SW/
 
 
 
-\## 📋 Troubleshooting
+\## 📋 Solicitudes, incidencias y comentarios
 
 
 
-\### 1. I tried opening `MPV-SW-Capture.exe` (or shortcut), but nothing happen. The screen doesn't open! What can I do?
+\### 1. Tengo algunos comentarios sobre estos proyectos. ¿Dónde puedo dar mi opinión?
 
 
 
-Capture Cards are treated as Cameras in Windows.
-
-Also, if you open your Capture Card with another software, you cannot use it in MPV-SW-Capture, until you close the other software first.
-
-For example, if you open the camera in Windows Settings -> Bluetooth \& devices -> Cameras, and choose your Capture Card as Camera, you cannot use MPV-SW-Capture until you close there.
-
-This is a limitation that Capture Cards have by default.
+Puedes compartir tus comentarios aquí: \*\*\[Debates](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions)\*\*
 
 
 
-\### 2. Can you open multiple windows with `MPV-SW-Capture.exe`?
+\### 2. Tengo algunos problemas. ¿Dónde puedo comentarlos?
 
 
 
-No. MPV-SW-Capture.exe only accept one window at the same time. Like the answer before, the Capture Card act as one device, so this is normal.
+Puedes compartir tus incidencias aquí: \*\*\[Incidencias](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)\*\*
 
 
 
-\### 3. I have more than one Capture Card connected. How can I change the default Capture Card?
+\### 3. Tengo algunas ideas o peticiones. ¿Puedo compartirlas? ¿Y dónde?
 
 
 
-With Setup, press \*\*"Scan Device"\*\* and choose the other Capture Card (video and audio) you want to use.
+Puedes compartir tus ideas o peticiones aquí: \*\*\[Ideas](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions/categories/ideas)\*\*
 
-You must close and open again MPV-SW-Capture to see the changes.
+
+
+\---
+
+
+
+\## 📋 Solución de problemas
+
+
+
+\### 1. He intentado abrir `MPV-SW-Capture.exe` (o el acceso directo), pero no pasa nada. ¡No se abre la pantalla! ¿Qué puedo hacer?
+
+
+
+Las tarjetas de captura se consideran cámaras en Windows.
+
+Además, si abres tu tarjeta de captura con otro programa, no podrás utilizarla en MPV-SW-Capture hasta que cierres primero ese otro programa.
+
+Por ejemplo, si abres la cámara en «Configuración de Windows» -> «Bluetooth y dispositivos» -> «Cámaras» y seleccionas tu tarjeta de captura como cámara, no podrás utilizar MPV-SW-Capture hasta que cierres esa ventana.
+
+Esta es una limitación que tienen las tarjetas de captura por defecto.
+
+
+
+\### 2. ¿Se pueden abrir varias ventanas con `MPV-SW-Capture.exe`?
+
+
+
+No. MPV-SW-Capture.exe solo admite una ventana a la vez. Tal y como se ha indicado en la respuesta anterior, la tarjeta de captura funciona como un único dispositivo, por lo que esto es normal.
+
+
+
+\### 3. Tengo más de una tarjeta de captura conectada. ¿Cómo puedo cambiar la tarjeta de captura predeterminada?
+
+
+
+En «Configuración», pulsa \*\*«Escanear dispositivo»\*\* y selecciona la otra tarjeta de captura (vídeo y audio) que quieras utilizar.
+
+Debes cerrar y volver a abrir MPV-SW-Capture para ver los cambios.
 
