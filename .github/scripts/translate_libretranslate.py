@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import sys
 import os
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 
 def translate_file(input_file, output_file):
-    translator = Translator()
+    translator = GoogleTranslator(source='en', target='es')
     
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -13,26 +13,27 @@ def translate_file(input_file, output_file):
         print("⚠️ Archivo vacío, no se traduce.")
         return
     
-    print("📝 Traduciendo con Google Translate...")
+    print("📝 Traduciendo con Google Translate (deep-translator)...")
     
-    try:
-        # Dividir en fragmentos para evitar límites de tamaño
-        chunks = content.split('\n\n')
-        translated_chunks = []
-        
-        for i, chunk in enumerate(chunks):
-            if chunk.strip():
-                print(f"🔄 Traduciendo fragmento {i+1}/{len(chunks)}...")
-                translated = translator.translate(chunk, src='en', dest='es').text
+    # Dividir en fragmentos para evitar límites de tamaño
+    chunks = content.split('\n\n')
+    translated_chunks = []
+    total = len(chunks)
+    
+    for i, chunk in enumerate(chunks):
+        if chunk.strip():
+            print(f"🔄 Traduciendo fragmento {i+1}/{total}...")
+            try:
+                translated = translator.translate(chunk)
                 translated_chunks.append(translated)
-            else:
+            except Exception as e:
+                print(f"⚠️ Error en fragmento {i+1}: {e}")
+                # Si falla, mantener el original
                 translated_chunks.append(chunk)
-        
-        translated_text = '\n\n'.join(translated_chunks)
-        
-    except Exception as e:
-        print(f"❌ Error en traducción: {e}")
-        sys.exit(1)
+        else:
+            translated_chunks.append(chunk)
+    
+    translated_text = '\n\n'.join(translated_chunks)
     
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write(translated_text)
@@ -42,7 +43,7 @@ def translate_file(input_file, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Uso: python translate_googletrans.py <input> <output>")
+        print("Uso: python translate_libretranslate.py <input> <output>")
         sys.exit(1)
     
     input_file = sys.argv[1]

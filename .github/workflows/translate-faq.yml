@@ -24,9 +24,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install googletrans==4.0.0-rc1
-          # También instalar httpx para evitar problemas de versión
-          pip install httpx==0.27.0
+          pip install deep-translator
+          # También instalar requests si no está (deep-translator lo usa internamente)
+          pip install requests
 
       - name: Translate FAQ to Spanish
         run: python .github/scripts/translate_libretranslate.py FAQ.md FAQ.es.md
