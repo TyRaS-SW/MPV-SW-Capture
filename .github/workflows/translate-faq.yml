@@ -9,7 +9,8 @@ on:
 
 permissions:
   contents: write
-  models: read
+  models: read          # Permiso necesario
+  id-token: write       # Opcional, por si se necesita
 
 jobs:
   translate:
@@ -25,6 +26,19 @@ jobs:
 
       - name: Install dependencies
         run: pip install openai
+
+      - name: Test GitHub Models availability
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Probando conexión a GitHub Models..."
+          curl -X POST https://models.inference.ai.azure.com/chat/completions?api-version=2024-05-01-preview \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"model":"gpt-4o-mini","messages":[{"role":"user","content":"Hello"}]}' \
+            -w "\nHTTP Status: %{http_code}\n" \
+            -o /tmp/test_response.txt || echo "Curl falló"
+          cat /tmp/test_response.txt
 
       - name: Translate FAQ to Spanish
         env:

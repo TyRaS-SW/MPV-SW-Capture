@@ -1,32 +1,32 @@
 #!/usr/bin/env python3
 import os
 import sys
+import json
 from openai import OpenAI
 
 def translate_file(input_file, output_file):
-    # Obtener el token de GitHub desde las variables de entorno
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        print("❌ Error: GITHUB_TOKEN no encontrado en las variables de entorno")
+        print("❌ Error: GITHUB_TOKEN no encontrado")
         sys.exit(1)
 
-    # Configurar el cliente para usar GitHub Models
+    # Configurar cliente para GitHub Models
     client = OpenAI(
         base_url="https://models.inference.ai.azure.com",
-        api_key=github_token
+        api_key=github_token,
+        default_headers={"api-version": "2024-05-01-preview"}  # Versión requerida
     )
 
-    # Leer el archivo original
+    # Leer archivo
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
     if not content or content.strip() == "":
-        print(f"⚠️ El archivo {input_file} está vacío. No se traducirá.")
+        print(f"⚠️ El archivo {input_file} está vacío.")
         return
 
     print(f"📝 Traduciendo {input_file}...")
 
-    # Instrucciones para la IA
     system_prompt = """Eres un traductor profesional especializado en documentación técnica.
 
 Traduce el siguiente texto de inglés a español.
@@ -38,29 +38,41 @@ Reglas:
 - Mantén el formato y la estructura del documento.
 - La traducción debe ser natural y clara en español."""
 
-    try:
-        # Realizar la traducción usando GitHub Models
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",  # Modelo gratuito y rápido
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": content}
-            ],
-            temperature=0.3
-        )
+    models_to_try = ["gpt-4o-mini", "gpt-4o", "gpt-35-turbo"]
 
-        translated = response.choices[0].message.content
+    for model in models_to_try:
+        try:
+            print(f"🔄 Intentando con modelo: {model}")
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": content}
+                ],
+                temperature=0.3
+            )
 
-        # Guardar el resultado
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write(translated)
+            translated = response.choices[0].message.content
+            with open(output_file, 'w', encoding='utf-8') as f:
+                f.write(translated)
 
-        print(f"✅ Traducción guardada en: {output_file}")
-        print(f"📊 Tokens usados: {response.usage.total_tokens}")
+            print(f"✅ Traducción guardada en: {output_file}")
+            print(f"📊 Tokens usados: {response.usage.total_tokens}")
+            return  # Salir si funcionó
 
-    except Exception as e:
-        print(f"❌ Error durante la traducción: {e}")
-        sys.exit(1)
+        except Exception as e:
+            error_msg = str(e)
+            print(f"⚠️ Error con {model}: {error_msg}")
+            # Si el error contiene detalles, mostrarlos
+            if hasattr(e, 'response') and e.response:
+                try:
+                    print(f"Detalles: {e.response.text}")
+                except:
+                    pass
+            continue
+
+    print("❌ No se pudo traducir con ningún modelo.")
+    sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
