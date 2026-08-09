@@ -565,9 +565,10 @@
             <button class="menu-toggle" id="menu-toggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
             <div class="nav-links" id="nav-links">
                 <a href="#features" data-i18n="nav-features">Features</a>
-                <a href="#modos" data-i18n="nav-modes">Modes</a>
+                <a href="#advanced" data-i18n="nav-custom">Advanced</a>
+                <a href="#suggestion" data-i18n="nav-suggestion">Suggestion</a>
                 <a href="#menu" data-i18n="nav-menu">Menu</a>
-                <a href="#personalizacion" data-i18n="nav-custom">Customization</a>
+                <a href="#news" data-i18n="nav-news">News</a>
                 <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
                 <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
@@ -695,8 +696,45 @@
         </div>
     </section>
 
+    <!-- ===== ADVANCED CUSTOMIZATION (ID cambia a advanced) ===== -->
+    <section id="advanced" class="container">
+        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
+        <div class="custom-grid">
+            <!-- Video Options -->
+            <div class="card">
+                <i class="fas fa-sliders-h"></i>
+                <h3><span class="lang-es">Opciones de video personalizadas</span><span class="lang-en" style="display:none;">Customize Video Options</span></h3>
+                <p><span class="lang-es">Personaliza las opciones de video predeterminadas con los valores que desees.</span><span class="lang-en" style="display:none;">Customize default video options with the options you want.</span></p>
+                <a href="#" onclick="openVideoManager(); return false;">
+                    <span class="lang-es">Guía de opciones de video →</span>
+                    <span class="lang-en" style="display:none;">Video Options Guide →</span>
+                </a>
+            </div>
+            <!-- Bezels -->
+            <div class="card">
+                <i class="fas fa-border-all"></i>
+                <h3><span class="lang-es">Marcos personalizados</span><span class="lang-en" style="display:none;">Customize Bezels</span></h3>
+                <p><span class="lang-es">Personaliza los marcos con nuevos que desees agregar.</span><span class="lang-en" style="display:none;">Customize bezels with new ones you want to add.</span></p>
+                <a href="#" onclick="openBezelManager(); return false;">
+                    <span class="lang-es">Guía de marcos →</span>
+                    <span class="lang-en" style="display:none;">Bezels Guide →</span>
+                </a>
+            </div>
+            <!-- OBS -->
+            <div class="card">
+                <i class="fas fa-video"></i>
+                <h3><span class="lang-es">OBS con MPV-SW-Capture</span><span class="lang-en" style="display:none;">OBS with MPV-SW-Capture</span></h3>
+                <p><span class="lang-es">Usa una herramienta para una fácil compatibilidad con OBS.</span><span class="lang-en" style="display:none;">Use a tool for easy compatibility with OBS.</span></p>
+                <a href="#" onclick="openStreamManager(); return false;">
+                    <span class="lang-es">Guía de Stream Manager →</span>
+                    <span class="lang-en" style="display:none;">Stream Manager Guide →</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- ===== COMBINACIONES RECOMENDADAS ===== -->
-    <section id="modos-combinaciones" class="container">
+    <section id="suggestion" class="container">
         <h2><i class="fas fa-exchange-alt"></i> <span class="lang-es">Combinaciones recomendadas</span><span class="lang-en" style="display:none;">Recommended combinations</span></h2>
         <p>
             <span class="lang-es">Elige el perfil que mejor se adapte a tu juego. Cada fila te sugiere una combinación de shader, forma, recorte y marco que puedes activar desde el menú.</span>
@@ -778,43 +816,6 @@
             <span class="lang-es">Puedes activar cada elemento por separado desde el menú. Estas combinaciones son solo sugerencias.</span>
             <span class="lang-en" style="display:none;">You can activate each element separately from the menu. These combinations are just suggestions.</span>
         </p>
-    </section>
-
-    <!-- ===== ADVANCED CUSTOMIZATION ===== -->
-    <section id="personalizacion" class="container">
-        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
-        <div class="custom-grid">
-            <!-- Video Options -->
-            <div class="card">
-                <i class="fas fa-sliders-h"></i>
-                <h3><span class="lang-es">Opciones de video personalizadas</span><span class="lang-en" style="display:none;">Customize Video Options</span></h3>
-                <p><span class="lang-es">Personaliza las opciones de video predeterminadas con los valores que desees.</span><span class="lang-en" style="display:none;">Customize default video options with the options you want.</span></p>
-                <a href="#" onclick="openVideoManager(); return false;">
-                    <span class="lang-es">Guía de opciones de video →</span>
-                    <span class="lang-en" style="display:none;">Video Options Guide →</span>
-                </a>
-            </div>
-            <!-- Bezels -->
-            <div class="card">
-                <i class="fas fa-border-all"></i>
-                <h3><span class="lang-es">Marcos personalizados</span><span class="lang-en" style="display:none;">Customize Bezels</span></h3>
-                <p><span class="lang-es">Personaliza los marcos con nuevos que desees agregar.</span><span class="lang-en" style="display:none;">Customize bezels with new ones you want to add.</span></p>
-                <a href="#" onclick="openBezelManager(); return false;">
-                    <span class="lang-es">Guía de marcos →</span>
-                    <span class="lang-en" style="display:none;">Bezels Guide →</span>
-                </a>
-            </div>
-            <!-- OBS -->
-            <div class="card">
-                <i class="fas fa-video"></i>
-                <h3><span class="lang-es">OBS con MPV-SW-Capture</span><span class="lang-en" style="display:none;">OBS with MPV-SW-Capture</span></h3>
-                <p><span class="lang-es">Usa una herramienta para una fácil compatibilidad con OBS.</span><span class="lang-en" style="display:none;">Use a tool for easy compatibility with OBS.</span></p>
-                <a href="#" onclick="openStreamManager(); return false;">
-                    <span class="lang-es">Guía de Stream Manager →</span>
-                    <span class="lang-en" style="display:none;">Stream Manager Guide →</span>
-                </a>
-            </div>
-        </div>
     </section>
 
     <!-- ===== OPCIONES DEL MENÚ ===== -->
@@ -903,9 +904,9 @@
         <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
     </section>
 
-    <!-- ===== NEWS ===== -->
-    <section id="novedades" class="container">
-        <h2><i class="fas fa-rocket"></i> <span class="lang-es">Novedades</span><span class="lang-en" style="display:none;">News</span></h2>
+    <!-- ===== NEWS (ID cambia a news) ===== -->
+    <section id="news" class="container">
+        <h2><i class="fas fa-rocket"></i> <span class="lang-es">Noticias</span><span class="lang-en" style="display:none;">News</span></h2>
         <div id="releases-container"><p class="text-center" style="color:var(--text-secondary);">Loading latest releases...</p></div>
         <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
     </section>
@@ -970,9 +971,10 @@
                     const key = el.getAttribute('data-i18n');
                     const translations = {
                         'nav-features': { es: 'Características', en: 'Features' },
-                        'nav-modes': { es: 'Modos', en: 'Modes' },
+                        'nav-custom': { es: 'Avanzado', en: 'Advanced' },
+                        'nav-suggestion': { es: 'Sugerencia', en: 'Suggestion' },
                         'nav-menu': { es: 'Menú', en: 'Menu' },
-                        'nav-custom': { es: 'Personalización', en: 'Customization' },
+                        'nav-news': { es: 'Noticias', en: 'News' },
                         'nav-readme': { es: 'LEEME', en: 'README' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-download': { es: 'Descargar', en: 'Download' },
@@ -1135,13 +1137,13 @@
             else openModal('Installation Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Installation.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Installation');
         }
         function openFaq() {
-    const lang = window.currentLang || 'en';
-    const title = lang === 'es' ? 'Preguntas frecuentes' : 'FAQ';
-    const file = lang === 'es' ? 'FAQ.es.md' : 'FAQ.md';
-    const url = `https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/${file}`;
-    const githubUrl = `https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/${file}`;
-    openModal(title, url, githubUrl);
-}
+            const lang = window.currentLang || 'en';
+            const title = lang === 'es' ? 'Preguntas frecuentes' : 'FAQ';
+            const file = lang === 'es' ? 'FAQ.es.md' : 'FAQ.md';
+            const url = `https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/${file}`;
+            const githubUrl = `https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/${file}`;
+            openModal(title, url, githubUrl);
+        }
         function openDonate() {
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
