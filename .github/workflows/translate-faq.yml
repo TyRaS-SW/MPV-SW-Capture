@@ -1,0 +1,42 @@
+name: Translate FAQ to Spanish
+
+on:
+  push:
+    branches: [ "main" ]   # Cambia a tu rama principal si es otra
+    paths:
+      - "FAQ.md"            # Se activa cuando cambia este archivo
+  workflow_dispatch:        # Permite ejecución manual
+
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Translate FAQ to Spanish
+        id: translate-faq
+        uses: FidelusAleksander/ai-translate-action@v1
+        with:
+          text-file: "FAQ.md"
+          target-language: "Spanish"
+          custom-instructions: |
+            Keep technical terms like 'OBS', 'plugin', 'stream', 'GitHub', 'API' in English.
+            Do not translate code blocks (text inside backticks).
+            Maintain the Markdown formatting exactly.
+
+      - name: Save translation
+        run: |
+          echo "${{ steps.translate-faq.outputs.translated-text }}" > FAQ.es.md
+
+      - name: Commit and push if changed
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add FAQ.es.md
+          git diff --staged --quiet || git commit -m "Auto-translate FAQ to Spanish"
+          git push
