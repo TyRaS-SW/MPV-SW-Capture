@@ -30,10 +30,10 @@ def translate_file(input_file, output_file):
     print(f"📝 Traduciendo (caracteres: {len(content)})...")
 
     try:
-        # Traducir usando el glosario si existe
         if glossary:
             translated = translator.translate_text(
                 content,
+                source_lang="EN",      # <-- Añadido
                 target_lang="ES",
                 glossary=glossary
             )
