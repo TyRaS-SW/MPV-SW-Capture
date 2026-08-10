@@ -31,7 +31,7 @@ def translate_file(input_file, output_file):
             translated = translator.translate_text(
                 content,
                 target_lang="ES",
-                glossary_id=glossary_id
+                glossary=glossary_id   # <-- Corrección aquí
             )
         else:
             translated = translator.translate_text(content, target_lang="ES")
