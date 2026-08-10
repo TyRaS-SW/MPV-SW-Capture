@@ -2,7 +2,7 @@
 
 A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB capture cards. Play with any HDMI video game console with **minimal as possible latency** and **endless options**.
 
-![MPV‑SW‑Capture Logo](assets/demo/1_menu.jpg)
+![MPV‑SW‑Capture Logo](assets/msc_menu.jpg)
 
 ---
 
