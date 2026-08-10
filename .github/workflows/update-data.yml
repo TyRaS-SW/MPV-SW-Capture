@@ -1,4 +1,4 @@
-name: Actualizar datos (releases, shaders, bezels)
+name: Update (releases, shaders, bezels)
 
 on:
   schedule:
@@ -11,17 +11,17 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Clonar repositorio
+      - name: Clone repository
         uses: actions/checkout@v4
 
-      - name: Obtener releases (últimos 5)
+      - name: Obtain releases (last 5)
         id: get_releases
         run: |
           curl -H "Accept: application/vnd.github.v3+json" \
                -H "Authorization: Bearer ${{ github.token }}" \
                https://api.github.com/repos/${{ github.repository }}/releases?per_page=5 \
                | jq '[.[] | {tag: .tag_name, fecha: .published_at, descripcion: .body}]' > docs/releases.json
-          echo "Contenido de docs/releases.json:"
+          echo "Contain of docs/releases.json:"
           cat docs/releases.json
 
       - name: Obtener shaders (archivos .glsl)
@@ -34,10 +34,10 @@ jobs:
           else
             echo '[]' > docs/shaders.json
           fi
-          echo "Contenido de docs/shaders.json:"
+          echo "Contain of docs/shaders.json:"
           cat docs/shaders.json
 
-      - name: Obtener bezels (archivos .png)
+      - name: Obtain bezels (.png)
         run: |
           if [ -d "bezels" ]; then
             curl -H "Accept: application/vnd.github.v3+json" \
@@ -47,24 +47,24 @@ jobs:
           else
             echo '[]' > docs/bezels.json
           fi
-          echo "Contenido de docs/bezels.json:"
+          echo "Contain of docs/bezels.json:"
           cat docs/bezels.json
 
-      - name: Validar JSON generado
+      - name: Validate generated JSON
         run: |
           for file in docs/releases.json docs/shaders.json docs/bezels.json; do
             if ! jq empty "$file" 2>/dev/null; then
-              echo "❌ Error: $file no es un JSON válido"
+              echo "❌ Error: $file isn't a valid JSON"
               exit 1
             fi
           done
-          echo "✅ Todos los JSON son válidos."
+          echo "✅ All JSON are valid."
 
       - name: Commit y push
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/releases.json docs/shaders.json docs/bezels.json
-          # Forzamos commit incluso si no hay cambios (para depuración)
-          git commit -m "Actualización automática de datos $(date +'%Y-%m-%d %H:%M')" || echo "ℹ️ No hay cambios para commit"
+          # Commit even if there aren't new changes (debug)
+          git commit -m "$(date +'%Y-%m-%d %H:%M')" || echo "ℹ️ No changes for commit"
           git push
