@@ -74,20 +74,24 @@ local function download_content_silent(url)
     return nil
 end
 
--- Safe OSD message: respects osd-duration, hides if duration is 0
+-- Safe OSD message: respects osd-duration (hides if 0), otherwise shows message.
+-- duration is in seconds (if not given, osd-duration converted to seconds)
 local function safe_osd_message(text, duration)
+    local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+    if osd_duration_ms == 0 then
+        return  -- OSD hidden, do not show
+    end
+    -- If no specific duration provided, use osd-duration converted to seconds
     if duration == nil then
-        duration = mp.get_property_number("osd-duration") or 1000
+        duration = osd_duration_ms / 1000
     end
-    if duration > 0 then
-        mp.osd_message(text, duration)
-    end
+    mp.osd_message(text, duration)
 end
 
 -- Main version check function
 local function show_version_status()
     local success, err = pcall(function()
-        -- Initial message
+        -- Initial message (no fixed duration, uses osd-duration converted)
         if current_lang == "es" then
             safe_osd_message("Buscando actualizaciones...")
         else
@@ -128,7 +132,7 @@ local function show_version_status()
             return
         end
 
-        -- Fetch online version
+        -- Fetch online version (no fixed duration)
         if current_lang == "es" then
             safe_osd_message("Verificando versión online...")
         else
@@ -179,16 +183,14 @@ local function show_version_status()
                 msg_text = "⚠️ You have v" .. local_version_str .. " > online v" .. online_version_str .. "\nDo not update."
             end
         end
-        safe_osd_message(msg_text)
+        -- Final message with fixed duration of 1.5 seconds
+        safe_osd_message(msg_text, 1.5)
     end)
 
     if not success then
-        if current_lang == "es" then
-            safe_osd_message("ERROR: " .. tostring(err))
-        else
-            safe_osd_message("ERROR: " .. tostring(err))
-        end
-        msg.error("Version check error: " .. tostring(err))
+        local err_msg = tostring(err)
+        safe_osd_message("ERROR: " .. err_msg, 1.5)
+        msg.error("Version check error: " .. err_msg)
     end
 end
 
