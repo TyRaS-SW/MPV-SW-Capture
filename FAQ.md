@@ -2,7 +2,7 @@
 
 ## 🎮 General & Concept
 
-### 1. Why use MPV to play Switch/2/PS/XB/Retro or any other HDMI compatible console?
+### 1. Why use MPV to play any HDMI compatible console?
 
 MPV is a very capable and fast video player when configured correctly. It also lets you add shaders, bezels, crops and many other options, which expands it beyond "just playing" into something you can really customize for console gaming.
 
@@ -64,7 +64,7 @@ But, if you are talking about MPV-SW-Capture itself, the recommendation it's jus
 
 `Installer_MPV-SW-Capture.exe`, it's the new way to download and install/update `MPV-SW-Capture`, `ffplay`, `ffmpeg` and `mpv`. You use the installer and the program autoinstall all needed files. This means, that you can update new future versions of MPV-SW-Capture from the installer. Also, you can update all other needed programs to their latest versions, without the need of manual download.
 
-You can still update in the old way. Check the Manual Instruction to do **
+You can still update in the old way. Check the Manual Instruction to do here: **[Installation Guide -> Manual Installation](https://tyras-sw.github.io/MPV-SW-Capture/)**.
 
 ### 4. I was using `Installer_MPV-SW-Capture.exe` and now I cannot update. Why this happened?
 
@@ -73,7 +73,7 @@ This is because of a limitation of Github. If you check a lot, Github limit to d
 Since you are just updating or installing, this shouldn't be an issue. But, if you are having this problem, wait 1 hour or do a Manual Installation.
 
 As a workaround, you can perform a Manual Instalation while you wait, or simply wait the hour and try again.
-You can check how to do it, going to the button, at the final of the page here: **[Installation Guide -> Manual Installation](https://tyras-sw.github.io/MPV-SW-Capture/)**.
+You can check how to do it, going to the button `Installation Guide` here: **[Installation Guide -> Manual Installation](https://tyras-sw.github.io/MPV-SW-Capture/)**.
 This limit is imposed by GitHub to prevent abuse.
 
 ### 5. How updates number work in MPV-SW-Capture?
@@ -92,15 +92,15 @@ v`X`.`Y`.`Z`.
 
 ### 1. Why do some shaders say 4K if I’m only using 1080p60?
 
-Those shaders perform upscaling and image enhancement. If you have a 4K display, the image will better in 4K even if the input signal is 1080p60. This help to improve image in higher resolution than the original (1080p) one.
+Those shaders perform an image enhancement. If you have a 4K display, this help to improve image in higher resolution than the original (1080p) one.
 
 ### 2. During setup, there is an option to auto‑enable the "👑1080p→4K Fast⚡" shader combo. Why is it recommended?
 
-Because it's a very good combination of shaders that improve the image quality when you use fullscreen to 4K, while using very few resources. Since you have a maximum of of 1080p and you are expanding the image above that, up to 4K, this will help to have a less blurry and cleaned image.
+Because it's a very good combination of shaders that improve the image quality when you use fullscreen to 4K, while using very few resources and this will help to have a less blurry and cleaner image.
 
 ### 3. I connected a Switch and use NSO, but when I apply a bezel or crop the image looks wrong (badly cut). How do I fix this?
 
-This is usually caused by the black bar that NSO shows at the bottom with controls and help text. You need to disable that overlay. Open any NSO app, and before selecting a game go to the right side menu → Settings → Control Display → turn off "Show controls in game". Once that bar is gone, the image area is cleaner (bigger in some cases) and the crops and bezels will work correctly. Must be done in each NSO app.
+This is usually caused by the black bar that NSO shows at the bottom with controls and help text. You need to disable that overlay. Open any NSO app, and before selecting a game go to the `right side menu` → `Settings` → `Control Display` → turn off `Show controls in game`. Once that bar is gone, the image area is cleaner (bigger in some cases) and the crops and bezels will work correctly. Must be done in each NSO app.
 
 ### 4. How do I disable a shader, bezel, or crop?
 
@@ -127,15 +127,9 @@ SHAPES are shaders that do the specific function of change the Shape of the scre
 
 For example, you can change the screen to a CRT TV shape, so the screen has a curvature.
 
-In an old version of MPV-SW-Capture, some shaders change the look to retro and change the shape of the screen, at the same time.
-
-But, the shape was specific to that shader.
-
-Now, this is separated, because you can change the shape and select whatever shader you want.
-
 You can make any combination possible, without limits!
 
-All older shaders that had a specific shape, now are "flat". So, you can choose to have the shader "flat" or combine with a shape, it's your choice.
+So, you can combine any Shader with any Shape at any time. If you want to see some examples, go here: **[MPV-SW-Capture in action](https://tyras-sw.github.io/MPV-SW-Capture/)**.
 
 ---
 
@@ -145,25 +139,21 @@ All older shaders that had a specific shape, now are "flat". So, you can choose 
 
 You can actually record as long as you want. The 30‑second default exists because of the way recording works: while you play, the tool needs a temporary space on disk. It can use around 7–10 GB (for 30 seconds of record, 1 minute is twice the size) of free space on your HDD to store a temporary video file and a temporary audio file. After recording, both are merged into a compressed `.mp4` file without quality loss, and the temporary 7–10 GB files are deleted automatically.
 
-If disk space is not a problem and you want a longer default duration, you can edit `scripts/record.lua` and change the number in `data.max_record_time =` to any value you want (in seconds).
+If disk space is not a problem and you want a longer default duration, you can increase the time in `Setup_MPV-SW-Capture.exe`.
 
-### 2. I want to change the Default Record Video Time to more than the default 30 seconds. Can I do this without editing record.lua?
-
-Yes, since v2.0.0 you can freely change the Default Record Time in Setup to 30/60/90/120 seconds.
-
-### 3. Can I record less than the default time I choose?
+### 2. Can I record less than the default time I choose?
 
 Yes. Start recording from the menu, and if you press the same record button again before default time is over, the recording will stop immediately at that moment.
 
-### 4. When I record a video, does it include bezels / crops / shaders?
+### 3. When I record a video, does it include bezels / crops / shaders?
 
 No. The recorded video is captured as if none of these were active, regardless of what you are using. This is because recording happens "before" any of these effects are applied.
 
-### 5. When I take a screenshot, does it include bezels / crops / shaders?
+### 4. When I take a screenshot, does it include bezels / crops / shaders?
 
 Yes. Screenshots are taken with whatever you have active at that moment. If you want a "clean" screenshot, just disable shaders (and any other overlay) before capturing.
 
-### 6. Where are videos and screenshots stored?
+### 5. Where are videos and screenshots stored?
 
 They are saved inside the `_record` and `_screenshots` folders, located in the same folder where you installed MPV‑SW‑Capture.
 
@@ -171,7 +161,7 @@ It's not necessary to create them, because the software creates itself after tak
 
 If, for a strange reason, you cannot record video and/or take screenshots, and you didn't have these folders, you can manually create them.
 
-### 7. When recording a video, I see a counter with the time left to finish the record. Is that normal?
+### 6. When recording a video, I see a counter with the time left to finish the record. Is that normal?
 
 Yes, that is normal. With this you can check how much time left do you have for your video.
 
@@ -185,9 +175,9 @@ Just right‑click on the window and the menu will open. Alternatively, you can 
 
 ### 2. How do I close the program? I don’t see any "X" button to close it.
 
-To close MPV‑SW‑Capture, open the menu and select the "QUIT" option.
+To close MPV‑SW‑Capture, open the menu and select the `❌ CLOSE MPV-SW-Capture` option.
 
-### 3. Why do I see a check mark next to some options in the menu?
+### 3. Why do I see a checkmark next to some options in the menu?
 
 The check mark means that the option is currently enabled. Not every single option has a check mark, but most of them do. With this, you can quickly see what is active and what is not.
 
@@ -212,11 +202,10 @@ Additionally, these window modes are especially useful for streamers:
 
 ### 6. How can I change the volume of MPV‑SW‑Capture independently in Windows?
 
-On Windows, click the sound icon in the system tray, open the output/mixer panel, find the `ffplay` entry and adjust its volume to the level you want. That will change the volume for MPV‑SW‑Capture specifically.
-
-In v2.1.0 you can change audio inside MPV-SW-Capture, without needing to change in output/mixer planel.
-
-You can use Mouse's Wheel, Keyboard's keys and a new Submenu called "AUDIO" in MENU, to change the audio.
+You have 2 alternatives:
+- **Official**: You can easily change audio inside MPV-SW-Capture, without needing to change in output/mixer planel.
+Use Mouse's Wheel (`UP` to increase, `DOWN` to decrease), Keyboard's keys (`UP` to increase, `DOWN` to decrease, `M` to Mute/Unmute) and a the Submenu called `AUDIO` in MENU, to also change the audio.
+- **Manual** (not recommended): On Windows, click the sound icon in the system tray, open the output/mixer panel, find the `ffplay` entry and adjust its volume to the level you want. That will change the volume for MPV‑SW‑Capture specifically. Use this only if the official way fails.
 
 ### 7. You say there are two programs, one for video and one for audio. What happens to audio if I close MPV‑SW‑Capture?
 
@@ -228,7 +217,7 @@ Any option, anything you choose, only keep until you close MPV-SW-Capture.
 
 So, if you open again, all will be the default options.
 
-The only options that you can save to autostart, are some options you can choose in the Setup.
+The only options that you can save to autostart, are some options you can choose in the **Setup**, **Install** and **Tools**.
 
 ### 9. For MPV‑SW‑Capture you must use mouse to control the MENU, right? But, exist some keyboard and mouse shortcuts to some functions?
 
@@ -238,23 +227,23 @@ Yes, there are some functions that you can use with keyboard and mouse:
 
 - **_Fullscreen_:** If you double click in the screen you can cycle fullscreen **ON** and **OFF**.
 - **_Access to MENU_:** Press right click in the screen to access menu.
-- **_Control Audio_:** If you use the Mouse's Wheel UP, you increase Volume. Wheel DOWN, decrease volume. You can keep rotating Wheel to find your desire volume.
+- **_Control Audio_:** If you use the Mouse's Wheel `UP`, you increase Volume. Wheel `DOWN`, decrease volume. You can keep rotating Wheel to find your desire volume.
 
 **b) Keyboard:**
 
-- **_Access to MENU_:** Press ESC key in the screen to access menu.
-- **_Navigate in MENU_:** You can also use keyboard keys UP, DOWN, LEFT, RIGHT to navigate in MENU if you want.
-- **_Quick Access_:** CTRL key + a key between 1 to 4, quick change to a selection of Shaders.
-  - CTRL+5 is for Clean Shaders.
-  - CTRL+0 is for Clean ALL.
-- **_Control Audio_:** If you use the Keyboard's UP key, you increase Volume by +10. DOWN key, decrease volume by -10.
-  - M key is a to Mute and pressing again is to Unmute.
+- **_Access to MENU_:** Press `ESC` key in the screen to access menu.
+- **_Navigate in MENU_:** You can also use keyboard keys `UP`, `DOWN`, `LEFT`, `RIGHT` to navigate in MENU if you want.
+- **_Quick Access_:** `CTRL` key + a key between `1` to `4`, quick change to a selection of Shaders.
+  - `CTRL`+`5` is for `Clean Shaders`.
+  - `CTRL`+`0` is for `Clean ALL`.
+- **_Control Audio_:** If you use the Keyboard's `UP` key, you increase Volume by +10. `DOWN` key, decrease volume by -10.
+  - `M` key is a to Mute and pressing again is to Unmute.
 
 ### 10. How can I check which version of MPV-SW-Capture I have installed?
 
 There are two ways:  
 1. Visit the [official releases page](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) to see the latest version available.  
-2. Open MPV-SW-Capture, go to the menu **HELP → Check Latest MSC Version**. The program will tell you if you have the latest version or if an update is available.
+2. Open MPV-SW-Capture, go to the menu **`HELP` → `Check Latest MSC Version`**. The program will tell you if you have the latest version or if an update is available.
 
 ---
 
@@ -284,7 +273,7 @@ The Stream Manager (in the `tools/` folder) automates the entire process. It ins
 
 The option **"Hide OSD Messages"** is located in the menu under **OTHERS → Hide OSD Messages**. When enabled, it hides all on‑screen messages that appear when you select any option (e.g., shader changes, crop adjustments, etc.). This is ideal for streamers who don’t want these notifications to appear on their broadcast, or for users who simply prefer a cleaner interface.
 
-**Important:** For safety reasons, the **RECORD VIDEO** function is completely disabled when "Hide OSD Messages" is active. You can only use recording when this option is turned off. This ensures that you are aware of the recording status and avoid accidentally capturing without visual feedback.
+**Important:** For safety reasons, the **`RECORD VIDEO`** function is completely disabled when `Hide OSD Messages` is active. You can only use recording when this option is turned off. This ensures that you are aware of the recording status and avoid accidentally capturing without visual feedback.
 
 ### 🖼 Bezel Manager
 
@@ -352,7 +341,7 @@ Yes! You can share comments/issues/request/and more, in the official discord: **
 
 ## 📋 Troubleshooting
 
-### 1. I tried opening `MPV-SW-Capture.exe` (or shortcut), but nothing happen. The screen doesn't open! What can I do?
+### 1. I tried opening `MPV.exe` (or shortcut), but nothing happen. The screen doesn't open! What can I do?
 
 Capture Cards are treated as Cameras in Windows.
 
@@ -364,7 +353,7 @@ This is a limitation that Capture Cards have by default.
 
 If the window appears for a moment and then closes, it is usually because the capture device is not properly configured. Run `Setup_MPV-SW-Capture.exe`, select your capture card (video and audio), click "Save and Exit", and then launch the program again.
 
-### 2. Can you open multiple windows with `MPV-SW-Capture.exe`?
+### 2. Can you open multiple windows with `MPV.exe`?
 
 No. MPV-SW-Capture.exe only accept one window at the same time. Like the answer before, the Capture Card act as one device, so this is normal.
 
