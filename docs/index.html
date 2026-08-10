@@ -219,6 +219,17 @@
             border-color: var(--accent-gold-light);
             color: var(--accent-gold-light);
         }
+        /* ---- NUEVO: BOTÓN FAQ AZUL ---- */
+        .btn-faq {
+            border-color: #1f6feb;
+            color: #1f6feb;
+        }
+        .btn-faq:hover {
+            background: rgba(31, 111, 235, 0.15);
+            border-color: #388bfd;
+            color: #388bfd;
+            text-decoration: none;
+        }
 
         /* ===== CARDS ===== */
         .card-grid {
@@ -567,7 +578,7 @@
                 <a href="#features" data-i18n="nav-features">Features</a>
                 <a href="#advanced" data-i18n="nav-custom">Advanced</a>
                 <a href="#news" data-i18n="nav-news">News</a>
-                <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
+                <a href="#faq" data-i18n="nav-faq">FAQ</a>
                 <a href="#suggestion" data-i18n="nav-suggestion">Suggestion</a>
                 <a href="#menu" data-i18n="nav-menu">Menu</a>
                 <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
@@ -608,7 +619,8 @@
                         <span class="lang-es">Guía de instalación</span>
                         <span class="lang-en" style="display:none;">Installation Guide</span>
                     </a>
-                    <a href="#" id="btn-faq" class="btn btn-outline" onclick="openFaq(); return false;">
+                    <!-- Botón FAQ con clase btn-faq -->
+                    <a href="#" id="btn-faq" class="btn btn-outline btn-faq" onclick="openFaq(); return false;">
                         <i class="fas fa-question-circle"></i> FAQ
                     </a>
                     <a href="#" onclick="openDonate(); return false;" class="btn btn-outline btn-support">
@@ -758,7 +770,8 @@
             <!-- Card 5 -->
             <div class="card"><h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3><p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span><span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p></div>
         </div>
-        <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
+        <!-- Botón "Ver FAQ completa →" con clase btn-faq -->
+        <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline btn-faq"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
     </section>
 
     <!-- ===== SUGGESTION ===== -->
@@ -952,10 +965,8 @@
 
     <script>
         // ========================================================
-        // 1. IDIOMA (desde URL, sin localStorage)
+        // 1. IDIOMA (solo desde URL, sin localStorage)
         // ========================================================
-        let releasesData = []; // Guardar datos de releases para actualizar fechas sin recargar
-
         document.addEventListener('DOMContentLoaded', function() {
             const langButtons = document.querySelectorAll('.lang-btn');
 
@@ -1006,11 +1017,6 @@
                 actualizarDemoIdioma(lang);
                 actualizarBotonAuto(lang);
                 generarControles();
-
-                // ★ NUEVO: Actualizar las fechas de las noticias sin recargar ★
-                if (releasesData && releasesData.length > 0) {
-                    mostrarReleases(releasesData);
-                }
             }
 
             langButtons.forEach(btn => {
@@ -1041,35 +1047,31 @@
         scrollBtn.addEventListener('click', scrollToTop);
 
         // ========================================================
-        // 3. RELEASES (con guardado de datos y refresco de fechas)
+        // 3. RELEASES
         // ========================================================
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
             try {
                 const response = await fetch('releases.json');
                 if (!response.ok) throw new Error('Could not load releases file');
-                releasesData = await response.json();
-                releasesData.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                if (releasesData.length > 0) {
-                    const version = releasesData[0].tag;
+                let releases = await response.json();
+                releases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                if (releases.length > 0) {
+                    const version = releases[0].tag;
                     document.querySelectorAll('#version-number, #version-number-en').forEach(el => el.textContent = version);
                 }
-                mostrarReleases(releasesData);
+                mostrarReleases(releases);
             } catch (error) {
-                const lang = window.currentLang || 'en';
-                const msg = lang === 'es' ? 'Error al cargar noticias. Puedes revisarlas en <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.' : 'Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.';
-                contenedor.innerHTML = `<p style="color:#ff6b6b;">${msg}</p>`;
+                contenedor.innerHTML = `<p style="color:#ff6b6b;">Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.</p>`;
             }
         }
-
         function mostrarReleases(releases) {
             const contenedor = document.getElementById('releases-container');
             const ultimas = releases.slice(0, 5);
             let html = '<ul style="list-style: none; padding-left:0;">';
-            const lang = window.currentLang || 'en';
-            const locale = lang === 'es' ? 'es-ES' : 'en-US';
-
             ultimas.forEach((release, index) => {
+                const lang = window.currentLang || 'en';
+                const locale = lang === 'es' ? 'es-ES' : 'en-US';
                 const fecha = new Date(release.fecha).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
                 const descripcion = marked.parse(release.descripcion || 'No description');
                 const colorBorde = index === 0 ? 'var(--accent-gold)' : (index === 1 ? 'var(--accent-gold-light)' : 'var(--border-color)');
