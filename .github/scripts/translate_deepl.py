@@ -6,16 +6,19 @@ import deepl
 def translate_file(input_file, output_file):
     api_key = os.environ.get("DEEPL_API_KEY")
     if not api_key:
-        print("❌ Error: DEEPL_API_KEY no encontrada en variables de entorno")
+        print("❌ Error: DEEPL_API_KEY no encontrada")
         sys.exit(1)
 
-    glossary_id = os.environ.get("DEEPL_GLOSSARY_ID")
-    if glossary_id:
-        print(f"🔤 Usando glosario: {glossary_id}")
-    else:
-        print("⚠️ DEEPL_GLOSSARY_ID no encontrada. Continuando sin glosario.")
-
     translator = deepl.Translator(api_key)
+
+    glossary_id = os.environ.get("DEEPL_GLOSSARY_ID")
+    glossary = None
+    if glossary_id:
+        try:
+            glossary = translator.get_glossary(glossary_id)
+            print(f"🔤 Glosario cargado: {glossary.name} (ID: {glossary_id})")
+        except Exception as e:
+            print(f"⚠️ No se pudo cargar el glosario: {e}. Continuando sin glosario.")
 
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
@@ -24,14 +27,15 @@ def translate_file(input_file, output_file):
         print("⚠️ Archivo vacío, no se traduce.")
         return
 
-    print(f"📝 Traduciendo con DeepL (caracteres: {len(content)})...")
+    print(f"📝 Traduciendo (caracteres: {len(content)})...")
 
     try:
-        if glossary_id:
+        # Traducir usando el glosario si existe
+        if glossary:
             translated = translator.translate_text(
                 content,
                 target_lang="ES",
-                glossary=glossary_id   # <-- Corrección aquí
+                glossary=glossary
             )
         else:
             translated = translator.translate_text(content, target_lang="ES")
