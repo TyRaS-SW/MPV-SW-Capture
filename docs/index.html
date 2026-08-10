@@ -952,8 +952,10 @@
 
     <script>
         // ========================================================
-        // 1. IDIOMA (solo desde URL, sin localStorage)
+        // 1. IDIOMA (desde URL, sin localStorage)
         // ========================================================
+        let releasesData = []; // Guardar datos de releases para actualizar fechas sin recargar
+
         document.addEventListener('DOMContentLoaded', function() {
             const langButtons = document.querySelectorAll('.lang-btn');
 
@@ -1004,6 +1006,11 @@
                 actualizarDemoIdioma(lang);
                 actualizarBotonAuto(lang);
                 generarControles();
+
+                // ★ NUEVO: Actualizar las fechas de las noticias sin recargar ★
+                if (releasesData && releasesData.length > 0) {
+                    mostrarReleases(releasesData);
+                }
             }
 
             langButtons.forEach(btn => {
@@ -1034,42 +1041,46 @@
         scrollBtn.addEventListener('click', scrollToTop);
 
         // ========================================================
-        // 3. RELEASES
+        // 3. RELEASES (con guardado de datos y refresco de fechas)
         // ========================================================
         async function cargarReleases() {
             const contenedor = document.getElementById('releases-container');
             try {
                 const response = await fetch('releases.json');
                 if (!response.ok) throw new Error('Could not load releases file');
-                let releases = await response.json();
-                releases.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                if (releases.length > 0) {
-                    const version = releases[0].tag;
+                releasesData = await response.json();
+                releasesData.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                if (releasesData.length > 0) {
+                    const version = releasesData[0].tag;
                     document.querySelectorAll('#version-number, #version-number-en').forEach(el => el.textContent = version);
                 }
-                mostrarReleases(releases);
+                mostrarReleases(releasesData);
             } catch (error) {
-                contenedor.innerHTML = `<p style="color:#ff6b6b;">Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.</p>`;
+                const lang = window.currentLang || 'en';
+                const msg = lang === 'es' ? 'Error al cargar noticias. Puedes revisarlas en <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.' : 'Error loading news. You can check them on <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank">GitHub</a>.';
+                contenedor.innerHTML = `<p style="color:#ff6b6b;">${msg}</p>`;
             }
         }
+
         function mostrarReleases(releases) {
-    const contenedor = document.getElementById('releases-container');
-    const ultimas = releases.slice(0, 5);
-    let html = '<ul style="list-style: none; padding-left:0;">';
-    ultimas.forEach((release, index) => {
-        const lang = window.currentLang || 'en';
-        const locale = lang === 'es' ? 'es-ES' : 'en-US';
-        const fecha = new Date(release.fecha).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-        const descripcion = marked.parse(release.descripcion || 'No description');
-        const colorBorde = index === 0 ? 'var(--accent-gold)' : (index === 1 ? 'var(--accent-gold-light)' : 'var(--border-color)');
-        html += `<li style="margin-bottom:0.8rem; background:var(--bg-card); padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
-            <strong>${release.tag}</strong> (${fecha})
-            <div style="margin-top:0.5rem; font-size:0.95rem; color:var(--text-secondary);">${descripcion}</div>
-        </li>`;
-    });
-    html += '</ul>';
-    contenedor.innerHTML = html;
-}
+            const contenedor = document.getElementById('releases-container');
+            const ultimas = releases.slice(0, 5);
+            let html = '<ul style="list-style: none; padding-left:0;">';
+            const lang = window.currentLang || 'en';
+            const locale = lang === 'es' ? 'es-ES' : 'en-US';
+
+            ultimas.forEach((release, index) => {
+                const fecha = new Date(release.fecha).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+                const descripcion = marked.parse(release.descripcion || 'No description');
+                const colorBorde = index === 0 ? 'var(--accent-gold)' : (index === 1 ? 'var(--accent-gold-light)' : 'var(--border-color)');
+                html += `<li style="margin-bottom:0.8rem; background:var(--bg-card); padding:1rem; border-radius:8px; border-left:4px solid ${colorBorde};">
+                    <strong>${release.tag}</strong> (${fecha})
+                    <div style="margin-top:0.5rem; font-size:0.95rem; color:var(--text-secondary);">${descripcion}</div>
+                </li>`;
+            });
+            html += '</ul>';
+            contenedor.innerHTML = html;
+        }
 
         // ========================================================
         // 4. SHADERS Y BEZELS
