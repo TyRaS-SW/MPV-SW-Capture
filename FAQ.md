@@ -355,7 +355,7 @@ If the window appears for a moment and then closes, it is usually because the ca
 
 ### 2. Can you open multiple windows with `MPV.exe`?
 
-No. MPV-SW-Capture.exe only accept one window at the same time. Like the answer before, the Capture Card act as one device, so this is normal.
+No. `MPV.exe` only accept one window at the same time. Like the answer before, the Capture Card act as one device, so this is normal.
 
 ### 3. I have more than one Capture Card connected. How can I change the default Capture Card?
 
