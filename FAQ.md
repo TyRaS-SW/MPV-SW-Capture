@@ -64,7 +64,7 @@ But, if you are talking about MPV-SW-Capture itself, the recommendation it's jus
 
 `Installer_MPV-SW-Capture.exe`, it's the new way to download and install/update `MPV-SW-Capture`, `ffplay`, `ffmpeg` and `mpv`. You use the installer and the program autoinstall all needed files. This means, that you can update new future versions of MPV-SW-Capture from the installer. Also, you can update all other needed programs to their latest versions, without the need of manual download.
 
-You can still update in the old way. The instructions for that are separated here: **[MANUAL Install](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)**
+You can still update in the old way. Check the Manual Instruction to do **
 
 ### 4. I was using `Installer_MPV-SW-Capture.exe` and now I cannot update. Why this happened?
 
@@ -72,7 +72,9 @@ This is because of a limitation of Github. If you check a lot, Github limit to d
 
 Since you are just updating or installing, this shouldn't be an issue. But, if you are having this problem, wait 1 hour or do a Manual Installation.
 
-As a workaround, you can perform a **[Manual Installation](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/MANUAL-Installation-Guide)** while you wait, or simply wait the hour and try again. This limit is imposed by GitHub to prevent abuse.
+As a workaround, you can perform a Manual Instalation while you wait, or simply wait the hour and try again.
+You can check how to do it, going to the button, at the final of the page here: **[Installation Guide -> Manual Installation](https://tyras-sw.github.io/MPV-SW-Capture/)**.
+This limit is imposed by GitHub to prevent abuse.
 
 ### 5. How updates number work in MPV-SW-Capture?
 
@@ -111,7 +113,7 @@ If you want to clear everything at once (for example, bezel, shader, shape), you
 
 ### 5. I want to create my own bezels but I don’t know how. How do I do it?
 
-Bezels are 1920x1080 PNG images. They are mainly used with NSO to replace the default borders with whatever artwork you want. The central area is where the game image goes; you just need to design the bezel so that the game area aligns correctly and looks good. A more detailed tutorial on how to create bezels and add them to the menu, you can go here: [Custom Bezels](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels)
+Bezels are 1920x1080 PNG images. They are mainly used with NSO to replace the default borders with whatever artwork you want. The central area is where the game image goes; you just need to design the bezel so that the game area aligns correctly and looks good. A more detailed tutorial on how to create bezels and add them to the menu, you can go here: **[Advanced customization -> 8. Create your Custom Bezel](https://tyras-sw.github.io/MPV-SW-Capture/#advanced)**.
 
 ### 6. Can I add my own shaders?
 
@@ -276,8 +278,7 @@ When OBS is installed in a protected system folder like `C:\Program Files`, writ
 #### 4. How can I use MPV-SW-Capture with OBS more easily?
 
 The Stream Manager (in the `tools/` folder) automates the entire process. It installs the `win-capture-audio` plugin, creates a scene collection, or adds the required sources to an existing collection. For detailed step-by-step guides, see:  
-- [Stream Manager Guide](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide-Stream-Manager)  
-- [Installation Guide](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide-Installation)
+- [Advanced customization](https://tyras-sw.github.io/MPV-SW-Capture/#advanced)
 
 #### 5. What is the "Hide OSD Messages" option and how does it affect recording?
 
@@ -294,7 +295,7 @@ The option **"Hide OSD Messages"** is located in the menu under **OTHERS → Hid
 - Add new bezels to the menu (by placing your PNG images in the appropriate folder and updating the configuration).
 - Remove or reorganize existing bezels.
 
-This tool simplifies the process of creating and using custom bezels without editing configuration files manually. For a detailed guide, see the [Custom Bezels](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Custom-Bezels) page.
+This tool simplifies the process of creating and using custom bezels without editing configuration files manually. For a detailed guide, go here: **[Advanced customization -> 8. Create your Custom Bezel](https://tyras-sw.github.io/MPV-SW-Capture/#advanced)**.
 
 ### 🎞 Video Manager
 
@@ -313,9 +314,9 @@ This tool is especially useful for users who want to fine‑tune performance and
 
 ## 📋 Language
 
-### 1. With v2.0.0, I noticed that you can change language from English and Spanish. How works?
+### 1. I noticed that you can change language from English and Spanish. How works?
 
-With the new GUI setup in v2.0.0 you can easily change the language only using the button **"MENU: English <- -> Espanol"** in `Setup_MPV-SW-Capture.exe`.
+With the GUI setup you can easily change the language only using the button **"MENU: English <- -> Espanol"** in `Setup_MPV-SW-Capture.exe`.
 
 You press the button and automatically updates all text from English to Spanish. If you press again, you can change from Spanish to English.
 
@@ -337,17 +338,15 @@ For example, if you open the Setup and change the language to Spanish, then clos
 
 ## 📋 Request, Issues and Comments
 
-### 1. I have some comments about this proyects. Where can I share my opinion?
+### 1. I have some comments, issues or request about this proyects. Where can I share my opinion in Github?
 
 You can share your comments here: **[Discussions](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions)**
-
-### 2. I have some issues. Where I can comment my issues?
-
 You can share your issues here: **[Issues](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)**
-
-### 3. I have some ideas/requests. Can I share them? And where?
-
 You can share your ideas/request here: **[Ideas](https://github.com/TyRaS-SW/MPV-SW-Capture/discussions/categories/ideas)**
+
+### 2. Can I ask in another platform like `Discord`?
+
+Yes! You can share comments/issues/request/and more, in the official discord: **[Official MPV-SW-Capture DISCORD](https://discord.gg/PaVutUUK9U)**.
 
 ---
 
