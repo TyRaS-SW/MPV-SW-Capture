@@ -566,11 +566,11 @@
             <div class="nav-links" id="nav-links">
                 <a href="#features" data-i18n="nav-features">Features</a>
                 <a href="#advanced" data-i18n="nav-custom">Advanced</a>
+                <a href="#news" data-i18n="nav-news">News</a>
+                <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="#suggestion" data-i18n="nav-suggestion">Suggestion</a>
                 <a href="#menu" data-i18n="nav-menu">Menu</a>
-                <a href="#news" data-i18n="nav-news">News</a>
                 <a href="#" onclick="openReadme(); return false;" data-i18n="nav-readme">README</a>
-                <a href="#" onclick="openFaq(); return false;" data-i18n="nav-faq">FAQ</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" data-i18n="nav-download">Download</a>
                 <a href="https://github.com/TyRaS-SW/MPV-SW-Capture" target="_blank" class="github-link" data-i18n="nav-github"><i class="fab fa-github"></i> GitHub</a>
                 <a href="https://discord.gg/PaVutUUK9U" target="_blank" class="discord-link" data-i18n="nav-discord"><i class="fab fa-discord"></i> Discord</a>
@@ -696,7 +696,7 @@
         </div>
     </section>
 
-    <!-- ===== ADVANCED CUSTOMIZATION (ID cambia a advanced) ===== -->
+    <!-- ===== ADVANCED CUSTOMIZATION ===== -->
     <section id="advanced" class="container">
         <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
         <div class="custom-grid">
@@ -733,7 +733,35 @@
         </div>
     </section>
 
-    <!-- ===== COMBINACIONES RECOMENDADAS ===== -->
+    <!-- ===== NEWS ===== -->
+    <section id="news" class="container">
+        <h2><i class="fas fa-rocket"></i> <span class="lang-es">Noticias</span><span class="lang-en" style="display:none;">News</span></h2>
+        <div id="releases-container"><p class="text-center" style="color:var(--text-secondary);">Loading latest releases...</p></div>
+        <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
+    </section>
+
+    <!-- ===== FAQ (movida justo debajo de News) ===== -->
+    <section id="faq" class="container">
+        <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
+        <div class="card-grid">
+            <!-- Card 1 -->
+            <div class="card"><h3><span class="lang-es">¿Por qué usar MPV y no OBS?</span><span class="lang-en" style="display:none;">Why use MPV instead of OBS?</span></h3><p><span class="lang-es">MPV ofrece menor latencia y una personalización más profunda (shaders, bezels, crops) mas adecuada para juegos.</span><span class="lang-en" style="display:none;">MPV offers lower latency and deeper customization (shaders, bezels, crops) most suited for gaming.</span></p></div>
+            <!-- Card 2 -->
+            <div class="card"><h3><span class="lang-es">¿Necesito USB 3.0?</span><span class="lang-en" style="display:none;">Do I need USB 3.0?</span></h3><p><span class="lang-es">Recomendado para mejor calidad y estabilidad. USB 2.0 funciona pero con rendimiento inferior.</span><span class="lang-en" style="display:none;">Recommended for better quality and stability. USB 2.0 works but with lower performance.</span></p></div>
+            <!-- Card 3 -->
+            <div class="card">
+                <h3><span class="lang-es">¿Cómo abro el menú cuando inicio el programa?</span><span class="lang-en" style="display:none;">How do I open the menu when the program starts?</span></h3>
+                <p><span class="lang-es">Haz clic derecho en la ventana y se abrirá el menú. También puedes presionar ESC en tu teclado. Asegúrate que el mouse esté sobre la ventana y el programa esté enfocado.</span><span class="lang-en" style="display:none;">Just right‑click on the window and the menu will open. Also you can press the ESC key on your keyboard, but make sure the mouse is over the window and the program is focused.</span></p>
+            </div>
+            <!-- Card 4 -->
+            <div class="card"><h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3><p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span><span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p></div>
+            <!-- Card 5 -->
+            <div class="card"><h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3><p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span><span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p></div>
+        </div>
+        <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
+    </section>
+
+    <!-- ===== SUGGESTION ===== -->
     <section id="suggestion" class="container">
         <h2><i class="fas fa-exchange-alt"></i> <span class="lang-es">Combinaciones recomendadas</span><span class="lang-en" style="display:none;">Recommended combinations</span></h2>
         <p>
@@ -818,7 +846,7 @@
         </p>
     </section>
 
-    <!-- ===== OPCIONES DEL MENÚ ===== -->
+    <!-- ===== MENU ===== -->
     <section id="menu" class="container">
         <h2><i class="fas fa-bars"></i> <span class="lang-es">Opciones del menú</span><span class="lang-en" style="display:none;">Menu options</span></h2>
         <p><span class="lang-es">El menú se abre con <strong>clic derecho</strong> o tecla <strong>ESC</strong>. Estas son las secciones principales:</span>
@@ -881,34 +909,6 @@
             <span class="lang-es">Para una lista completa, consulta la <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank">Wiki</a>.</span>
             <span class="lang-en" style="display:none;">For a complete list, check the <a href="https://github.com/TyRaS-SW/MPV-SW-Capture/wiki" target="_blank">Wiki</a>.</span>
         </p>
-    </section>
-
-    <!-- ===== FAQ ===== -->
-    <section id="faq" class="container">
-        <h2><i class="fas fa-question-circle"></i> <span class="lang-es">Preguntas frecuentes</span><span class="lang-en" style="display:none;">Frequently asked questions</span></h2>
-        <div class="card-grid">
-            <!-- Card 1 -->
-            <div class="card"><h3><span class="lang-es">¿Por qué usar MPV y no OBS?</span><span class="lang-en" style="display:none;">Why use MPV instead of OBS?</span></h3><p><span class="lang-es">MPV ofrece menor latencia y una personalización más profunda (shaders, bezels, crops) mas adecuada para juegos.</span><span class="lang-en" style="display:none;">MPV offers lower latency and deeper customization (shaders, bezels, crops) most suited for gaming.</span></p></div>
-            <!-- Card 2 -->
-            <div class="card"><h3><span class="lang-es">¿Necesito USB 3.0?</span><span class="lang-en" style="display:none;">Do I need USB 3.0?</span></h3><p><span class="lang-es">Recomendado para mejor calidad y estabilidad. USB 2.0 funciona pero con rendimiento inferior.</span><span class="lang-en" style="display:none;">Recommended for better quality and stability. USB 2.0 works but with lower performance.</span></p></div>
-            <!-- Card 3 (nueva) -->
-            <div class="card">
-                <h3><span class="lang-es">¿Cómo abro el menú cuando inicio el programa?</span><span class="lang-en" style="display:none;">How do I open the menu when the program starts?</span></h3>
-                <p><span class="lang-es">Haz clic derecho en la ventana y se abrirá el menú. También puedes presionar ESC en tu teclado. Asegúrate que el mouse esté sobre la ventana y el programa esté enfocado.</span><span class="lang-en" style="display:none;">Just right‑click on the window and the menu will open. Also you can press the ESC key on your keyboard, but make sure the mouse is over the window and the program is focused.</span></p>
-            </div>
-            <!-- Card 4 -->
-            <div class="card"><h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3><p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span><span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p></div>
-            <!-- Card 5 -->
-            <div class="card"><h3><span class="lang-es">¿Dónde se guardan las capturas y vídeos?</span><span class="lang-en" style="display:none;">Where are screenshots and videos saved?</span></h3><p><span class="lang-es">En las carpetas <code>_screenshots</code> y <code>_record</code> dentro de la instalación.</span><span class="lang-en" style="display:none;">In the <code>_screenshots</code> and <code>_record</code> folders inside the installation.</span></p></div>
-        </div>
-        <p class="text-center mt-2"><a href="#" onclick="openFaq(); return false;" class="btn btn-outline"><span class="lang-es">Ver FAQ completa →</span><span class="lang-en" style="display:none;">View full FAQ →</span></a></p>
-    </section>
-
-    <!-- ===== NEWS (ID cambia a news) ===== -->
-    <section id="news" class="container">
-        <h2><i class="fas fa-rocket"></i> <span class="lang-es">Noticias</span><span class="lang-en" style="display:none;">News</span></h2>
-        <div id="releases-container"><p class="text-center" style="color:var(--text-secondary);">Loading latest releases...</p></div>
-        <p class="text-center mt-2"><a href="https://github.com/TyRaS-SW/MPV-SW-Capture/releases" target="_blank" class="btn btn-outline"><i class="fas fa-history"></i> <span class="lang-es">Ver todas las versiones</span><span class="lang-en" style="display:none;">View all versions</span></a></p>
     </section>
 
     <!-- ===== FOOTER ===== -->
@@ -977,11 +977,11 @@
                     const translations = {
                         'nav-features': { es: 'Características', en: 'Features' },
                         'nav-custom': { es: 'Avanzado', en: 'Advanced' },
+                        'nav-news': { es: 'Noticias', en: 'News' },
+                        'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-suggestion': { es: 'Sugerencia', en: 'Suggestion' },
                         'nav-menu': { es: 'Menú', en: 'Menu' },
-                        'nav-news': { es: 'Noticias', en: 'News' },
                         'nav-readme': { es: 'LEEME', en: 'README' },
-                        'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-download': { es: 'Descargar', en: 'Download' },
                         'nav-github': { es: 'GitHub', en: 'GitHub' },
                         'nav-discord': { es: 'Discord', en: 'Discord' }
@@ -1540,7 +1540,7 @@
             cargarReleases();
             cargarShaders();
             cargarBezels();
-            setupDownloadButton(); // <-- Añadido para descarga directa
+            setupDownloadButton();
         });
 
         // ========================================================
