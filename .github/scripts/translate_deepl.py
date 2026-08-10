@@ -9,9 +9,14 @@ def translate_file(input_file, output_file):
         print("❌ Error: DEEPL_API_KEY no encontrada en variables de entorno")
         sys.exit(1)
 
+    glossary_id = os.environ.get("DEEPL_GLOSSARY_ID")
+    if glossary_id:
+        print(f"🔤 Usando glosario: {glossary_id}")
+    else:
+        print("⚠️ DEEPL_GLOSSARY_ID no encontrada. Continuando sin glosario.")
+
     translator = deepl.Translator(api_key)
 
-    # Leer el archivo tal cual, preservando saltos de línea
     with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -22,9 +27,15 @@ def translate_file(input_file, output_file):
     print(f"📝 Traduciendo con DeepL (caracteres: {len(content)})...")
 
     try:
-        # Traducir el contenido completo de una vez
-        # DeepL respeta los saltos de línea en la traducción
-        translated = translator.translate_text(content, target_lang="ES")
+        if glossary_id:
+            translated = translator.translate_text(
+                content,
+                target_lang="ES",
+                glossary_id=glossary_id
+            )
+        else:
+            translated = translator.translate_text(content, target_lang="ES")
+
         translated_text = translated.text
 
         with open(output_file, 'w', encoding='utf-8') as f:

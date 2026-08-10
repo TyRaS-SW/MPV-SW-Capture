@@ -28,6 +28,7 @@ jobs:
       - name: Translate FAQ to Spanish
         env:
           DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
+          DEEPL_GLOSSARY_ID: ${{ secrets.DEEPL_GLOSSARY_ID }}  # <-- Nueva línea
         run: python .github/scripts/translate_deepl.py FAQ.md FAQ.es.md
 
       - name: Commit and push if changed
@@ -35,5 +36,5 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add FAQ.es.md
-          git diff --staged --quiet || git commit -m "FAQ updated"
+          git diff --staged --quiet || git commit -m "FAQ"
           git push
