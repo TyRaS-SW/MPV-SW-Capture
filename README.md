@@ -1,14 +1,14 @@
 # MPV‑SW‑Capture
 
-Configurable and ready‑to‑use MPV for Windows, adapted for USB 3.0 capture cards to play your **own real** video game console (such as Switch/2, or any other) with **minimal lag/latency** and many extra features.
+A complete program with ready‑to‑use configurations for MPV on Windows, optimized for USB capture cards. Play with any HDMI video game console with **minimal as possible latency** and **endless options**.
 
-![MPV‑SW‑Capture Logo](assets/mpv-sw-capture1.jpg)
+![MPV‑SW‑Capture Logo](assets/demo/1_menu.jpg)
 
 ---
 
 ## 📋 Features
 
-- **Play any console** (Switch/2, PS, Xbox, Retro or any HDMI‑compatible console) through your USB capture card using MPV.
+- **Play any console HDMI‑compatible console** through your USB capture card using MPV.
 - **Minimal lag/latency** – play your real console with lag almost as low as connecting it directly to a TV.
 - **Portable** – copy the whole folder anywhere and it will work without reinstallation.
 - **Custom menu** (right‑click or `ESC`) with:
