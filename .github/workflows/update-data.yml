@@ -1,70 +1,82 @@
-name: Update (releases, shaders, bezels)
+name: Update data (releases, shaders, bezels)
 
 on:
   schedule:
-    - cron: '0 10 * * *'
-  workflow_dispatch:
+    - cron: '0 10 * * *'   # Everyday 10:00 UTC
+  workflow_dispatch:        # Manual work
 
 jobs:
   update-data:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
 
-      - name: Obtain releases (last 5)
+      - name: Get latest 5 releases (sorted by date)
         id: get_releases
         run: |
           curl -H "Accept: application/vnd.github.v3+json" \
                -H "Authorization: Bearer ${{ github.token }}" \
                https://api.github.com/repos/${{ github.repository }}/releases?per_page=5 \
-               | jq '[.[] | {tag: .tag_name, fecha: .published_at, descripcion: .body}]' > docs/releases.json
-          echo "Contain of docs/releases.json:"
+               | jq '[.[] | {tag: .tag_name, fecha: .published_at, descripcion: .body}] | sort_by(.fecha) | reverse' \
+               > docs/releases.json
+          echo "Content of docs/releases.json:"
           cat docs/releases.json
 
-      - name: Obtener shaders (archivos .glsl)
+      - name: Get shaders (.glsl)
         run: |
           if [ -d "shaders" ]; then
             curl -H "Accept: application/vnd.github.v3+json" \
                  -H "Authorization: Bearer ${{ github.token }}" \
                  https://api.github.com/repos/${{ github.repository }}/contents/shaders \
-                 | jq '[.[] | select(.name | endswith(".glsl")) | .name]' > docs/shaders.json
+                 | jq '[.[] | select(.name | endswith(".glsl")) | .name]' \
+                 > docs/shaders.json
           else
             echo '[]' > docs/shaders.json
           fi
-          echo "Contain of docs/shaders.json:"
+          echo "Content of docs/shaders.json:"
           cat docs/shaders.json
 
-      - name: Obtain bezels (.png)
+      - name: Get bezels (.png)
         run: |
           if [ -d "bezels" ]; then
             curl -H "Accept: application/vnd.github.v3+json" \
                  -H "Authorization: Bearer ${{ github.token }}" \
                  https://api.github.com/repos/${{ github.repository }}/contents/bezels \
-                 | jq '[.[] | select(.name | endswith(".png")) | .name]' > docs/bezels.json
+                 | jq '[.[] | select(.name | endswith(".png")) | .name]' \
+                 > docs/bezels.json
           else
             echo '[]' > docs/bezels.json
           fi
-          echo "Contain of docs/bezels.json:"
+          echo "Content of docs/bezels.json:"
           cat docs/bezels.json
 
-      - name: Validate generated JSON
+      - name: Validate JSON files
         run: |
           for file in docs/releases.json docs/shaders.json docs/bezels.json; do
             if ! jq empty "$file" 2>/dev/null; then
-              echo "❌ Error: $file isn't a valid JSON"
+              echo "❌ Error: $file is not a valid JSON"
               exit 1
             fi
+            # Check if file is empty or just empty array
+            if [ "$(jq length "$file")" -eq 0 ] 2>/dev/null; then
+              echo "⚠️ Warning: $file is empty (or empty array). This may be normal if there are no releases/shaders/bezels."
+            fi
           done
-          echo "✅ All JSON are valid."
+          echo "✅ All JSON files are valid."
 
-      - name: Commit y push
+      - name: Commit and push if changed
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/releases.json docs/shaders.json docs/bezels.json
-          # Commit even if there aren't new changes (debug)
-          git commit -m "$(date +'%Y-%m-%d %H:%M')" || echo "ℹ️ No changes for commit"
-          git push
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "ℹ️ No changes to commit."
+          else
+            git commit -m "Update $(date +'%Y-%m-%d %H:%M')"
+            git push
+          fi
