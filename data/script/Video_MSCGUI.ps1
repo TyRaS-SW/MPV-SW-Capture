@@ -1,3 +1,7 @@
+# Video_MSCGUI.ps1 - By TyRaS-SW
+# GUI Tool for Sdvanced Video Configurations
+# EN/ES GUI - PowerShell 5+ (Windows 10/11)
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -48,6 +52,35 @@ $script:ToolsDir = Join-Path $script:RootDir "tools"   # Real tools folder
 $script:BatPath = Join-Path $script:RootDir "data\MPV-SW-Capture.bat"
 $script:JsonPath = Join-Path $script:ToolsDir "user-video_options.json"
 
+# ============================================================
+#  LANGUAGE PERSISTENCE (shared with other tools)
+# ============================================================
+$script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
+
+function Load-GUILanguage {
+    if (Test-Path $script:LangFilePath) {
+        try {
+            $content = Get-Content $script:LangFilePath -Encoding UTF8 -Raw
+            $content = $content.Trim().ToUpper()
+            if ($content -eq "EN" -or $content -eq "ES") {
+                return $content
+            }
+        } catch {}
+    }
+    # Si no existe o es inválido, devolver "EN" y crear el archivo
+    Save-GUILanguage "EN"
+    return "EN"
+}
+
+function Save-GUILanguage([string]$lang) {
+    $dir = Split-Path -Parent $script:LangFilePath
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $content = if ($lang -eq "EN") { "en" } else { "es" }
+    [System.IO.File]::WriteAllText($script:LangFilePath, $content, [System.Text.Encoding]::UTF8)
+}
+
 $script:CurrentLang = 'EN'
 $script:LogEntries = New-Object System.Collections.Generic.List[object]
 $script:DefaultLine = 'start "" /b "%prog1_path%" av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --no-border --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no'
@@ -88,7 +121,7 @@ MsgBatMissing='MPV-SW-Capture.bat was not found in /data.'; MsgLineMissing='The 
 LogTitle='Log'; RtbufHelp='Set the video buffer size used by mpv before playback. Lower values reduce lag, while higher values improve stability."64M" is the default option.'; VideoSizeHelp='Force the default resolution. "1080p" is the most stable option; higher values increase usage and can cause lag. Use "720p" if you still get lag at 1080p.'; FpsHelp='Force the default FPS. "Auto" uses the Capture Card FPS. "60" is the default option.'; ThreadsHelp='Select video decode threads. "1" is the best option for low latency; "0" uses the automatic value and can increase buffering.'; DemuxerHelp='Enable or disable the demuxer thread used while reading the stream. "no" is the recommended option to reduce latency.'; VoHelp='Select the video output renderer. "gpu-next" is the modern and best option; "gpu" is an option for older PCs.'; HwdecHelp='"no" is the default and disables it; "auto-safe" reduces the CPU usage with hardware acceleration."auto","yes", are more aggressive options.'; WindowScaleHelp='Adjust the initial mpv window size. Higher values make the window larger and can slightly increase rendering load.'; Auto='Auto'; Yes='Yes'; No='No'; DefaultWord='Default'; JsonFilter='JSON files (*.json)|*.json';
 };
 ES = @{
-Title='MPV-SW-Capture - Video Options Manager'; Header='Edita las opciones de video en MPV-SW-Capture.bat.'; LangLabel='Idioma del GUI';
+Title='MPV-SW-Capture - Administrador de Opciones de Video'; Header='Edita las opciones de video en MPV-SW-Capture.bat.'; LangLabel='Idioma del GUI';
 Files='Rutas'; FilesNote='El programa GUI queda en /tools. El archivo que edita este programa es /data/MPV-SW-Capture.bat. Los JSON personalizados se guardan en /tools.';
 Root='Carpeta raiz'; Tools='Carpeta tools'; Bat='Archivo BAT'; Json='JSON personalizado';
 Settings='Opciones de inicio de MPV'; Actions='Acciones';
@@ -428,14 +461,30 @@ function Apply-Lang([string]$lang){
     if($saved){ Apply-ValuesToForm $saved }
 }
 
-$btnEN.Add_Click({ Apply-Lang 'EN' })
-$btnES.Add_Click({ Apply-Lang 'ES' })
+# ============================================================
+#  EVENTOS (modificados para guardar el idioma)
+# ============================================================
+$btnEN.Add_Click({
+    Apply-Lang 'EN'
+    Save-GUILanguage 'EN'
+})
+
+$btnES.Add_Click({
+    Apply-Lang 'ES'
+    Save-GUILanguage 'ES'
+})
+
 $btnReload.Add_Click({ try { Load-ValuesToForm; Set-StatusKey 'MsgReload' } catch { Set-Status $_.Exception.Message } })
 $btnSave.Add_Click({ try { Save-Bat } catch { Set-Status $_.Exception.Message } })
 $btnRestoreDefaults.Add_Click({ try { $ans=[Windows.Forms.MessageBox]::Show((T 'MsgDefaultsConfirm'),(T 'MsgConfirmTitle'),[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Question); if($ans -ne [Windows.Forms.DialogResult]::Yes){ return }; Apply-DefaultOptions } catch { Set-Status $_.Exception.Message } })
 $btnSaveCustom.Add_Click({ try { Save-CustomJson } catch { Set-Status $_.Exception.Message } })
 $btnImportCustom.Add_Click({ try { $ans=[Windows.Forms.MessageBox]::Show((T 'MsgImportConfirm'),(T 'MsgConfirmTitle'),[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Question); if($ans -ne [Windows.Forms.DialogResult]::Yes){ return }; Import-CustomJson } catch { Set-Status $_.Exception.Message } })
 
-Apply-Lang 'EN'
+# ============================================================
+#  INIT (cargar idioma guardado)
+# ============================================================
+$savedLang = Load-GUILanguage
+Apply-Lang $savedLang
+
 try { Load-ValuesToForm; Set-StatusKey 'MsgReload' } catch { Set-Status $_.Exception.Message }
 [void]$form.ShowDialog()

@@ -1,7 +1,6 @@
-# Install_MSCGUI.ps1
-# GUI Installer/Updater for MPV-SW-Capture - PowerShell 5+ (Windows 10/11)
-# EN/ES GUI - Same layout/structure as Setup_MPV-SW-Capture_GUI.ps1
-# Amber/orange color palette to differentiate from Setup's blue theme
+# Install_MSCGUI.ps1 - By TyRaS-SW
+# GUI Installer/Updater for MPV-SW-Capture
+# EN/ES GUI - PowerShell 5+ (Windows 10/11)
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
@@ -50,6 +49,35 @@ function Get-RootDir {
 
 $script:RootDir = Get-RootDir
 $script:ScriptDir = Get-ScriptDir  # Should be data/script
+
+# ============================================================
+#  LANGUAGE PERSISTENCE (shared with other tools)
+# ============================================================
+$script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
+
+function Load-GUILanguage {
+    if (Test-Path $script:LangFilePath) {
+        try {
+            $content = Get-Content $script:LangFilePath -Encoding UTF8 -Raw
+            $content = $content.Trim().ToUpper()
+            if ($content -eq "EN" -or $content -eq "ES") {
+                return $content
+            }
+        } catch {}
+    }
+    # Si no existe o es inválido, devolver "EN" y crear el archivo
+    Save-GUILanguage "EN"
+    return "EN"
+}
+
+function Save-GUILanguage([string]$lang) {
+    $dir = Split-Path -Parent $script:LangFilePath
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $content = if ($lang -eq "EN") { "en" } else { "es" }
+    [System.IO.File]::WriteAllText($script:LangFilePath, $content, [System.Text.Encoding]::UTF8)
+}
 
 # ============================================================
 #  FORM ICON (prioritizes data\icon\installmsc.ico)
@@ -108,6 +136,7 @@ $FontMono         = New-Object System.Drawing.Font("Consolas",  8, [System.Drawi
 # ============================================================
 $script:Lang = @{}
 $script:Lang["EN"] = @{
+    Title         = "MPV-SW-Capture - Installer / Updater"
     HeaderSub     = "Installer / Updater  -  Download and update all required software."
     HeaderNote    = "All files are installed in the same folder as this script."
     SevenZipChoice = "Do you want to use your installed 7-Zip instead of the downloaded one?"
@@ -208,7 +237,8 @@ $script:Lang["EN"] = @{
     IconMissing       = "x"
 }
 $script:Lang["ES"] = @{
-    HeaderSub     = "Installer / Updater  -  Descarga y actualiza todos los softwares necesarios."
+    Title         = "MPV-SW-Capture - Instalador / Actualizador"
+    HeaderSub     = "Instalador / Actualizador  -  Descarga y actualiza todos los softwares necesarios."
     HeaderNote    = "Todos los archivos se instalan en la misma carpeta que este script."
     SevenZipChoice = "Quieres usar tu 7-Zip instalado en vez del que descarga el installer?"
     SevenZipYes    = "SI"
@@ -1409,7 +1439,7 @@ $cTopH=170; $cMidH=185; $cBotH=85
 $form=New-Object System.Windows.Forms.Form
 try { $appIcon = Get-AppIcon; if($appIcon){ $form.Icon = $appIcon } } catch {}
 $form.ShowInTaskbar = $true
-$form.Text="MPV-SW-Capture  -  Installer / Updater"
+$form.Text = T 'Title'   # <-- NOW dynamic
 $form.ClientSize=[System.Drawing.Size]::new($formW,$formH)
 $form.MinimumSize=$form.Size
 $form.BackColor=$script:BG; $form.ForeColor=$script:TEXT
@@ -1833,6 +1863,10 @@ function Apply-Lang([string]$lang) {
     $script:CurrentLang=$lang
     Style-LangBtn $btnEN ($lang -eq "EN")
     Style-LangBtn $btnES ($lang -eq "ES")
+
+    # ★ Update window title ★
+    $form.Text = T 'Title'
+
     $lAppSub.Text=T "HeaderSub"; $lLangLbl.Text=T "LangLabel"; $lHeaderNote.Text=T "HeaderNote"
     $l7zChoice.Text=T "SevenZipChoice"
     $rbUseInstalled7zYes.Text=T "SevenZipYes"
@@ -1888,12 +1922,22 @@ function Apply-Lang([string]$lang) {
     Refresh-VersionLabels; $form.Refresh()
 }
 
-$btnEN.Add_Click({ Apply-Lang "EN" })
+# ============================================================
+#  BUTTON EVENTS (modificados para guardar idioma)
+# ============================================================
+$btnEN.Add_Click({
+    Apply-Lang "EN"
+    Save-GUILanguage "EN"
+})
+$btnES.Add_Click({
+    Apply-Lang "ES"
+    Save-GUILanguage "ES"
+})
+
 $rbV1.Add_CheckedChanged({ if ($rbV1.Checked) { Update-MpvAvailableForSelection } })
 $rbV2.Add_CheckedChanged({ if ($rbV2.Checked) { Update-MpvAvailableForSelection } })
 $rbV3.Add_CheckedChanged({ if ($rbV3.Checked) { Update-MpvAvailableForSelection } })
 
-$btnES.Add_Click({ Apply-Lang "ES" })
 $rbUseInstalled7zYes.Add_CheckedChanged({ if ($rbUseInstalled7zYes.Checked) { $script:PreferInstalled7Zip = $true } })
 $rbUseInstalled7zNo.Add_CheckedChanged({ if ($rbUseInstalled7zNo.Checked) { $script:PreferInstalled7Zip = $false } })
 
@@ -1901,7 +1945,11 @@ $rbUseInstalled7zNo.Add_CheckedChanged({ if ($rbUseInstalled7zNo.Checked) { $scr
 #  INIT
 # ============================================================
 [void](Sync-OfflineInstalledVersions)
-Apply-Lang "EN"
+
+# Cargar idioma guardado
+$savedLang = Load-GUILanguage
+Apply-Lang $savedLang
+
 Set-ApiStatus '' $script:MUTED
 
 [System.Windows.Forms.Application]::Run($form)

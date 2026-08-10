@@ -1,7 +1,10 @@
--- # autocompress.lua - For MPV-SW-Capture - By TyRaS-SW
+-- autocompress.lua - For MPV-SW-Capture - By TyRaS-SW
 
 local mp = require "mp"
 local utils = require "mp.utils"
+
+-- Default language (change to "es" for Spanish)
+local current_lang = "en"  -- "en" or "es"
 
 local is_recording = false
 local is_processing = false
@@ -98,7 +101,13 @@ local function start_recording_osd(total)
             elapsed = total_now
         end
 
-        local txt = string.format("🔴 RECORDING %s / %s", fmt_time(elapsed), fmt_time(total_now))
+        local label
+        if current_lang == "es" then
+            label = "🔴 GRABANDO"
+        else
+            label = "🔴 RECORDING"
+        end
+        local txt = string.format("%s %s / %s", label, fmt_time(elapsed), fmt_time(total_now))
         mp.commandv("show-text", txt, "1000")
     end)
 end
@@ -147,7 +156,13 @@ end
 local function finalize_and_merge(target_time)
     stop_recording_osd()
     mp.commandv("show-text", "", "1")
-    mp.osd_message("Processing and Merging...", 3)
+
+    if current_lang == "es" then
+        mp.osd_message("Procesando y uniendo...", 3)
+    else
+        mp.osd_message("Processing and merging...", 3)
+    end
+
     mp.set_property("stream-record", "")
 
     local record_dir = cwd .. "\\_record"
@@ -157,7 +172,12 @@ local function finalize_and_merge(target_time)
     local final_duration = tonumber(target_time) or tonumber(record_data.max_record_time) or 0
 
     is_processing = true
-    mp.commandv("show-text", "⏳ Finishing Recording Video, please wait!", "6000")
+
+    if current_lang == "es" then
+        mp.commandv("show-text", "⏳ Finalizando grabación de video, ¡espera!", "6000")
+    else
+        mp.commandv("show-text", "⏳ Finishing Recording Video, please wait!", "6000")
+    end
 
     mp.add_timeout(finalize_delay_seconds, function()
         kill_audio_ffmpeg()
@@ -185,10 +205,18 @@ local function finalize_and_merge(target_time)
                 is_processing = false
 
                 if result and result.status == 0 then
-                    mp.commandv("show-text", "✅Finished!", "2000")
+                    if current_lang == "es" then
+                        mp.commandv("show-text", "✅¡Finalizado!", "2000")
+                    else
+                        mp.commandv("show-text", "✅Finished!", "2000")
+                    end
                     mp.add_timeout(2, clean_temporals)
                 else
-                    mp.osd_message("❌ Error while merging recording", 3)
+                    if current_lang == "es" then
+                        mp.osd_message("❌ Error al unir la grabación", 3)
+                    else
+                        mp.osd_message("❌ Error while merging recording", 3)
+                    end
                     if err then
                         mp.msg.error("Merge error: " .. tostring(err))
                     end
@@ -215,8 +243,19 @@ local function stop_recording()
 end
 
 mp.register_script_message("toggle-record", function()
+    -- ============================
+    -- 🔒 BLOCK RECORD IN STREAMER MODE
+    -- ============================
+    if mp.get_property_number("osd-duration") == 0 then
+    return
+end
+
     if is_processing and not is_recording then
-        mp.osd_message("⏳ Wait! Previous recording still processing...", 2)
+        if current_lang == "es" then
+            mp.osd_message("⏳ ¡Espera! La grabación anterior aún se está procesando...", 2)
+        else
+            mp.osd_message("⏳ Wait! Previous recording still processing...", 2)
+        end
         return
     end
 
@@ -231,7 +270,11 @@ mp.register_script_message("toggle-record", function()
 
         if not ensure_record_dir(record_dir) then
             update_menu_state(false)
-            mp.osd_message("Could not create _record folder", 3)
+            if current_lang == "es" then
+                mp.osd_message("No se pudo crear la carpeta _record", 3)
+            else
+                mp.osd_message("Could not create _record folder", 3)
+            end
             return
         end
 

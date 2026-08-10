@@ -8,13 +8,13 @@ SET "prog1_path=%ROOT_DIR%\mpv.exe"
 SET "prog2_path=%ROOT_DIR%\ffplay.exe"
 SET "prog1_name=mpv.exe"
 SET "prog2_name=ffplay.exe"
-SET "video_device=USB3 Video"
-SET "audio_device=Interfaz de sonido digital (USB3 Digital Audio)"
+SET "video_device="
+SET "audio_device="
 SET "ffplay_volume=100"
 SET "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
 SET "ffplayvol_path=%ROOT_DIR%\data\ffplayvol.exe"
 
-start "" /b "%prog1_path%" av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --no-border --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no
+start "" /b "%prog1_path%" --no-border av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0
 
 set SDL_AUDIODRIVER=wasapi
 set SDL_AUDIO_SAMPLES=128

@@ -1,3 +1,7 @@
+# Bezel_MSCGUI.ps1 - By TyRaS-SW
+# GUI Tool for add Custom Bezel in Menu
+# EN/ES GUI - PowerShell 5+ (Windows 10/11)
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
@@ -52,6 +56,35 @@ $script:JsonPath = Join-Path $script:ManagerDir "user-bezels.json"
 $script:LogPath = Join-Path $script:ManagerDir "bezel_manager_debug.log"
 $script:CurrentLang = 'EN'
 $script:CurrentEditBid = $null
+
+# ============================================================
+#  LANGUAGE PERSISTENCE (shared with other tools)
+# ============================================================
+$script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
+
+function Load-GUILanguage {
+    if (Test-Path $script:LangFilePath) {
+        try {
+            $content = Get-Content $script:LangFilePath -Encoding UTF8 -Raw
+            $content = $content.Trim().ToUpper()
+            if ($content -eq "EN" -or $content -eq "ES") {
+                return $content
+            }
+        } catch {}
+    }
+    # Si no existe o es inválido, devolver "EN" y crear el archivo
+    Save-GUILanguage "EN"
+    return "EN"
+}
+
+function Save-GUILanguage([string]$lang) {
+    $dir = Split-Path -Parent $script:LangFilePath
+    if (-not (Test-Path $dir)) {
+        New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    $content = if ($lang -eq "EN") { "en" } else { "es" }
+    [System.IO.File]::WriteAllText($script:LangFilePath, $content, [System.Text.Encoding]::UTF8)
+}
 
 # ============================================================
 #  ENSURE DIRECTORIES
@@ -763,12 +796,29 @@ $btnApply.Add_Click({
     }
 })
 
-$btnEN.Add_Click({ Apply-Lang 'EN' })
-$btnES.Add_Click({ Apply-Lang 'ES' })
+# ============================================================
+#  LANGUAGE TOGGLE (modificado para guardar el idioma)
+# ============================================================
+$btnEN.Add_Click({
+    Apply-Lang 'EN'
+    Save-GUILanguage 'EN'
+})
 
+$btnES.Add_Click({
+    Apply-Lang 'ES'
+    Save-GUILanguage 'ES'
+})
+
+# ============================================================
+#  INIT
+# ============================================================
 Ensure-Dirs
 Load-Data | Out-Null
-Apply-Lang 'EN'
+
+# Cargar idioma guardado
+$savedLang = Load-GUILanguage
+Apply-Lang $savedLang
+
 Refresh-List
 Clear-Form
 Write-Log ('STARTUP FINAL-PURPLE-BG-ORIGBUTTONS toolsDir=' + $script:ToolsDir + ' managerDir=' + $script:ManagerDir + ' bezelsDir=' + $script:BezelsDir + ' rootDir=' + $script:RootDir + ' menuExists=' + (Test-Path -LiteralPath $script:MenuConfPath) + ' json=' + $script:JsonPath)
