@@ -88,7 +88,7 @@ If you prefer the older manual installation method, you can find it here:
 ## ❓ FAQ
 
 You can find the Frequently Asked Questions here:  
-**[FAQ](https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/FAQ)**
+**[FAQ](FAQ.md)**
 
 ---
 
