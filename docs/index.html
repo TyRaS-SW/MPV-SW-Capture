@@ -122,7 +122,7 @@
         }
 
         /* ===== HERO ===== */
-        .hero { padding:2.5rem 0 2rem; text-align:center; border-bottom:1px solid var(--border-color); }
+        .hero { padding:1.25rem 0 2rem; text-align:center; border-bottom:1px solid var(--border-color); }
         .hero h1 {
             font-size: 3.2rem;
             font-weight: 700;
@@ -1032,6 +1032,7 @@
             const langURL = getIdiomaDesdeURL();
             let idiomaInicial = langURL || 'en';
             setLanguage(idiomaInicial);
+            abrirModalDesdeURL();
         });
 
         // ========================================================
@@ -1147,17 +1148,35 @@
             }
         }
 
+        // ===== FUNCIONES PARA ABRIR MODALES CON URL (parámetro 'view') =====
+        function setModalParam(modalKey) {
+            const lang = window.currentLang || 'en';
+            const url = new URL(window.location);
+            url.searchParams.set('view', modalKey);
+            if (lang === 'es') {
+                url.searchParams.set('lang', 'es');
+            } else {
+                url.searchParams.delete('lang');
+            }
+            history.pushState({}, '', url);
+        }
+
         function openReadme() {
+            setModalParam('readme');
             const lang = window.currentLang || 'en';
             if (lang === 'es') openModal('LEEME', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/LEEME.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/LEEME');
             else openModal('README', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/README.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/README.md');
         }
+
         function openInstallationGuide() {
+            setModalParam('install');
             const lang = window.currentLang || 'en';
             if (lang === 'es') openModal('Guía de instalación', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Instalaci%C3%B3n.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Instalaci%C3%B3n');
             else openModal('Installation Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Installation.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Installation');
         }
+
         function openFaq() {
+            setModalParam('faq');
             const lang = window.currentLang || 'en';
             const title = lang === 'es' ? 'Preguntas frecuentes' : 'FAQ';
             const file = lang === 'es' ? 'FAQ.es.md' : 'FAQ.md';
@@ -1165,7 +1184,9 @@
             const githubUrl = `https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/${file}`;
             openModal(title, url, githubUrl);
         }
+
         function openDonate() {
+            setModalParam('donate');
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
                 openModal('Apoyar el proyecto', 'https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/docs/DONATE_es.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/blob/main/docs/DONATE_es.md');
@@ -1176,6 +1197,7 @@
 
         // ===== FUNCIONES PARA PERSONALIZACIÓN AVANZADA =====
         function openVideoManager() {
+            setModalParam('video');
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
                 openModal('Guía de Administrador de Video', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Video.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Video');
@@ -1185,6 +1207,7 @@
         }
 
         function openBezelManager() {
+            setModalParam('bezel');
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
                 openModal('Guía de Administrador de Marcos', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Marcos.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Marcos');
@@ -1194,6 +1217,7 @@
         }
 
         function openStreamManager() {
+            setModalParam('stream');
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
                 openModal('Guía de Administrador de Stream', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Administrador-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Administrador-Stream');
@@ -1202,9 +1226,53 @@
             }
         }
 
-        document.getElementById('modal-close').addEventListener('click', function() { document.getElementById('modal-overlay').classList.remove('active'); });
-        document.getElementById('modal-overlay').addEventListener('click', function(e) { if (e.target === this) this.classList.remove('active'); });
-        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('active'); });
+        // ===== ABRIR MODAL DESDE URL (parámetro 'view') =====
+        function abrirModalDesdeURL() {
+            const params = new URLSearchParams(window.location.search);
+            const view = params.get('view');
+            if (!view) return;
+
+            const acciones = {
+                'readme': openReadme,
+                'install': openInstallationGuide,
+                'faq': openFaq,
+                'donate': openDonate,
+                'video': openVideoManager,
+                'bezel': openBezelManager,
+                'stream': openStreamManager
+            };
+            const accion = acciones[view];
+            if (accion) {
+                setTimeout(accion, 300);
+            }
+        }
+
+        document.getElementById('modal-close').addEventListener('click', function() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            // Limpiar parámetro 'view' de la URL al cerrar
+            const url = new URL(window.location);
+            url.searchParams.delete('view');
+            history.pushState({}, '', url);
+        });
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.remove('active');
+                const url = new URL(window.location);
+                url.searchParams.delete('view');
+                history.pushState({}, '', url);
+            }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('modal-overlay');
+                if (overlay.classList.contains('active')) {
+                    overlay.classList.remove('active');
+                    const url = new URL(window.location);
+                    url.searchParams.delete('view');
+                    history.pushState({}, '', url);
+                }
+            }
+        });
 
         // ========================================================
         // 6. MENÚ HAMBURGUESA
