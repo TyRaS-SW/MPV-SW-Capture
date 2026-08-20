@@ -92,21 +92,20 @@ $FontMono         = New-Object System.Drawing.Font("Consolas", 8, [System.Drawin
 # ============================================================
 $script:Lang = @{}
 $script:Lang["EN"] = @{
-    Title           = "MPV-SW-Capture - Stream Manager"
+    Title           = "MPV-SW-Capture - Stream Helper"
     HeaderSub       = "OBS Streaming Setup  -  One-click integration for MPV-SW-Capture"
     HeaderNote      = "This tool downloads win-capture-audio and configures OBS automatically."
     LangLabel       = "GUI Language:"
     S1Title         = "[OBS] INSTALLATION"
-    S1Desc          = "Detect existing OBS or download the latest installer."
+    S1Desc          = "Select your OBS folder or download the latest installer."
     S1Status        = "Status:"
     S1StatusFound   = "Found"
     S1StatusNotFound = "Not found"
-    S1DetectBtn     = "Detect Installed OBS"
+    S1BrowseBtn     = "Browse OBS Folder"
     S1DownloadBtn   = "Download OBS Installer"
     S1DownloadPortableBtn = "Download Portable OBS"
     S1ArchLabel     = "Portable Architecture:"
     S1OpenBtn       = "Open OBS"
-    S1BrowseBtn     = "Browse OBS Folder (Portable)"
     S1PathLabel     = "OBS Path:"
     S1ModeLabel     = "Mode:"
     S1ModeChoice    = "Choose OBS Mode:"
@@ -182,24 +181,23 @@ $script:Lang["EN"] = @{
     ConfirmUninstallPlugin = "Are you sure you want to uninstall the win-capture-audio plugin?`n`nThis will remove all plugin files from OBS."
     ConfirmRestore  = "Are you sure you want to restore OBS configuration from the selected backup?`n`nThis will overwrite all current scene collections and settings.`n`nIt's recommended to create a backup before restoring."
     MsgAdminRequired = "OBS is installed in a protected folder.{0}{0}To install the plugin, you need to run this program as Administrator.{0}{0}Please close and restart with Administrator rights."
-MsgAdminTitle = "Administrator Rights Required"
+    MsgAdminTitle = "Administrator Rights Required"
 }
 $script:Lang["ES"] = @{
-    Title           = "MPV-SW-Capture - Administrador de Stream"
+    Title           = "MPV-SW-Capture - Asistente de Stream"
     HeaderSub       = "Configuracion para OBS  -  Integracion automatica para MPV-SW-Capture"
     HeaderNote      = "Esta herramienta descarga win-capture-audio y configura OBS automaticamente."
     LangLabel       = "Idioma del GUI:"
     S1Title         = "[OBS] INSTALACION"
-    S1Desc          = "Detectar OBS existente o descargar el ultimo instalador."
+    S1Desc          = "Selecciona tu carpeta de OBS o descarga el ultimo instalador."
     S1Status        = "Estado:"
     S1StatusFound   = "Encontrado"
     S1StatusNotFound = "No encontrado"
-    S1DetectBtn     = "Detectar OBS Instalado"
+    S1BrowseBtn     = "Examinar Carpeta OBS"
     S1DownloadBtn   = "Descargar Instalador OBS"
     S1DownloadPortableBtn = "Descargar OBS Portable"
     S1ArchLabel     = "Arquitectura Portable:"
     S1OpenBtn       = "Abrir OBS"
-    S1BrowseBtn     = "Examinar Carpeta OBS (Portable)"
     S1PathLabel     = "Ruta OBS:"
     S1ModeLabel     = "Modo:"
     S1ModeChoice    = "Elegir modo OBS:"
@@ -275,7 +273,7 @@ $script:Lang["ES"] = @{
     ConfirmUninstallPlugin = "Esta seguro de desinstalar el plugin win-capture-audio?`n`nSe eliminaran todos los archivos del plugin de OBS."
     ConfirmRestore  = "Esta seguro de restaurar la configuracion de OBS desde el backup seleccionado?`n`nEsto sobrescribira todas las colecciones de escenas y configuraciones actuales.`n`nSe recomienda crear un backup antes de restaurar."
     MsgAdminRequired = "OBS esta instalado en una carpeta protegida.{0}{0}Para instalar el plugin, necesitas ejecutar este programa como Administrador.{0}{0}Por favor, cierra y reinicia con derechos de Administrador."
-MsgAdminTitle = "Se requieren derechos de Administrador"
+    MsgAdminTitle = "Se requieren derechos de Administrador"
 }
 
 $script:CurrentLang = "EN"
@@ -411,6 +409,7 @@ function Load-OBSConfig {
                 $script:CurrentOBSMode = "Installed"
             }
 
+            # Compatibilidad con versiones antiguas (si solo tiene OBSRoot)
             if ($json.OBSRoot -and -not $inst -and -not $port) {
                 $root = $json.OBSRoot
                 if (Test-Path (Join-Path $root "bin\64bit\obs64.exe")) {
@@ -430,15 +429,9 @@ function Load-OBSConfig {
             return $script:OBSRoot
         } catch {}
     }
-    $root = Find-OBSRoot -Mode $script:CurrentOBSMode
-    if ($script:CurrentOBSMode -eq "Installed") {
-        $script:OBSRootInstalled = $root
-    } else {
-        $script:OBSRootPortable = $root
-    }
-    $script:OBSRoot = $root
-    Save-OBSConfig $root
-    return $root
+    # Si no hay JSON, no se detecta automáticamente (el usuario debe usar Browse)
+    $script:OBSRoot = $null
+    return $null
 }
 
 function Save-OBSConfig([string]$root) {
@@ -459,7 +452,7 @@ function Save-OBSConfig([string]$root) {
 }
 
 # ============================================================
-# OBS DETECTION AND CONFIGURATION (con modo)
+# OBS DETECTION AND CONFIGURATION (solo manual)
 # ============================================================
 function Get-OBSUserConfig {
     param([bool]$Silent = $false)
@@ -484,49 +477,20 @@ function Get-OBSUserConfig {
     return $null
 }
 
+# ============================================================
+# NUEVO: Find-OBSRoot (solo usa ruta guardada, sin registro)
+# ============================================================
 function Find-OBSRoot {
     param([string]$Mode = $script:CurrentOBSMode)
     Log-Info (T "LogDetecting")
-    $paths = @()
-    if ($Mode -eq "Installed") {
-        try {
-            $regPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\obs64.exe"
-            $obsExe = (Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue).'(Default)'
-            if ($obsExe) { $paths += $obsExe }
-        } catch {}
-        try {
-            $regPath = "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\OBS Studio"
-            $installPath = (Get-ItemProperty -Path $regPath -ErrorAction SilentlyContinue).DisplayIcon
-            if ($installPath) {
-                $installPath = Split-Path $installPath -Parent
-                $paths += (Join-Path $installPath "bin\64bit\obs64.exe")
-            }
-        } catch {}
-        $paths += @(
-            "C:\Program Files\obs-studio\bin\64bit\obs64.exe",
-            "C:\Program Files (x86)\obs-studio\bin\64bit\obs64.exe",
-            "$env:LOCALAPPDATA\Programs\obs-studio\bin\64bit\obs64.exe"
-        )
-    } else {
-        $savedRoot = if ($Mode -eq "Installed") { $script:OBSRootInstalled } else { $script:OBSRootPortable }
-        if ($savedRoot -and (Test-Path (Join-Path $savedRoot "bin\64bit\obs64.exe"))) {
-            $paths += (Join-Path $savedRoot "bin\64bit\obs64.exe")
-        }
-        $rootDir = $script:RootDir
-        $paths += @(
-            (Join-Path $rootDir "bin\64bit\obs64.exe"),
-            (Join-Path $rootDir "..\bin\64bit\obs64.exe"),
-            (Join-Path $env:USERPROFILE "obs-portable\bin\64bit\obs64.exe")
-        )
+    
+    $savedRoot = if ($Mode -eq "Installed") { $script:OBSRootInstalled } else { $script:OBSRootPortable }
+    
+    if ($savedRoot -and (Test-Path (Join-Path $savedRoot "bin\64bit\obs64.exe"))) {
+        Log-OK ([string]::Format((T "LogFound"), $savedRoot))
+        return $savedRoot
     }
-
-    foreach ($p in $paths) {
-        if (Test-Path $p) {
-            $root = Split-Path (Split-Path (Split-Path $p -Parent) -Parent) -Parent
-            Log-OK ([string]::Format((T "LogFound"), $root))
-            return $root
-        }
-    }
+    
     Log-Warn (T "LogNotFound")
     return $null
 }
@@ -924,7 +888,7 @@ function Install-NewSceneCollection {
     param([string]$collectionName)
     
     if (-not $script:OBSRoot) {
-        Log-Error "[New] OBS not found. Please detect OBS first."
+        Log-Error "[New] OBS not found. Please select OBS folder first."
         return $false
     }
     
@@ -996,7 +960,7 @@ function Add-SourcesToCollection {
     param([string]$collectionName, [string]$sceneName)
     
     if (-not $script:OBSRoot) {
-        Log-Error "[Add] OBS not found. Please detect OBS first."
+        Log-Error "[Add] OBS not found. Please select OBS folder first."
         return $false
     }
     
@@ -1769,17 +1733,13 @@ $card1.Controls.Add($lOBSModeLabel)
 $lOBSMode=New-Lbl "" 68 98 100 18 $FontSmall $script:TEXT
 $card1.Controls.Add($lOBSMode); $script:lOBSMode=$lOBSMode
 
-# Botones: Detect, Browse, Open
-$btnOBSDetect=New-Object System.Windows.Forms.Button
-$btnOBSDetect.Text=T "S1DetectBtn"; $btnOBSDetect.Location=[System.Drawing.Point]::new(14, 118); $btnOBSDetect.Size=[System.Drawing.Size]::new(130,32); Style-Btn $btnOBSDetect $script:SURFACE $script:ACCENT; $btnOBSDetect.FlatAppearance.BorderSize=1; $btnOBSDetect.FlatAppearance.BorderColor=$script:ACCENT
-$card1.Controls.Add($btnOBSDetect)
-
+# Botones: Browse, Open, Download
 $btnOBSBrowse=New-Object System.Windows.Forms.Button
-$btnOBSBrowse.Text=T "S1BrowseBtn"; $btnOBSBrowse.Location=[System.Drawing.Point]::new(152, 118); $btnOBSBrowse.Size=[System.Drawing.Size]::new(180,32); Style-Btn $btnOBSBrowse $script:SURFACE $script:ACCENT; $btnOBSBrowse.FlatAppearance.BorderSize=1; $btnOBSBrowse.FlatAppearance.BorderColor=$script:ACCENT
+$btnOBSBrowse.Text=T "S1BrowseBtn"; $btnOBSBrowse.Location=[System.Drawing.Point]::new(14, 118); $btnOBSBrowse.Size=[System.Drawing.Size]::new(180,32); Style-Btn $btnOBSBrowse $script:SURFACE $script:ACCENT; $btnOBSBrowse.FlatAppearance.BorderSize=1; $btnOBSBrowse.FlatAppearance.BorderColor=$script:ACCENT
 $card1.Controls.Add($btnOBSBrowse)
 
 $btnOBSOpen=New-Object System.Windows.Forms.Button
-$btnOBSOpen.Text=T "S1OpenBtn"; $btnOBSOpen.Location=[System.Drawing.Point]::new(340, 118); $btnOBSOpen.Size=[System.Drawing.Size]::new(110,32); Style-Btn $btnOBSOpen $script:SURFACE $script:ACCENT; $btnOBSOpen.FlatAppearance.BorderSize=1; $btnOBSOpen.FlatAppearance.BorderColor=$script:ACCENT; $btnOBSOpen.Enabled=$false
+$btnOBSOpen.Text=T "S1OpenBtn"; $btnOBSOpen.Location=[System.Drawing.Point]::new(204, 118); $btnOBSOpen.Size=[System.Drawing.Size]::new(110,32); Style-Btn $btnOBSOpen $script:SURFACE $script:ACCENT; $btnOBSOpen.FlatAppearance.BorderSize=1; $btnOBSOpen.FlatAppearance.BorderColor=$script:ACCENT; $btnOBSOpen.Enabled=$false
 $card1.Controls.Add($btnOBSOpen)
 
 # Download OBS Installer
@@ -2025,45 +1985,15 @@ function Update-OBSDisplay {
     }
     Update-OSDDisplay
 }
-# Detect OBS usando el modo actual
-$btnOBSDetect.Add_Click({
-    Set-Status (T "StatusChecking") $script:NOTE_C
-    $root = Find-OBSRoot -Mode $script:CurrentOBSMode
-    if ($root) {
-        $script:OBSRoot = $root
-        if ($script:CurrentOBSMode -eq "Installed") {
-            $script:OBSRootInstalled = $root
-        } else {
-            $script:OBSRootPortable = $root
-        }
-        Save-OBSConfig $root
-    } else {
-        if ($script:CurrentOBSMode -eq "Installed") {
-            $script:OBSRootInstalled = $null
-        } else {
-            $script:OBSRootPortable = $null
-        }
-        $script:OBSRoot = $null
-        Save-OBSConfig $null
-    }
-    Update-OBSDisplay
-    Set-Status (T "StatusReady") $script:MUTED
-})
 
-# Browse OBS
+# --- NUEVO: Browse OBS Folder (manual) ---
 $btnOBSBrowse.Add_Click({
-    $dialog = New-Object System.Windows.Forms.OpenFileDialog
-    $dialog.Title = "Select obs64.exe (to locate OBS root folder)"
-    $dialog.Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*"
-    $dialog.FilterIndex = 1
-    $dialog.Multiselect = $false
-    $dialog.CheckFileExists = $true
-    $dialog.CheckPathExists = $true
-    $dialog.InitialDirectory = if ($script:OBSRoot -and (Test-Path $script:OBSRoot)) { $script:OBSRoot } else { $env:ProgramFiles }
+    $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+    $dialog.Description = "Select the OBS Studio folder (e.g., C:\Program Files\obs-studio)"
+    $dialog.ShowNewFolderButton = $false
     
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
-        $selectedExe = $dialog.FileName
-        $root = Split-Path (Split-Path (Split-Path $selectedExe -Parent) -Parent) -Parent
+        $root = $dialog.SelectedPath
         if (Test-Path (Join-Path $root "bin\64bit\obs64.exe")) {
             $script:OBSRoot = $root
             if ($script:CurrentOBSMode -eq "Installed") {
@@ -2077,11 +2007,17 @@ $btnOBSBrowse.Add_Click({
             Set-Status (T "StatusReady") $script:MUTED
         } else {
             Log-Error "[OBS] Invalid folder. 'bin\64bit\obs64.exe' not found."
+            [System.Windows.Forms.MessageBox]::Show(
+                "The selected folder does not contain 'bin\64bit\obs64.exe'.",
+                "Invalid OBS Folder",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Error
+            )
         }
     }
 })
 
-# Download OBS Installer
+# --- Download OBS Installer (standard .exe) ---
 $btnOBSDL.Add_Click({
     Set-Status (T "StatusDownload") $script:NOTE_C
     Log-Info (T "LogDL")
@@ -2100,7 +2036,7 @@ $btnOBSDL.Add_Click({
     Set-Status (T "StatusReady") $script:MUTED
 })
 
-# Download Portable OBS
+# --- Download Portable OBS (with architecture selection) ---
 $btnOBSDLPortable.Add_Click({
     $arch = if ($rbArchX64.Checked) { "x64" } else { "arm64" }
     $archDisplay = if ($arch -eq "x64") { "x86_64" } else { "arm64" }
@@ -2124,6 +2060,7 @@ $btnOBSDLPortable.Add_Click({
             $rel = Get-GitHubRelease "https://api.github.com/repos/obsproject/obs-studio/releases/latest"
             if (-not $rel) { Log-Error "Could not fetch OBS latest release."; return }
             
+            # Build the pattern based on selected architecture
             if ($arch -eq "x64") {
                 $asset = $rel.assets | Where-Object { 
                     $_.name -match '\.zip$' -and 
@@ -2139,7 +2076,7 @@ $btnOBSDLPortable.Add_Click({
                         $_.name -notmatch 'PDB' 
                     } | Select-Object -First 1
                 }
-            } else {
+            } else { # arm64
                 $asset = $rel.assets | Where-Object { 
                     $_.name -match '\.zip$' -and 
                     $_.name -match 'arm64' -and 
@@ -2178,6 +2115,7 @@ $btnOBSDLPortable.Add_Click({
             Log-Info "[OBS] Extracting ZIP to $destFolder"
             Expand-Archive -Path $zipPath -DestinationPath $destFolder -Force -ErrorAction Stop
             
+            # Find the extracted folder
             $extractedDirs = Get-ChildItem -Path $destFolder -Directory | Where-Object { $_.Name -match 'obs-studio' }
             if ($extractedDirs.Count -gt 0) {
                 $extractedDir = $extractedDirs[0]
@@ -2186,16 +2124,19 @@ $btnOBSDLPortable.Add_Click({
                 Remove-Item $extractedDir.FullName -Force -ErrorAction SilentlyContinue
             }
             
+            # Create portable_mode file
             $portableFile = Join-Path $destFolder "portable_mode"
             New-Item -ItemType File -Path $portableFile -Force | Out-Null
             Log-Info "[OBS] Created portable_mode file at: $portableFile"
             
+            # Create config directory
             $configDir = Join-Path $destFolder "config"
             if (-not (Test-Path $configDir)) {
                 New-Item -ItemType Directory -Path $configDir -Force | Out-Null
                 Log-Info "[OBS] Created config directory: $configDir"
             }
             
+            # Check for obs64.exe
             $obsExe = Join-Path $destFolder "bin\64bit\obs64.exe"
             if (Test-Path $obsExe) {
                 $root = $destFolder
@@ -2236,7 +2177,7 @@ $btnOBSDLPortable.Add_Click({
     }
 })
 
-# Open OBS
+# --- Open OBS ---
 $btnOBSOpen.Add_Click({
     $path = $btnOBSOpen.Tag
     if ($path -and (Test-Path $path)) {
@@ -2286,9 +2227,9 @@ $btnOBSOpen.Add_Click({
     }
 })
 
-# Check Plugin
+# --- Check Plugin ---
 $btnPluginCheck.Add_Click({
-    if (-not $script:OBSRoot) { Log-Warn "[Plugin] No OBS root detected."; return }
+    if (-not $script:OBSRoot) { Log-Warn "[Plugin] No OBS root detected. Please select OBS folder first."; return }
     $dll = Join-Path $script:OBSRoot "obs-plugins\64bit\win-capture-audio.dll"
     if (Test-Path $dll) {
         Log-OK (T "LogPluginFound")
@@ -2301,10 +2242,10 @@ $btnPluginCheck.Add_Click({
     }
 })
 
-# Install Plugin
+# --- Install Plugin ---
 $btnPluginInstall.Add_Click({
     if (-not $script:OBSRoot) {
-        Log-Error "[Plugin] OBS not found. Please detect OBS first."
+        Log-Error "[Plugin] OBS not found. Please select OBS folder first."
         return
     }
 
@@ -2332,10 +2273,10 @@ $btnPluginInstall.Add_Click({
     }
 })
 
-# Uninstall Plugin
+# --- Uninstall Plugin ---
 $btnPluginUninstall.Add_Click({
     if (-not $script:OBSRoot) {
-        Log-Error "[Uninstall] OBS not found. Please detect OBS first."
+        Log-Error "[Uninstall] OBS not found. Please select OBS folder first."
         return
     }
 
@@ -2366,7 +2307,7 @@ $btnPluginUninstall.Add_Click({
     }
 })
 
-# Manual Download
+# --- Manual Download ---
 $btnPluginManual.Add_Click({
     $url = "https://github.com/bozbez/win-capture-audio/releases"
     Log-Info "[Plugin] Opening manual download page: $url"
@@ -2428,10 +2369,9 @@ $rbModeInstalled.Add_CheckedChanged({
         if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
             $script:OBSRoot = $root
         } else {
-            $root = Find-OBSRoot -Mode "Installed"
-            $script:OBSRoot = $root
-            $script:OBSRootInstalled = $root
-            Save-OBSConfig $root
+            # No se detecta automáticamente; el usuario debe usar Browse
+            $script:OBSRoot = $null
+            Log-Warn "[OBS] No saved Installed path. Please use 'Browse OBS Folder' to select the OBS folder."
         }
         Update-OBSDisplay
         Set-Status (T "StatusReady") $script:MUTED
@@ -2445,10 +2385,8 @@ $rbModePortable.Add_CheckedChanged({
         if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
             $script:OBSRoot = $root
         } else {
-            $root = Find-OBSRoot -Mode "Portable"
-            $script:OBSRoot = $root
-            $script:OBSRootPortable = $root
-            Save-OBSConfig $root
+            $script:OBSRoot = $null
+            Log-Warn "[OBS] No saved Portable path. Please use 'Browse OBS Folder' to select the OBS folder."
         }
         Update-OBSDisplay
         Set-Status (T "StatusReady") $script:MUTED
@@ -2458,9 +2396,9 @@ $rbModePortable.Add_CheckedChanged({
 # Install New Scene Collection
 $btnSceneNew.Add_Click({
     if (-not $script:OBSRoot) { 
-        Log-Error "[New] OBS not found. Please detect OBS first."
+        Log-Error "[New] OBS not found. Please select OBS folder first."
         [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Detect Installed OBS' or browse for the OBS folder.",
+            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
             "Error - MPV-SW-Capture Stream Manager",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
@@ -2492,9 +2430,9 @@ $btnSceneNew.Add_Click({
 # Add Sources to Selected Collection
 $btnSceneAdd.Add_Click({
     if (-not $script:OBSRoot) { 
-        Log-Error "[Add] OBS not found. Please detect OBS first."
+        Log-Error "[Add] OBS not found. Please select OBS folder first."
         [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Detect Installed OBS' or browse for the OBS folder.",
+            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
             "Error - MPV-SW-Capture Stream Manager",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
@@ -2540,9 +2478,9 @@ $btnSceneAdd.Add_Click({
 # BACKUP
 $btnBackup.Add_Click({
     if (-not $script:OBSRoot) {
-        Log-Error "[Backup] OBS not found. Please detect OBS first."
+        Log-Error "[Backup] OBS not found. Please select OBS folder first."
         [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Detect Installed OBS' or browse for the OBS folder.",
+            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
             "Error - MPV-SW-Capture Stream Manager",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
@@ -2579,9 +2517,9 @@ $btnBackup.Add_Click({
 # RESTORE
 $btnRestore.Add_Click({
     if (-not $script:OBSRoot) {
-        Log-Error "[Restore] OBS not found. Please detect OBS first."
+        Log-Error "[Restore] OBS not found. Please select OBS folder first."
         [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Detect Installed OBS' or browse for the OBS folder.",
+            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
             "Error - MPV-SW-Capture Stream Manager",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
@@ -2667,11 +2605,10 @@ function Apply-Lang([string]$lang) {
     $script:rbModeInstalled.Text = T "S1ModeInstalled"
     $script:rbModePortable.Text = T "S1ModePortable"
     
-    $btnOBSDetect.Text = T "S1DetectBtn"
+    $btnOBSBrowse.Text = T "S1BrowseBtn"
     $btnOBSDL.Text = T "S1DownloadBtn"
     $btnOBSDLPortable.Text = T "S1DownloadPortableBtn"
     $btnOBSOpen.Text = T "S1OpenBtn"
-    $btnOBSBrowse.Text = T "S1BrowseBtn"
     
     $btnPluginCheck.Text = T "S2DetectBtn"
     $btnPluginInstall.Text = T "S2InstallBtn"
@@ -2732,7 +2669,8 @@ if ($savedRoot) {
     $script:OBSRoot = $savedRoot
     Log-Info ("[OBS] Loaded saved path: " + $savedRoot)
 } else {
-    $script:OBSRoot = Find-OBSRoot -Mode $script:CurrentOBSMode
+    $script:OBSRoot = $null
+    Log-Warn "[OBS] No OBS path found. Please use 'Browse OBS Folder' to select your OBS installation."
 }
 if ($script:CurrentOBSMode -eq "Installed") {
     $rbModeInstalled.Checked = $true
