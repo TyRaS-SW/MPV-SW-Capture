@@ -1,7 +1,7 @@
 [
   {
     "tag": "v4.0.1",
-    "fecha": "2026-08-20T18:48:28Z",
+    "fecha": "2026-08-20T19:00:10Z",
     "descripcion": "## 🛠️ Fixed Tool: `MSC_Stream_Helper.exe`\r\n\r\n- This tool now is renamed from MSC_Stream_Manager to `MSC_Stream_Helper`.\r\n- Also has a fixed funcionality. Now, you need to manual search OBS if it's installed (similar as portable).\r\n- Some extra fixes.\r\n\r\n## 🛠️ Fixed: `Installer` and `Setup`\r\n\r\n- Both files has extra fixes to make it work better.\r\n\r\n## 📌 Notes\r\n\r\n- `mpv` and `ffmpeg`/`ffplay` are not included. Download them from their official sources or use the installer.\r\n- Check **[Official MPV-SW-Capture Website](https://tyras-sw.github.io/MPV-SW-Capture/)** for Installation Guide and more useful guides.\r\n- **ESPAÑOL:** **Revisa el [Sitio Oficial de MPV-SW-Capture](https://tyras-sw.github.io/MPV-SW-Capture/?lang=es)** para la Guía de Instalación y otras guías útiles."
   },
   {
