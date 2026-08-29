@@ -92,23 +92,21 @@ public static class ShortcutCreator
 "@ -ReferencedAssemblies "System.Runtime.InteropServices"
 
 # ============================================================
-#  ROOT DIRECTORY DETECTION (simplified, works even if script is in data/script)
+#  ROOT DIRECTORY DETECTION
 # ============================================================
 function Get-RootDir {
     $scriptDir = if ($PSCommandPath) { Split-Path -Parent $PSCommandPath } else { (Get-Location).Path }
-    # If the script is inside data/script, go up two levels to get the root
     if ((Split-Path $scriptDir -Leaf) -eq 'script' -and (Split-Path (Split-Path $scriptDir -Parent) -Leaf) -eq 'data') {
         $root = Split-Path -Parent (Split-Path -Parent $scriptDir)
         return $root
     }
-    # Fallback: use the script's directory as root
     return $scriptDir
 }
 $script:RootDir = Get-RootDir
-$script:SD = $script:RootDir  # Alias for compatibility
+$script:SD = $script:RootDir
 
 # ============================================================
-#  LANGUAGE PERSISTENCE (shared with other tools)
+#  LANGUAGE PERSISTENCE
 # ============================================================
 $script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
 
@@ -122,7 +120,6 @@ function Load-GUILanguage {
             }
         } catch {}
     }
-    # Si no existe o es inválido, devolver "EN" y crear el archivo
     Save-GUILanguage "EN"
     return "EN"
 }
@@ -137,7 +134,7 @@ function Save-GUILanguage([string]$lang) {
 }
 
 # ============================================================
-#  FORM ICON (prioritizes data\icon\setupmsc.ico)
+#  FORM ICON
 # ============================================================
 function Get-AppIcon {
     try {
@@ -186,6 +183,7 @@ $FontSmall        = New-Object System.Drawing.Font("Segoe UI",  8, [System.Drawi
 $FontNote         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Regular)
 $FontSectionTitle = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
 $FontLangBtn      = New-Object System.Drawing.Font("Segoe UI",  11, [System.Drawing.FontStyle]::Bold)
+$FontSmallBold    = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
 
 # ============================================================
 #  LANGUAGE STRINGS (EN / ES)
@@ -432,6 +430,30 @@ function New-CardXY(
 }
 
 # ============================================================
+#  FUNCIÓN PARA ACTUALIZAR current_lang EN SCRIPTS LUA
+# ============================================================
+function Set-ScriptLanguage([string]$path, [string]$lang, [System.Text.Encoding]$enc) {
+    # Si el archivo no existe, lo creamos con la línea current_lang
+    if (-not (Test-Path $path)) {
+        $langValue = if ($lang -eq "ES") { "es" } else { "en" }
+        $content = "local current_lang = `"$langValue`"`r`n`r`n"
+        [System.IO.File]::WriteAllText($path, $content, $enc)
+        return
+    }
+    $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+    $langValue = if ($lang -eq "ES") { "es" } else { "en" }
+    $pattern = 'local\s+current_lang\s*=\s*"(?:en|es)"'
+    $replace = 'local current_lang = "' + $langValue + '"'
+    if ($content -match $pattern) {
+        $content = [regex]::Replace($content, $pattern, $replace, 1)
+    } else {
+        # Si no existe, insertar al principio
+        $content = 'local current_lang = "' + $langValue + '"' + "`r`n" + $content
+    }
+    [System.IO.File]::WriteAllText($path, $content, $enc)
+}
+
+# ============================================================
 #  FORM & CARDS
 # ============================================================
 $formW   = 1140
@@ -454,7 +476,7 @@ $cBottomH = 92
 $form = New-Object System.Windows.Forms.Form
 try { $appIcon = Get-AppIcon; if($appIcon){ $form.Icon = $appIcon } } catch {}
 $form.ShowInTaskbar = $true
-$form.Text = T 'Title'  # <-- NOW dynamic
+$form.Text = T 'Title'
 $form.ClientSize = [System.Drawing.Size]::new($formW,$formH)
 $form.MinimumSize = $form.Size
 $form.BackColor = $script:BG
@@ -506,9 +528,9 @@ $form.Controls.Add($pMain)
 
 $card1 = New-CardXY $pMain $leftX  $row1Y $cardW $cTopH    "S1Title" $null    $false
 $card2 = New-CardXY $pMain $leftX  $row3Y $cardW $cBottomH "S2Title" $null $false
-$card3 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH    "S3Title" $null    $false  # <-- Shaders ahora en top-right
+$card3 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH    "S3Title" $null    $false
 $card4 = New-CardXY $pMain $rightX $row2Y $cardW $cMidH    "S4Title" $null    $false
-$card5 = New-CardXY $pMain $leftX  $row2Y $cardW $cMidH    "S5Title" $null    $false  # <-- Other Options ahora en middle-left
+$card5 = New-CardXY $pMain $leftX  $row2Y $cardW $cMidH    "S5Title" $null    $false
 $card6 = New-CardXY $pMain $rightX $row3Y $cardW $cBottomH "ActionsTitle" $null $false
 
 $card1.Tag="S1"
@@ -540,7 +562,7 @@ $rbUS  = New-RB (T "S2Opt3") 14 70 500
 $rbEU.Checked = $true
 $card2.Controls.AddRange(@($rbEU,$rbISO,$rbUS))
 
-# --- Card 3: Shaders (ahora en top-right) ---
+# --- Card 3: Shaders ---
 $lS3Note = New-Object System.Windows.Forms.Label
 $lS3Note.Text        = T "S3Note"
 $lS3Note.Location    = [System.Drawing.Point]::new(14,34)
@@ -576,10 +598,7 @@ $rbR120 = New-RB (T "S4Opt4") 14 172 520
 $rbR30.Checked = $true
 $card4.Controls.AddRange(@($rbR30,$rbR60,$rbR90,$rbR120))
 
-# --- Card 5: Other Options (ahora en middle-left, sin título redundante) ---
-# Cada grupo de opciones va en su propio Panel para que sean independientes
-
-# Panel 1: Shortcuts
+# --- Card 5: Other Options ---
 $pnlSc = New-Pnl 14 28 520 26 $script:CARD
 $lScLabel = New-Lbl (T "S5Shorcut") 0 5 320 16 $FontSmallBold $script:ACCENT3
 $rbScNo   = New-RB (T "S5No")  320 3 50
@@ -587,7 +606,6 @@ $rbScYes  = New-RB (T "S5Yes") 420 3 50
 $rbScYes.Checked = $true
 $pnlSc.Controls.AddRange(@($lScLabel, $rbScNo, $rbScYes))
 
-# Panel 2: ICC Profile
 $pnlIcc = New-Pnl 14 52 520 26 $script:CARD
 $lIccLabel = New-Lbl (T "S5IccTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
 $rbIccNo   = New-RB (T "S5No")  320 3 50
@@ -595,7 +613,6 @@ $rbIccYes  = New-RB (T "S5Yes") 420 3 50
 $rbIccNo.Checked = $true
 $pnlIcc.Controls.AddRange(@($lIccLabel, $rbIccNo, $rbIccYes))
 
-# Panel 3: OSD Messages (Streamer Mode)
 $pnlOsd = New-Pnl 14 76 520 26 $script:CARD
 $lOsdLabel = New-Lbl (T "S5OsdTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
 $rbOsdNo   = New-RB (T "S5No")  320 3 50
@@ -603,7 +620,6 @@ $rbOsdYes  = New-RB (T "S5Yes") 420 3 50
 $rbOsdNo.Checked = $true
 $pnlOsd.Controls.AddRange(@($lOsdLabel, $rbOsdNo, $rbOsdYes))
 
-# Panel 4: Window Border & Title Bar
 $pnlBorder = New-Pnl 14 100 520 26 $script:CARD
 $lBorderLabel = New-Lbl (T "S5BorderTitle") 0 5 260 16 $FontSmallBold $script:ACCENT3
 $rbBorderNo   = New-RB (T "S5No")        265 3 50
@@ -612,7 +628,6 @@ $rbBorderBoth = New-RB (T "S5BorderBoth") 420 3 110
 $rbBorderNo.Checked = $true
 $pnlBorder.Controls.AddRange(@($lBorderLabel, $rbBorderNo, $rbBorderOnly, $rbBorderBoth))
 
-# Panel 5: Auto-check for updates (NEW)
 $pnlAutoCheck = New-Pnl 14 124 520 26 $script:CARD
 $lAutoCheckLabel = New-Lbl (T "S5AutoCheckTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
 $rbAutoCheckNo   = New-RB (T "S5No")  320 3 50
@@ -620,7 +635,6 @@ $rbAutoCheckYes  = New-RB (T "S5Yes") 420 3 50
 $rbAutoCheckNo.Checked = $true
 $pnlAutoCheck.Controls.AddRange(@($lAutoCheckLabel, $rbAutoCheckNo, $rbAutoCheckYes))
 
-# Agregar los paneles a la tarjeta
 $card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck))
 
 # --- Card 6: Actions ---
@@ -648,9 +662,7 @@ function Apply-Lang([string]$lang) {
     Style-LangBtn $btnEN ($lang -eq "EN")
     Style-LangBtn $btnES ($lang -eq "ES")
 
-    # ★ Update window title ★
     $form.Text = T 'Title'
-
     $lAppSub.Text     = T "HeaderSub"
     $lLangLbl.Text    = T "LangLabel"
     $lHeaderNote.Text = T "HeaderNote"
@@ -700,7 +712,6 @@ function Apply-Lang([string]$lang) {
     $rbR90.Text   = T "S4Opt3"
     $rbR120.Text  = T "S4Opt4"
 
-    # Card 5 translations (sin título redundante)
     $lScLabel.Text      = T "S5Shorcut"
     $lIccLabel.Text     = T "S5IccTitle"
     $lOsdLabel.Text     = T "S5OsdTitle"
@@ -740,24 +751,6 @@ function Apply-Lang([string]$lang) {
     $lExeMenuConf.ForeColor = $menuColor
 
     $form.Refresh()
-}
-
-# ============================================================
-#  FUNCIÓN PARA ACTUALIZAR current_lang EN SCRIPTS LUA
-# ============================================================
-function Set-ScriptLanguage([string]$path, [string]$lang, [System.Text.Encoding]$enc) {
-    if (-not (Test-Path $path)) { return }
-    $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
-    $langValue = if ($lang -eq "ES") { "es" } else { "en" }
-    $pattern = 'local\s+current_lang\s*=\s*"(?:en|es)"'
-    $replace = 'local current_lang = "' + $langValue + '"'
-    if ($content -match $pattern) {
-        $content = [regex]::Replace($content, $pattern, $replace, 1)
-    } else {
-        # Si no existe, insertar al principio
-        $content = 'local current_lang = "' + $langValue + '"' + "`r`n" + $content
-    }
-    [System.IO.File]::WriteAllText($path, $content, $enc)
 }
 
 # ============================================================
@@ -866,6 +859,9 @@ $btnScan.Add_Click({
     }
 })
 
+# ============================================================
+#  BOTÓN MENU (con las nuevas traducciones y tools_launcher)
+# ============================================================
 $btnMenuToggle.Add_Click({
     $menuPath = Join-Path $script:RootDir "menu.conf"
     if (-not (Test-Path $menuPath)) {
@@ -878,7 +874,7 @@ $btnMenuToggle.Add_Click({
     $utf8 = New-Object System.Text.UTF8Encoding $false
     $menu = [System.IO.File]::ReadAllText($menuPath, [System.Text.Encoding]::UTF8)
 
-    # Mapas de traducción para el menú (solo para el texto visible, no para los scripts)
+    # Mapas de traducción (incluyendo las nuevas claves de TOOLS)
     $mapEN = @{
         'CERRAR MPV-SW-Capture'='CLOSE MPV-SW-Capture'; 'Videojuegos'='VideoGame'; 'Rellenar Ventana'='Fill Screen'; 'Solo Nitidez'='Only Sharpen'; 'Limpiar Shaders'='Clean Shaders'; 'AYUDA'='HELP'; 'RECORTES'='CROPS'; 'Borrar Recorte'='Clear Crop'; 'Recorte Eliminado'='Crop Cleared'
         'MARCOS'='BEZELS'; 'Borrar Marcos'='Clear Bezels'; 'Marcos Eliminados'='Bezels Cleared'
@@ -901,6 +897,11 @@ $btnMenuToggle.Add_Click({
         'Perspectiva Pinball'='Pinball Perspective';
         'Keystone Hacia Adentro (Zoom Inferior Bajo)'='Inward Keystone (Low Bottom Zoom)'
         'ROTACION'='ROTATION'; 'Girar a la Derecha'='Rotate Clockwise'; 'Girar a la Izquierda'='Rotate Counter-Clockwise'; 'Restablecer Rotacion'='Reset Rotation'; 'OTRAS OPCIONES'='OTHER OPTIONS'; 'Borde de Ventana'='Window Border'; 'Barra de Titulo'='Title Bar'; 'Quitar TODO'='Remove ALL'; 'Girado +90°'='Rotated +90°'; 'Girado -90°'='Rotated -90°'; 'Rotacion Reiniciada'='Rotation Reset'; 'Borde: ${border}'='Border: ${border}'; 'Barra de Titulo: ${border}'='Title Bar: ${border}'; 'Ambos Quitados'='Removed Both'; 'Ocultar Mensajes OSD'='Hide OSD Messages'; 'Espejo OFF'='Mirror OFF'; 'Espejo ON'='Mirror ON'; 'Modo Espejo'='Mirror Mode'; 'Revisa la Ultima Version de MSC'='Check Latest MSC Version'; 'Abre la Web de MPV-SW-Capture'='Open MPV-SW-Capture Website'; 'Discord de MPV-SW-Capture'='MPV-SW-Capture Discord'; 'Abriendo sitio web...'='Opening website...'; 'Abriendo Discord...'='Opening Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'='https://tyras-sw.github.io/MPV-SW-Capture/'
+        # Traducciones para TOOLS
+        'HERRAMIENTAS'='TOOLS'
+        'Abrir Administrador Marcos'='Open Bezel Manager'
+        'Abrir Administrador de Video'='Open Video Manager'
+        'Abrir Asistente de Stream'='Open Stream Helper'
     }
 
     $mapES = @{
@@ -925,6 +926,11 @@ $btnMenuToggle.Add_Click({
         'Pinball Perspective'='Perspectiva Pinball';
         'Inward Keystone (Low Bottom Zoom)'='Keystone Hacia Adentro (Zoom Inferior Bajo)'
         'ROTATION'='ROTACION'; 'Rotate Clockwise'='Girar a la Derecha'; 'Rotate Counter-Clockwise'='Girar a la Izquierda'; 'Reset Rotation'='Restablecer Rotacion'; 'OTHER OPTIONS'='OTRAS OPCIONES'; 'Window Border'='Borde de Ventana'; 'Title Bar'='Barra de Titulo'; 'Remove ALL'='Quitar TODO'; 'Rotated +90°'='Girado +90°'; 'Rotated -90°'='Girado -90°'; 'Rotation Reset'='Rotacion Reiniciada'; 'Border: ${border}'='Borde: ${border}'; 'Title Bar: ${border}'='Barra de Titulo: ${border}'; 'Removed Both'='Ambos Quitados'; 'Hide OSD Messages'='Ocultar Mensajes OSD'; 'Mirror OFF'='Espejo OFF'; 'Mirror ON'='Espejo ON'; 'Mirror Mode'='Modo Espejo'; 'Check Latest MSC Version'='Revisa la Ultima Version de MSC'; 'Open MPV-SW-Capture Website'='Abre la Web de MPV-SW-Capture'; 'MPV-SW-Capture Discord'='Discord de MPV-SW-Capture'; 'Opening website...'='Abriendo sitio web...'; 'Opening Discord...'='Abriendo Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/'='https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'
+        # Traducciones para TOOLS
+        'TOOLS'='HERRAMIENTAS'
+        'Open Bezel Manager'='Abrir Administrador Marcos'
+        'Open Video Manager'='Abrir Administrador de Video'
+        'Open Stream Helper'='Abrir Asistente de Stream'
     }
 
     # Detectar si el menú está en inglés o español (usando palabras clave)
@@ -962,7 +968,8 @@ $btnMenuToggle.Add_Click({
         "scripts\check_version.lua",
         "scripts\mirror_toggle.lua",
         "scripts\autocompress.lua",
-        "scripts\shader_init.lua"
+        "scripts\shader_init.lua",
+        "scripts\tools_launcher.lua"   # <--- NUEVO
     )
 
     foreach ($relPath in $scriptsToUpdate) {
@@ -971,6 +978,9 @@ $btnMenuToggle.Add_Click({
     }
 })
 
+# ============================================================
+#  BOTÓN APPLY (sin cambios)
+# ============================================================
 $btnApply.Add_Click({
     if ($cbVideo.SelectedIndex -lt 0 -or $cbAudio.SelectedIndex -lt 0) {
         $script:LastStatusState = "err_select"
@@ -1010,15 +1020,10 @@ $btnApply.Add_Click({
             '(data\.audio_device\s*=\s*")[^"]*"' = ('${1}' + $aDev + '"')
         } $utf8
 
-        # --- Update mpv.conf with all options (EXCEPT border and title-bar) ---
         $cf = Join-Path $root "mpv.conf"
         if (Test-Path $cf) {
             $c = [System.IO.File]::ReadAllText($cf, [System.Text.Encoding]::UTF8)
-
-            # Screenshot template
             $c = $c -replace 'screenshot-template=.*', ('screenshot-template="' + $tpl + '"')
-
-            # Shader and deband
             if ($shMode -eq "enable") {
                 $c = $c -replace '(?m)^#?(deband=)', '$1'
                 $c = $c -replace '(?m)^#?(glsl-shader=)', '$1'
@@ -1026,47 +1031,37 @@ $btnApply.Add_Click({
                 $c = $c -replace '(?m)^#?(deband=)', '#$1'
                 $c = $c -replace '(?m)^#?(glsl-shader=)', '#$1'
             }
-
-            # ICC Profile
             $iccVal = if ($rbIccYes.Checked) { "yes" } else { "no" }
             if ($c -match 'icc-profile-auto=') {
                 $c = $c -replace 'icc-profile-auto=\S+', ('icc-profile-auto=' + $iccVal)
             } else {
                 $c = $c.TrimEnd() + "`r`nicc-profile-auto=$iccVal`r`n"
             }
-
-            # OSD Duration
             $osdVal = if ($rbOsdYes.Checked) { "0" } else { "1000" }
             if ($c -match 'osd-duration=') {
                 $c = $c -replace 'osd-duration=\d+', ('osd-duration=' + $osdVal)
             } else {
                 $c = $c.TrimEnd() + "`r`nosd-duration=$osdVal`r`n"
             }
-
             [System.IO.File]::WriteAllText($cf, $c, $utf8)
         }
 
-        # --- Actualizar MPV-SW-Capture.bat para el borde y la barra de título ---
+        # --- Actualizar MPV-SW-Capture.bat para borde y barra de título ---
         $batPath = Join-Path $root "data\MPV-SW-Capture.bat"
         if (Test-Path $batPath) {
             $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
             
-            # Determinar los argumentos según la selección del usuario
             if ($rbBorderNo.Checked) {
-                # Opción "No": sin borde ni barra de título → forzar --no-border
                 $borderArg = "--no-border"
                 $titleArg = ""
             } elseif ($rbBorderOnly.Checked) {
-                # Opción "Only border": borde sin barra de título
-                $borderArg = "--border"  # No necesario, pero explícito
+                $borderArg = "--border"
                 $titleArg = "--title-bar=no"
             } else { # $rbBorderBoth.Checked
-                # Opción "Border + Title Bar": borde y barra de título
-                $borderArg = "--border"  # No necesario, pero explícito
-                $titleArg = ""  # O --title-bar=yes (por defecto)
+                $borderArg = "--border"
+                $titleArg = ""
             }
             
-            # Eliminar cualquier --no-border, --border, --title-bar existente para evitar duplicados
             $batContent = $batContent -replace '--no-border ', ''
             $batContent = $batContent -replace '--no-border', ''
             $batContent = $batContent -replace '--border ', ''
@@ -1074,61 +1069,45 @@ $btnApply.Add_Click({
             $batContent = $batContent -replace '--title-bar=\S+ ', ''
             $batContent = $batContent -replace '--title-bar=\S+', ''
             
-            # Buscar la línea que comienza con 'start "" /b "%prog1_path%"'
-            # Insertar los argumentos antes de 'av://dshow:video='
             $pattern = '(start "" /b "%prog1_path%" )'
             $replacement = '${1}' + $borderArg + ' ' + $titleArg + ' '
             $batContent = $batContent -replace $pattern, $replacement
-            # Eliminar espacios dobles
             $batContent = $batContent -replace '  +', ' '
             
             [System.IO.File]::WriteAllText($batPath, $batContent, $utf8)
         }
 
-        # --- NEW: Auto-check for updates on startup (modificar .bat) ---
+        # --- Auto-check for updates ---
         $autoCheckVal = if ($rbAutoCheckYes.Checked) { "1" } else { "0" }
         $batPath = Join-Path $root "data\MPV-SW-Capture.bat"
         if (Test-Path $batPath) {
             $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
-            # Buscar si ya existe el parámetro y actualizarlo, o añadirlo al final de la línea de mpv
             if ($batContent -match '(--script-opts=msc_check_version_auto=\d)') {
                 $batContent = $batContent -replace '--script-opts=msc_check_version_auto=\d', ('--script-opts=msc_check_version_auto=' + $autoCheckVal)
             } else {
-                # Insertar al final de la línea que contiene 'start "" /b "%prog1_path%"'
                 $batContent = $batContent -replace '(start "" /b "%prog1_path%.*?)(\s*$|(?= --))', ('$1 --script-opts=msc_check_version_auto=' + $autoCheckVal)
             }
             [System.IO.File]::WriteAllText($batPath, $batContent, [System.Text.Encoding]::UTF8)
         }
 
         $luaDateFmt = if ($psFmt -eq "yyyy-MM-dd") { "%Y-%m-%d_%H%M%S" } elseif ($psFmt -eq "MM-dd-yyyy") { "%m-%d-%Y_%H%M%S" } else { "%d-%m-%Y_%H%M%S" }
-
-        # Update autocompress.lua date format only (not text translation)
         Update-File (Join-Path $root "scripts\autocompress.lua") @{
             'os\.date\("%[^"]+"\)' = ('os.date("' + $luaDateFmt + '")')
         } $utf8
 
-        # --- Update shader_init.lua (solo active_shader, respeta current_lang) ---
+        # --- Update shader_init.lua ---
         $shaderInitPath = Join-Path $root "scripts\shader_init.lua"
-
         if (Test-Path $shaderInitPath) {
             $content = [System.IO.File]::ReadAllText($shaderInitPath, [System.Text.Encoding]::UTF8)
-            # Reemplazar solo la línea de active_shader
             $content = $content -replace 'mp\.set_property\("user-data/active_shader",\s*"[^"]*"\)', ('mp.set_property("user-data/active_shader", "' + $shInit + '")')
             [System.IO.File]::WriteAllText($shaderInitPath, $content, $utf8)
         } else {
-            # Si el archivo no existe (nueva instalación), crearlo con current_lang = "en" por defecto
             $shaderInitContent = @"
 -- shader_init.lua - Initialization of shader and OSD control
--- This file is modified by the setup to establish:
---   - active_shader (SH_4K_1 / none)
---   - current_lang (en / es)
+local current_lang = "en"
 
-local current_lang = "en"  -- Updated by the menu translation button
-
--- Initialize active shader
 mp.set_property("user-data/active_shader", "$shInit")
 
--- Function to toggle OSD (hide/show messages)
 local function toggle_osd()
     local dur = mp.get_property_number("osd-duration")
     if dur == 0 then
@@ -1147,7 +1126,6 @@ local function toggle_osd()
         end
     end
 end
-
 mp.register_script_message("toggle-osd", toggle_osd)
 "@
             [System.IO.File]::WriteAllText($shaderInitPath, $shaderInitContent, $utf8)
@@ -1161,12 +1139,10 @@ mp.register_script_message("toggle-osd", toggle_osd)
             '(data\.max_record_time\s*=\s*)\d+(?:\.\d+)?' = ('${1}' + $recLua)
         } $utf8
 
-        # ============================================================
-        #  SHORTCUT CREATION (C#)
-        # ============================================================
+        # --- Shortcuts ---
         if ($rbScYes.Checked) {
             $targetExe = Join-Path $root "mpv.exe"
-            $icoPath   = Join-Path $root "data\icon\msc-shortcut.ico"   # <-- updated path
+            $icoPath   = Join-Path $root "data\icon\msc-shortcut.ico"
             $desktopFolder = [Environment]::GetFolderPath("Desktop")
 
             function New-Shortcut {
@@ -1225,7 +1201,6 @@ IconFile=$($root)\data\icon\msc-shortcut.ico
 # ============================================================
 #  INIT
 # ============================================================
-# Cargar idioma guardado
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang
 

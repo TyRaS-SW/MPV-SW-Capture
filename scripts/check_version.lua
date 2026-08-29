@@ -8,6 +8,10 @@ local msg = require "mp.msg"
 -- Default language (can be changed to "es" for Spanish)
 local current_lang = "en"
 
+-- 🔧 DURATION OF FINAL MESSAGE (in seconds)
+-- Adjust this value to control how long the final result message stays on screen.
+local FINAL_MSG_DURATION = 4.0
+
 -- Read script-opts for auto-check
 local function get_script_opt(key)
     local script_opts = mp.get_property("options/script-opts") or ""
@@ -183,13 +187,13 @@ local function show_version_status()
                 msg_text = "⚠️ You have v" .. local_version_str .. " > online v" .. online_version_str .. "\nDo not update."
             end
         end
-        -- Final message with fixed duration of 1.5 seconds
-        safe_osd_message(msg_text, 1.5)
+        -- 🔧 Use FINAL_MSG_DURATION to control MSG duration
+        safe_osd_message(msg_text, FINAL_MSG_DURATION)
     end)
 
     if not success then
         local err_msg = tostring(err)
-        safe_osd_message("ERROR: " .. err_msg, 1.5)
+        safe_osd_message("ERROR: " .. err_msg, FINAL_MSG_DURATION)
         msg.error("Version check error: " .. err_msg)
     end
 end
