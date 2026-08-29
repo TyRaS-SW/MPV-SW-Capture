@@ -15,6 +15,8 @@ local tool_names = {
     bezel = { en = "Bezel Manager", es = "Administrador de Marcos" },
     video = { en = "Video Manager", es = "Administrador de Video" },
     stream = { en = "Stream Helper", es = "Asistente de Stream" },
+    install = { en = "Installer", es = "Instalador" },
+    setup = { en = "Setup", es = "Configuración" },
 }
 
 -- ============================================================
@@ -124,6 +126,14 @@ end)
 
 mp.register_script_message("launch-stream", function()
     run_tool("stream", "data/script/Stream_MSCGUI.ps1")
+end)
+
+mp.register_script_message("launch-installer", function()
+    run_tool("install", "data/script/Install_MSCGUI.ps1")
+end)
+
+mp.register_script_message("launch-setup", function()
+    run_tool("setup", "data/script/Setup_MSCGUI.ps1")
 end)
 
 msg.info("Tools Launcher loaded. Use script-messages to open tools.")

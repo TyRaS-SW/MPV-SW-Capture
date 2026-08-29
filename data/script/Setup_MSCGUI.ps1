@@ -897,11 +897,13 @@ $btnMenuToggle.Add_Click({
         'Perspectiva Pinball'='Pinball Perspective';
         'Keystone Hacia Adentro (Zoom Inferior Bajo)'='Inward Keystone (Low Bottom Zoom)'
         'ROTACION'='ROTATION'; 'Girar a la Derecha'='Rotate Clockwise'; 'Girar a la Izquierda'='Rotate Counter-Clockwise'; 'Restablecer Rotacion'='Reset Rotation'; 'OTRAS OPCIONES'='OTHER OPTIONS'; 'Borde de Ventana'='Window Border'; 'Barra de Titulo'='Title Bar'; 'Quitar TODO'='Remove ALL'; 'Girado +90°'='Rotated +90°'; 'Girado -90°'='Rotated -90°'; 'Rotacion Reiniciada'='Rotation Reset'; 'Borde: ${border}'='Border: ${border}'; 'Barra de Titulo: ${border}'='Title Bar: ${border}'; 'Ambos Quitados'='Removed Both'; 'Ocultar Mensajes OSD'='Hide OSD Messages'; 'Espejo OFF'='Mirror OFF'; 'Espejo ON'='Mirror ON'; 'Modo Espejo'='Mirror Mode'; 'Revisa la Ultima Version de MSC'='Check Latest MSC Version'; 'Abre la Web de MPV-SW-Capture'='Open MPV-SW-Capture Website'; 'Discord de MPV-SW-Capture'='MPV-SW-Capture Discord'; 'Abriendo sitio web...'='Opening website...'; 'Abriendo Discord...'='Opening Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'='https://tyras-sw.github.io/MPV-SW-Capture/'
-        # Traducciones para TOOLS
         'HERRAMIENTAS'='TOOLS'
         'Abrir Administrador Marcos'='Open Bezel Manager'
         'Abrir Administrador de Video'='Open Video Manager'
         'Abrir Asistente de Stream'='Open Stream Helper'
+        'INSTALADORES'='INSTALLERS'
+        'Abrir INSTALADOR'='Run INSTALLER'
+        'Abrir CONFIGURADOR'='Run SETUP'
     }
 
     $mapES = @{
@@ -926,11 +928,13 @@ $btnMenuToggle.Add_Click({
         'Pinball Perspective'='Perspectiva Pinball';
         'Inward Keystone (Low Bottom Zoom)'='Keystone Hacia Adentro (Zoom Inferior Bajo)'
         'ROTATION'='ROTACION'; 'Rotate Clockwise'='Girar a la Derecha'; 'Rotate Counter-Clockwise'='Girar a la Izquierda'; 'Reset Rotation'='Restablecer Rotacion'; 'OTHER OPTIONS'='OTRAS OPCIONES'; 'Window Border'='Borde de Ventana'; 'Title Bar'='Barra de Titulo'; 'Remove ALL'='Quitar TODO'; 'Rotated +90°'='Girado +90°'; 'Rotated -90°'='Girado -90°'; 'Rotation Reset'='Rotacion Reiniciada'; 'Border: ${border}'='Borde: ${border}'; 'Title Bar: ${border}'='Barra de Titulo: ${border}'; 'Removed Both'='Ambos Quitados'; 'Hide OSD Messages'='Ocultar Mensajes OSD'; 'Mirror OFF'='Espejo OFF'; 'Mirror ON'='Espejo ON'; 'Mirror Mode'='Modo Espejo'; 'Check Latest MSC Version'='Revisa la Ultima Version de MSC'; 'Open MPV-SW-Capture Website'='Abre la Web de MPV-SW-Capture'; 'MPV-SW-Capture Discord'='Discord de MPV-SW-Capture'; 'Opening website...'='Abriendo sitio web...'; 'Opening Discord...'='Abriendo Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/'='https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'
-        # Traducciones para TOOLS
         'TOOLS'='HERRAMIENTAS'
         'Open Bezel Manager'='Abrir Administrador Marcos'
         'Open Video Manager'='Abrir Administrador de Video'
         'Open Stream Helper'='Abrir Asistente de Stream'
+        'INSTALLERS'='INSTALADORES'
+        'Run INSTALLER'='Abrir INSTALADOR'
+        'Run SETUP'='Abrir CONFIGURADOR'
     }
 
     # Detectar si el menú está en inglés o español (usando palabras clave)
