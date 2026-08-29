@@ -76,11 +76,11 @@
             background: var(--accent-primary-light);
         }
 
-        .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:500; font-size:0.95rem; align-items:center; }
-        .nav-links a { color:var(--text-secondary); }
-        .nav-links a:hover { color:var(--text-primary); text-decoration:none; }
+        .nav-links { display:flex; gap:1.5rem; flex-wrap:wrap; font-weight:700; font-size:0.95rem; align-items:center; }
+        .nav-links a { color:var(--text-primary); }
+        .nav-links a:hover { color:var(--text-primary); text-decoration:underline; }
         .nav-links .discord-link { color:#5865F2; }
-        .nav-links .discord-link:hover { color:#8ea1ff; }
+        .nav-links .discord-link:hover { color:#8ea1ff; text-decoration:underline; }
 
         /* ===== SELECTOR DE IDIOMA ===== */
         .lang-selector {
@@ -404,7 +404,6 @@
             border-radius: 8px;
             overflow: hidden;
             width: 80%;
-            aspect-ratio: 16 / 9;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -414,7 +413,7 @@
         .monitor-screen img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block;
             transition: opacity 0.3s ease;
         }
@@ -682,7 +681,7 @@
 
     <!-- ===== FEATURES ===== -->
     <section id="features" class="container">
-        <h2><i class="fas fa-star"></i> <span class="lang-es">Características clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
+        <h2><i class="fas fa-star"></i> <span class="lang-es">Funciones clave</span><span class="lang-en" style="display:none;">Key features</span></h2>
         <div class="card-grid">
             <!-- 1. Minimal lag -->
             <div class="card"><i class="fas fa-bolt"></i><h3><span class="lang-es">Mínima latencia</span><span class="lang-en" style="display:none;">Minimal lag</span></h3><p><span class="lang-es">MPV maneja el vídeo y ffplay el audio en paralelo, sincronizados para una respuesta casi instantánea.</span><span class="lang-en" style="display:none;">MPV handles video and ffplay handles audio in parallel, synced for near-instant response.</span></p></div>
@@ -763,7 +762,7 @@
             <!-- Card 3 -->
             <div class="card">
                 <h3><span class="lang-es">¿Cómo abro el menú cuando inicio el programa?</span><span class="lang-en" style="display:none;">How do I open the menu when the program starts?</span></h3>
-                <p><span class="lang-es">Haz clic derecho en la ventana y se abrirá el menú. También puedes presionar ESC en tu teclado. Asegúrate que el mouse esté sobre la ventana y el programa esté enfocado.</span><span class="lang-en" style="display:none;">Just right‑click on the window and the menu will open. Also you can press the ESC key on your keyboard, but make sure the mouse is over the window and the program is focused.</span></p>
+                <p><span class="lang-es">Haz clic derecho en la ventana y se abrirá el menú. También puedes presionar ESC en tu teclado. Eso si, el mouse esté estar sobre la ventana y enfocado.</span><span class="lang-en" style="display:none;">Just right‑click on the window and the menu will open. Also you can press the ESC key on your keyboard, but the mouse must be over the window and focused.</span></p>
             </div>
             <!-- Card 4 -->
             <div class="card"><h3><span class="lang-es">¿Cómo cambio de idioma el menú?</span><span class="lang-en" style="display:none;">How do I change the menu language?</span></h3><p><span class="lang-es">En el <code>Setup_MPV-SW-Capture.exe</code> pulsa el botón <strong>"MENU: English <- -> Español"</strong>.</span><span class="lang-en" style="display:none;">In <code>Setup_MPV-SW-Capture.exe</code> press the <strong>"MENU: English <- -> Español"</strong> button.</span></p></div>
@@ -988,7 +987,7 @@
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
                     const translations = {
-                        'nav-features': { es: 'Características', en: 'Features' },
+                        'nav-features': { es: 'Funciones', en: 'Features' },
                         'nav-custom': { es: 'Avanzado', en: 'Advanced' },
                         'nav-news': { es: 'Noticias', en: 'News' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
@@ -1280,7 +1279,7 @@
         document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
         // ========================================================
-        // 7. DEMOSTRACIÓN INTERACTIVA (14 modos)
+        // 7. DEMOSTRACIÓN INTERACTIVA (15 modos)
         // ========================================================
         const demoData = [
             // Fila 1: Menu, Fullscreen, Mini Mode, Mirror Mode, Stretch Window, Recording, Rotation
@@ -1368,7 +1367,7 @@
                 desc_es: 'Rota la ventana en sentido horario o antihorario.',
                 desc_en: 'Rotate the window clockwise or counterclockwise.'
             },
-            // Fila 2: Shaders, Shapes, Crops, Bezels, Shader+Bezel, Shader+Crop, Shader+Crop+Shape
+            // Fila 2: Shaders, Shapes, Crops, Bezels, Shader+Bezel, Shader+Shape+Bezel, Shader+Crop, Shader+Crop+Shape
             {
                 icon: 'fa-palette',
                 color: '#fd79a8',
@@ -1428,6 +1427,18 @@
                 title_en: 'Shader + Bezel',
                 desc_es: 'Combina shaders con marcos para un efecto visual más completo.',
                 desc_en: 'Combine shaders with bezels for a more complete visual effect.'
+            },
+            {
+                icon: 'fa-magic',
+                color: '#a29bfe',
+                image_es: 'assets/demo/15_shadershapebezel.jpg',
+                image_en: 'assets/demo/15_shadershapebezel.jpg',
+                label_es: 'Shader+Forma+Marco',
+                label_en: 'Shader+Shape+Bezel',
+                title_es: 'Shader + Forma + Marco',
+                title_en: 'Shader + Shape + Bezel',
+                desc_es: 'Combina shaders, formas y marcos para el máximo nivel de personalización visual.',
+                desc_en: 'Combine shaders, shapes and bezels for the ultimate visual customization.'
             },
             {
                 icon: 'fa-object-group',
