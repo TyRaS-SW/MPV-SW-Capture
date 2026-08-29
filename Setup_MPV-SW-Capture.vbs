@@ -14,8 +14,8 @@ strScriptDir = objFSO.GetParentFolderName(WScript.ScriptFullName)
 strScriptPath = objFSO.BuildPath(strScriptDir, "data\script\Setup_MSCGUI.ps1")
 
 If Not objFSO.FileExists(strScriptPath) Then
-    MsgBox "No se encontró el archivo: " & strScriptPath & vbCrLf & _
-           "Asegúrate de que Setup_MSCGUI.ps1 esté en la carpeta 'data\script'.", _
+    MsgBox "File not found: " & strScriptPath & vbCrLf & _
+           "Setup_MSCGUI.ps1 must be in folder 'data\script'.", _
            vbCritical, "Setup - Error"
     WScript.Quit 1
 End If
