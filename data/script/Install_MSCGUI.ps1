@@ -1044,6 +1044,9 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
     return $false
 }
 
+# ============================================================
+#  MODIFIED: Do-InstallMySW (handles root folder in ZIP)
+# ============================================================
 function Do-InstallMySW([bool]$force) {
     Log-Info (T 'LogCheckingMySW')
     [void](Sync-MpvSwVersionFromOffline)
@@ -1074,14 +1077,27 @@ function Do-InstallMySW([bool]$force) {
     if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
     Log-Info (T 'LogMySWExtracting')
     if (Expand-ArchiveZip $zipPath $extPath) {
-        $files = Get-ChildItem -Path $extPath -Recurse -File
+        # --- DETECT IF ZIP HAS ROOT FOLDER ---
+        $items = Get-ChildItem -Path $extPath -Force
+        $directories = $items | Where-Object { $_.PSIsContainer }
+        $files = $items | Where-Object { -not $_.PSIsContainer }
+        $sourceRoot = $extPath
+        if ($directories.Count -eq 1 -and $files.Count -eq 0) {
+            # Only one folder and no unsorted files -> use that folder as origin
+            $sourceRoot = $directories[0].FullName
+            Log-Info "[Extract] ZIP contains a root folder: $($directories[0].Name). Extracting its contents."
+        } else {
+            Log-Info "[Extract] ZIP contains files directly in root. Extracting from root."
+        }
+
+        $files = Get-ChildItem -Path $sourceRoot -Recurse -File
         if (-not $files -or $files.Count -eq 0) {
             Log-Error ([string]::Format((T 'LogMySWError'),'ZIP extracted no files'))
             return $false
         }
         try {
             foreach ($f in $files) {
-                $rel = $f.FullName.Substring($extPath.Length).TrimStart('\','/')
+                $rel = $f.FullName.Substring($sourceRoot.Length).TrimStart('\','/')
                 if ([string]::IsNullOrWhiteSpace($rel)) { continue }
                 $dest = Join-Path $script:SD $rel
                 $destDir = Split-Path -Parent $dest
