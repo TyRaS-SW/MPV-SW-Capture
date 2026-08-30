@@ -1,26 +1,38 @@
-﻿@echo off
+@echo off
 setlocal EnableExtensions
 
 set "SCRIPT_DIR=%~dp0"
 for %%I in ("%SCRIPT_DIR%..") do set "ROOT_DIR=%%~fI"
 
-SET "prog1_path=%ROOT_DIR%\mpv.exe"
-SET "prog2_path=%ROOT_DIR%\ffplay.exe"
-SET "prog1_name=mpv.exe"
-SET "prog2_name=ffplay.exe"
+set "prog1_path=%ROOT_DIR%\mpv.exe"
+set "prog2_path=%ROOT_DIR%\ffplay.exe"
+set "prog1_name=mpv.exe"
+set "prog2_name=ffplay.exe"
+set "prog2_name=ffplay.exe"
 SET "video_device="
 SET "audio_device="
-SET "ffplay_volume=100"
-SET "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
-SET "ffplayvol_path=%ROOT_DIR%\data\ffplayvol.exe"
+set "ffplay_volume=100"
+set "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
+
+set "ffplayvol_ps1=%ROOT_DIR%\data\ffplayvol.ps1"
+set "ffplayvol_dll=%ROOT_DIR%\data\FfplayVolWrapper.dll"
+
+if not exist "%ffplayvol_ps1%" (
+    echo ERROR: no existe "%ffplayvol_ps1%"
+    exit /b 1
+)
+
+if not exist "%ffplayvol_dll%" (
+    echo ERROR: no existe "%ffplayvol_dll%"
+    exit /b 1
+)
 
 start "" /b "%prog1_path%" --no-border av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0
 
-set SDL_AUDIODRIVER=wasapi
-set SDL_AUDIO_SAMPLES=128
+set "SDL_AUDIODRIVER=wasapi"
+set "SDL_AUDIO_SAMPLES=128"
 
-if exist "%ffplayvol_path%" (
-start "" /b "%ffplayvol_path%" watch-tag ffplay 5000 >nul 2>&1
+start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
 ping 127.0.0.1 -n 2 >nul
 
 start "" /b "%prog2_path%" -f dshow -audio_buffer_size 4 -i audio="%audio_device%" -volume %ffplay_volume% -fflags nobuffer+fastseek -flags low_delay -strict experimental -nodisp -hide_banner -loglevel quiet
@@ -46,4 +58,3 @@ exit /b
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$m = [System.Threading.Mutex]::OpenExisting('%mutex_name%'); $m.ReleaseMutex(); $m.Dispose()" >nul 2>&1
 taskkill /f /im %prog1_name% >nul 2>&1
 exit /b
-)

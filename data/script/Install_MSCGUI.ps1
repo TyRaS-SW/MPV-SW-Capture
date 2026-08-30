@@ -39,11 +39,9 @@ function Get-RootDir {
     # If the script is inside data/script, go up two levels to get the root
     if ((Split-Path $scriptDir -Leaf) -eq 'script' -and (Split-Path (Split-Path $scriptDir -Parent) -Leaf) -eq 'data') {
         $root = Split-Path -Parent (Split-Path -Parent $scriptDir)
-        Log-Info ("[ROOT] Detected root as: $root (from data/script)")
         return $root
     }
     # Fallback: use the script's directory as root (for compatibility)
-    Log-Info ("[ROOT] Using script directory as root: $scriptDir")
     return $scriptDir
 }
 
@@ -65,7 +63,6 @@ function Load-GUILanguage {
             }
         } catch {}
     }
-    # Si no existe o es inválido, devolver "EN" y crear el archivo
     Save-GUILanguage "EN"
     return "EN"
 }
@@ -139,9 +136,6 @@ $script:Lang["EN"] = @{
     Title         = "MPV-SW-Capture - Installer / Updater"
     HeaderSub     = "Installer / Updater  -  Download and update all required software."
     HeaderNote    = "All files are installed in the same folder as this script."
-    SevenZipChoice = "Do you want to use your installed 7-Zip instead of the downloaded one?"
-    SevenZipYes    = "YES"
-    SevenZipNo     = "NO"
     LangLabel     = "GUI Language:"
     ActionsTitle  = "ACTIONS"
     S1Title       = "INSTALL OR UPDATE ffmpeg + ffplay"
@@ -209,9 +203,6 @@ $script:Lang["EN"] = @{
     LogFFError        = "[ffmpeg]  Error: {0}"
     LogMpvError       = "[mpv]     Error: {0}"
     LogMySWError      = "[MPV-SW]  Error: {0}"
-    Log7zDownload     = "[7zr]     Downloading 7zr.exe..."
-    Log7zReady        = "[7zr]     7zr.exe ready."
-    LogForced         = "Version data reset. Will reinstall everything."
     LogAllDone        = "All operations completed."
     LogFFNotFound     = "[ffmpeg]  No essentials asset found in release."
     LogMpvNotFound    = "[mpv]     No compatible .7z asset found for variant '{0}'."
@@ -240,9 +231,6 @@ $script:Lang["ES"] = @{
     Title         = "MPV-SW-Capture - Instalador / Actualizador"
     HeaderSub     = "Instalador / Actualizador  -  Descarga y actualiza todos los softwares necesarios."
     HeaderNote    = "Todos los archivos se instalan en la misma carpeta que este script."
-    SevenZipChoice = "Quieres usar tu 7-Zip instalado en vez del que descarga el installer?"
-    SevenZipYes    = "SI"
-    SevenZipNo     = "NO"
     LangLabel     = "Idioma del GUI:"
     ActionsTitle  = "ACCIONES"
     S1Title       = "INSTALAR O ACTUALIZAR ffmpeg + ffplay"
@@ -313,9 +301,6 @@ $script:Lang["ES"] = @{
     LogFFError        = "[ffmpeg]  Error: {0}"
     LogMpvError       = "[mpv]     Error: {0}"
     LogMySWError      = "[MPV-SW]  Error: {0}"
-    Log7zDownload     = "[7zr]     Descargando 7zr.exe..."
-    Log7zReady        = "[7zr]     7zr.exe listo."
-    LogForced         = "Versiones reiniciadas. Se reinstalara todo."
     LogAllDone        = "Todas las operaciones completadas."
     LogFFNotFound     = "[ffmpeg]  No se encontro asset essentials en la release."
     LogMpvNotFound    = "[mpv]     No se encontro asset .7z para la variante '{0}'."
@@ -349,8 +334,6 @@ function T { param([string]$key) return $script:Lang[$script:CurrentLang][$key] 
 # ============================================================
 $script:SD = $script:RootDir  # All files are installed in the root folder
 $script:TempDir     = Join-Path $script:RootDir "_temp_installer"
-$script:SevenZipUrl = "https://7-zip.org/a/7zr.exe"
-$script:SevenZipExe = Join-Path $script:TempDir "7zr.exe"
 $script:VersionFile = Join-Path $script:RootDir "scripts\.installed-versions.json"
 $script:GitHubTokenFile = Join-Path $script:RootDir "scripts\.github-token.txt"
 
@@ -372,7 +355,6 @@ $script:CheckedFFAvailable = $null
 $script:CheckedMpvAvailable = $null
 $script:CheckedMyAvailable = $null
 $script:GitHubRateLimited = $false
-$script:PreferInstalled7Zip = $true
 
 function Get-GitHubToken {
     if ($env:GITHUB_TOKEN) { return $env:GITHUB_TOKEN.Trim() }
@@ -420,7 +402,8 @@ function New-RB([string]$text,[int]$x,[int]$y,[int]$w) {
 }
 function Style-Btn([System.Windows.Forms.Button]$btn,
                    [System.Drawing.Color]$bg,[System.Drawing.Color]$fg) {
-    if ($bg.IsEmpty) { $bg=$script:ACCENT }; if ($fg.IsEmpty) { $fg=$script:BG }
+    if ($bg.IsEmpty) { $bg=$script:ACCENT }
+    if ($fg.IsEmpty) { $fg=$script:BG }
     $btn.BackColor=$bg; $btn.ForeColor=$fg; $btn.Font=$FontBtn
     $btn.FlatStyle='Flat'; $btn.FlatAppearance.BorderSize=0
     $btn.Cursor=[System.Windows.Forms.Cursors]::Hand
@@ -641,7 +624,6 @@ function Rewrite-FFmpegJsonToOnlineTag([string]$onlineTag) {
     if (-not $current) { return $false }
     if ($current -eq $onlineTag) { return $false }
 
-    # Compare the display (short) version of both
     $localDisplay  = Get-FFmpegDisplayVersion $current
     $remoteDisplay = Get-FFmpegDisplayVersion $onlineTag
 
@@ -920,6 +902,97 @@ function Get-SelectedMpvVariant {
     return 'x86_64'
 }
 
+# ============================================================
+#  EXTRACTION FUNCTIONS (using tar.exe)
+# ============================================================
+function Expand-Archive7z {
+    param([string]$archive, [string]$dest)
+    try {
+        if (-not (Test-Path $dest)) {
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        }
+        # Usar tar.exe (nativo de Windows 10/11) para extraer .7z
+        $tarExe = if (Test-Path "$env:SystemRoot\System32\tar.exe") { "$env:SystemRoot\System32\tar.exe" } else { "tar.exe" }
+        $p = Start-Process -FilePath $tarExe -ArgumentList @("-xf", "`"$archive`"", "-C", "`"$dest`"") -Wait -PassThru -WindowStyle Minimized
+        if ($p.ExitCode -eq 0) {
+            return $true
+        } else {
+            Log-Error ("[tar] Extraction failed with code " + $p.ExitCode)
+            return $false
+        }
+    } catch {
+        Log-Error ("[tar] Extraction error: " + $_.Exception.Message)
+        return $false
+    }
+}
+
+function Expand-ArchiveZip {
+    param([string]$archive, [string]$dest)
+    try {
+        if (-not (Test-Path $dest)) {
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+        }
+        Expand-Archive -Path $archive -DestinationPath $dest -Force -ErrorAction Stop
+        return $true
+    } catch {
+        Log-Error ("[zip] Extraction error: " + $_.Exception.Message)
+        return $false
+    }
+}
+
+function Download-File([string]$url,[string]$out,[string]$logKey) {
+    Log-Info ([string]::Format((T $logKey),[System.IO.Path]::GetFileName($out)))
+    try {
+        $ProgressPreference='SilentlyContinue'
+        Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
+        $ProgressPreference='Continue'; return $true
+    } catch { Log-Error $_.Exception.Message; return $false }
+}
+
+# ============================================================
+#  INSTALLATION FUNCTIONS (using tar.exe)
+# ============================================================
+function Do-InstallFFmpeg([bool]$force) {
+    Log-Info (T 'LogCheckingFF')
+    $installed=(Get-InstalledVersions).ffmpeg
+    $remoteVer,$asset=Get-FFmpegLatest
+    if (-not $asset -or -not $remoteVer) {
+        if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
+        Log-Error (T 'LogFFNotFound')
+        return $false
+    }
+    $state = Get-VersionState $installed $remoteVer
+    if (-not $force -and $installed -and ($state -eq 'latest' -or $state -eq 'newer')) {
+        Log-OK ([string]::Format((T 'LogFFUpToDate'),$installed))
+        $script:CheckedFFAvailable=$remoteVer
+        Refresh-VersionLabels
+        return $true
+    }
+    Ensure-TempDir
+    $archPath=Join-Path $script:TempDir $asset.name
+    $extPath=Join-Path $script:TempDir 'ffmpeg_extracted'
+    if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
+    if (-not (Download-File $asset.browser_download_url $archPath 'LogFFDownload')) { return $false }
+    Log-Info (T 'LogFFExtracting')
+    if (Expand-Archive7z $archPath $extPath) {
+        $fe=Get-ChildItem -Path $extPath -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
+        $fp=Get-ChildItem -Path $extPath -Recurse -Filter 'ffplay.exe' | Select-Object -First 1
+        if ($fe -and $fp) {
+            Copy-Item $fe.FullName -Destination (Join-Path $script:SD 'ffmpeg.exe') -Force
+            Copy-Item $fp.FullName -Destination (Join-Path $script:SD 'ffplay.exe') -Force
+            Save-InstalledVersions -ffmpeg $remoteVer
+            $script:CheckedFFAvailable=$remoteVer
+            Log-OK ([string]::Format((T 'LogFFDone'),$remoteVer))
+            Refresh-VersionLabels
+            return $true
+        }
+        Log-Error (T 'LogFFNotFound')
+        return $false
+    }
+    Log-Error ([string]::Format((T 'LogFFError'),'Extraction failed'))
+    return $false
+}
+
 function Do-InstallMPV([string]$variant,[bool]$force) {
     Log-Info (T 'LogCheckingMpv')
     $installed=(Get-InstalledVersions).mpv
@@ -941,39 +1014,34 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
         Refresh-VersionLabels
         return $true
     }
-    if (-not $asset) {
-        Log-Error ([string]::Format((T 'LogMpvNotFound'),$variant))
-        return $false
-    }
-    if (-not (Ensure-7zr)) { return $false }
     Ensure-TempDir
     $archPath=Join-Path $script:TempDir $asset.name
     $extPath=Join-Path $script:TempDir 'mpv_extracted'
     if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
     if (-not (Download-File $asset.browser_download_url $archPath 'LogMpvDownload')) { return $false }
     Log-Info (T 'LogMpvExtracting')
-    if (-not (Expand-7z $archPath $extPath)) {
-        Log-Error ([string]::Format((T 'LogMpvError'),'Extraction failed'))
-        return $false
-    }
-    $exe=Get-ChildItem -Path $extPath -Recurse -File | Where-Object { $_.Name -ieq 'mpv.exe' } | Select-Object -First 1
-    if (-not $exe) {
-        $candidateDir = Get-ChildItem -Path $extPath -Recurse -Directory | Where-Object { $_.Name -match '^mpv($|[\-_])' } | Select-Object -First 1
-        if ($candidateDir) {
-            $directExe = Join-Path $candidateDir.FullName 'mpv.exe'
-            if (Test-Path $directExe) { $exe = Get-Item $directExe }
+    if (Expand-Archive7z $archPath $extPath) {
+        $exe=Get-ChildItem -Path $extPath -Recurse -File | Where-Object { $_.Name -ieq 'mpv.exe' } | Select-Object -First 1
+        if (-not $exe) {
+            $candidateDir = Get-ChildItem -Path $extPath -Recurse -Directory | Where-Object { $_.Name -match '^mpv($|[\-_])' } | Select-Object -First 1
+            if ($candidateDir) {
+                $directExe = Join-Path $candidateDir.FullName 'mpv.exe'
+                if (Test-Path $directExe) { $exe = Get-Item $directExe }
+            }
         }
+        if (-not $exe) {
+            Log-Error ([string]::Format((T 'LogMpvError'),'mpv.exe not found'))
+            return $false
+        }
+        Copy-Item $exe.FullName -Destination (Join-Path $script:SD 'mpv.exe') -Force
+        Save-InstalledVersions -mpv $remoteVer -mpvVariant $variant
+        $script:CheckedMpvAvailable=$remoteVer
+        Log-OK ([string]::Format((T 'LogMpvDone'),$remoteVer,$variant))
+        Refresh-VersionLabels
+        return $true
     }
-    if (-not $exe) {
-        Log-Error ([string]::Format((T 'LogMpvError'),'mpv.exe not found'))
-        return $false
-    }
-    Copy-Item $exe.FullName -Destination (Join-Path $script:SD 'mpv.exe') -Force
-    Save-InstalledVersions -mpv $remoteVer -mpvVariant $variant
-    $script:CheckedMpvAvailable=$remoteVer
-    Log-OK ([string]::Format((T 'LogMpvDone'),$remoteVer,$variant))
-    Refresh-VersionLabels
-    return $true
+    Log-Error ([string]::Format((T 'LogMpvError'),'Extraction failed'))
+    return $false
 }
 
 function Do-InstallMySW([bool]$force) {
@@ -1005,230 +1073,33 @@ function Do-InstallMySW([bool]$force) {
     if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
     if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
     Log-Info (T 'LogMySWExtracting')
-    try {
-        if (-not (Test-Path $extPath)) { New-Item -ItemType Directory -Path $extPath -Force | Out-Null }
+    if (Expand-ArchiveZip $zipPath $extPath) {
+        $files = Get-ChildItem -Path $extPath -Recurse -File
+        if (-not $files -or $files.Count -eq 0) {
+            Log-Error ([string]::Format((T 'LogMySWError'),'ZIP extracted no files'))
+            return $false
+        }
         try {
-            Expand-Archive -Path $zipPath -DestinationPath $extPath -Force -ErrorAction Stop
+            foreach ($f in $files) {
+                $rel = $f.FullName.Substring($extPath.Length).TrimStart('\','/')
+                if ([string]::IsNullOrWhiteSpace($rel)) { continue }
+                $dest = Join-Path $script:SD $rel
+                $destDir = Split-Path -Parent $dest
+                if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+                Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction Stop
+            }
         } catch {
-            $tarExe = Join-Path $env:SystemRoot 'System32\tar.exe'
-            if (Test-Path $tarExe) {
-                $p = Start-Process -FilePath $tarExe -ArgumentList @('-xf', $zipPath, '-C', $extPath) -Wait -PassThru -WindowStyle Minimized
-                if ($p.ExitCode -ne 0) { throw 'tar extraction failed' }
-            } else {
-                throw
-            }
+            Log-Error ([string]::Format((T 'LogMySWError'),$_.Exception.Message))
+            return $false
         }
-    } catch {
-        Log-Error ([string]::Format((T 'LogMySWError'),$_.Exception.Message))
-        return $false
-    }
-    $files = Get-ChildItem -Path $extPath -Recurse -File
-    if (-not $files -or $files.Count -eq 0) {
-        Log-Error ([string]::Format((T 'LogMySWError'),'ZIP extracted no files'))
-        return $false
-    }
-    try {
-        foreach ($f in $files) {
-            $rel = $f.FullName.Substring($extPath.Length).TrimStart('\','/')
-            if ([string]::IsNullOrWhiteSpace($rel)) { continue }
-            $dest = Join-Path $script:SD $rel
-            $destDir = Split-Path -Parent $dest
-            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
-            Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction Stop
-        }
-    } catch {
-        Log-Error ([string]::Format((T 'LogMySWError'),$_.Exception.Message))
-        return $false
-    }
-    Save-InstalledVersions -mpvsw $remoteVer
-    $script:CheckedMyAvailable=$remoteVer
-    Log-OK ([string]::Format((T 'LogMySWDone'),$remoteVer))
-    Refresh-VersionLabels
-    return $true
-}
-
-function Get-Local7ZipExe {
-    $candidates = @()
-
-    try {
-        $cmd = Get-Command '7z.exe' -CommandType Application -ErrorAction SilentlyContinue
-        if ($cmd -and $cmd.Source) {
-            $candidates += $cmd.Source
-        }
-    } catch {}
-
-    $candidates += @(
-        (Join-Path ${env:ProgramFiles} '7-Zip\7z.exe'),
-        (Join-Path ${env:ProgramFiles(x86)} '7-Zip\7z.exe')
-    )
-
-    try {
-        $regPaths = @(
-            'HKLM:\SOFTWARE\7-Zip',
-            'HKLM:\SOFTWARE\WOW6432Node\7-Zip'
-        )
-
-        foreach ($rp in $regPaths) {
-            try {
-                $p = (Get-ItemProperty -Path $rp -ErrorAction SilentlyContinue).Path
-                if ($p) {
-                    $candidates += (Join-Path $p '7z.exe')
-                }
-            } catch {}
-        }
-    } catch {}
-
-    $seen = @{}
-    foreach ($p in $candidates) {
-        if (-not $p) { continue }
-        $key = $p.ToLowerInvariant()
-        if ($seen.ContainsKey($key)) { continue }
-        $seen[$key] = $true
-
-        if (Test-Path $p) {
-            return $p
-        }
-    }
-
-    return $null
-}
-
-function Get-LatestSevenZipSourceForgeVersion {
-    try {
-        $browseUrl = 'https://sourceforge.net/projects/sevenzip/files/7-Zip/'
-        $ProgressPreference = 'SilentlyContinue'
-        $resp = Invoke-WebRequest -Uri $browseUrl -UseBasicParsing
-        $ProgressPreference = 'Continue'
-
-        if (-not $resp -or -not $resp.Content) {
-            return $null
-        }
-
-        $matches = [regex]::Matches($resp.Content, '/projects/sevenzip/files/7-Zip/([0-9]+\.[0-9]+)/')
-        if (-not $matches -or $matches.Count -eq 0) {
-            return $null
-        }
-
-        $versions = @()
-        foreach ($m in $matches) {
-            $v = $m.Groups[1].Value
-            if ($v -and ($versions -notcontains $v)) {
-                $versions += $v
-            }
-        }
-
-        if (-not $versions -or $versions.Count -eq 0) {
-            return $null
-        }
-
-        return ($versions | Sort-Object {[version]$_} -Descending | Select-Object -First 1)
-    }
-    catch {
-        return $null
-    }
-    finally {
-        $ProgressPreference = 'Continue'
-    }
-}
-
-function Ensure-7zr {
-    Ensure-TempDir
-
-    if ($script:PreferInstalled7Zip) {
-        $local7z = Get-Local7ZipExe
-        if ($local7z) {
-            $script:SevenZipExe = $local7z
-            Log-OK ("[7z]      Using installed 7-Zip: " + $local7z)
-            return $true
-        }
-    }
-
-    $script:SevenZipExe = Join-Path $script:TempDir '7zr.exe'
-
-    if (Test-Path $script:SevenZipExe) {
+        Save-InstalledVersions -mpvsw $remoteVer
+        $script:CheckedMyAvailable=$remoteVer
+        Log-OK ([string]::Format((T 'LogMySWDone'),$remoteVer))
+        Refresh-VersionLabels
         return $true
     }
-
-    $urls = New-Object System.Collections.Generic.List[string]
-
-    if ($script:SevenZipUrl) {
-        [void]$urls.Add($script:SevenZipUrl)
-    }
-
-    $sfLatest = Get-LatestSevenZipSourceForgeVersion
-    if ($sfLatest) {
-        [void]$urls.Add("https://sourceforge.net/projects/sevenzip/files/7-Zip/$sfLatest/7zr.exe/download")
-    }
-
-    Log-Info (T 'Log7zDownload')
-
-    $errors = @()
-
-    foreach ($url in $urls) {
-        try {
-            if (Test-Path $script:SevenZipExe) {
-                Remove-Item $script:SevenZipExe -Force -ErrorAction SilentlyContinue
-            }
-
-            Log-Info ("[7zr]     Trying: " + $url)
-
-            $ProgressPreference = 'SilentlyContinue'
-            Invoke-WebRequest -Uri $url -OutFile $script:SevenZipExe -UseBasicParsing
-            $ProgressPreference = 'Continue'
-
-            if ((Test-Path $script:SevenZipExe) -and ((Get-Item $script:SevenZipExe).Length -gt 0)) {
-                Log-OK (T 'Log7zReady')
-                return $true
-            } else {
-                $errors += ("Empty download from: " + $url)
-            }
-        }
-        catch {
-            $errors += ($url + " -> " + $_.Exception.Message)
-        }
-        finally {
-            $ProgressPreference = 'Continue'
-        }
-    }
-
-    Log-Error ([string]::Format((T 'Log7zError'), ($errors -join ' | ')))
+    Log-Error ([string]::Format((T 'LogMySWError'),'Extraction failed'))
     return $false
-}
-
-function Expand-7z([string]$archive,[string]$dest) {
-    if (-not (Ensure-7zr)) {
-        return $false
-    }
-
-    try {
-        if (-not (Test-Path $dest)) {
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        }
-
-        $szArgs = @(
-            'x'
-            "`"$archive`""
-            ("-o`"$dest`"")
-            '-y'
-            '-bso0'
-            '-bsp0'
-        )
-
-        $p = Start-Process -FilePath $script:SevenZipExe -ArgumentList $szArgs -Wait -PassThru -WindowStyle Minimized
-        return ($p.ExitCode -eq 0)
-    }
-    catch {
-        Log-Error ("[7z]      Extraction failed: " + $_.Exception.Message)
-        return $false
-    }
-}
-function Download-File([string]$url,[string]$out,[string]$logKey) {
-    Log-Info ([string]::Format((T $logKey),[System.IO.Path]::GetFileName($out)))
-    try {
-        $ProgressPreference='SilentlyContinue'
-        Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
-        $ProgressPreference='Continue'; return $true
-    } catch { Log-Error $_.Exception.Message; return $false }
 }
 
 # ============================================================
@@ -1290,11 +1161,9 @@ function Get-ResultIcon([string]$installed,[string]$available) {
 
 function Get-FFmpegDisplayVersion([string]$v) {
     if (-not $v) { return $v }
-
     if ($v -match '^([0-9]+(\.[0-9]+){1,3})') {
         return $Matches[1]
     }
-
     return $v
 }
 
@@ -1439,7 +1308,7 @@ $cTopH=170; $cMidH=185; $cBotH=85
 $form=New-Object System.Windows.Forms.Form
 try { $appIcon = Get-AppIcon; if($appIcon){ $form.Icon = $appIcon } } catch {}
 $form.ShowInTaskbar = $true
-$form.Text = T 'Title'   # <-- NOW dynamic
+$form.Text = T 'Title'
 $form.ClientSize=[System.Drawing.Size]::new($formW,$formH)
 $form.MinimumSize=$form.Size
 $form.BackColor=$script:BG; $form.ForeColor=$script:TEXT
@@ -1450,21 +1319,15 @@ $form.StartPosition='CenterScreen'; $form.Font=$FontSub
 $pHeader=New-Pnl 0 0 $formW $headerH $script:SURFACE
 $lAppTitle  =New-Lbl "MPV-SW-Capture" 20 2 420 36 $FontTitle $script:ACCENT
 $lAppSub    =New-Lbl (T "HeaderSub")  22 36 520 18 $FontSub $script:MUTED
-$l7zChoice  =New-Lbl (T "SevenZipChoice") 22 54 400 18 $FontSmall $script:TEXT
-$rbUseInstalled7zYes=New-RB (T "SevenZipYes") 425 51 45
-$rbUseInstalled7zNo =New-RB (T "SevenZipNo")  470 51 45
-$rbUseInstalled7zYes.Checked = $true
-$rbUseInstalled7zYes.ForeColor=$script:TEXT; $rbUseInstalled7zNo.ForeColor=$script:TEXT
-$rbUseInstalled7zYes.Font=$FontBold; $rbUseInstalled7zNo.Font=$FontBold
 $lHeaderNote=New-Lbl (T "HeaderNote") 560 38 560 18 $FontSmall $script:ACCENT3
 $lLangLbl   =New-Lbl (T "LangLabel")  930 10 90 18 $FontSmall $script:MUTED
 $btnEN=New-Object System.Windows.Forms.Button
 $btnEN.Text="EN"; $btnEN.Location=[System.Drawing.Point]::new(1038,6)
-$btnEN.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnEN $true; $btnEN.Size=[System.Drawing.Size]::new(44,26)
+$btnEN.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnEN $true
 $btnES=New-Object System.Windows.Forms.Button
 $btnES.Text="ES"; $btnES.Location=[System.Drawing.Point]::new(1086,6)
-$btnES.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnES $false; $btnES.Size=[System.Drawing.Size]::new(44,26)
-$pHeader.Controls.AddRange(@($lAppTitle,$lAppSub,$l7zChoice,$rbUseInstalled7zYes,$rbUseInstalled7zNo,$lLangLbl,$btnEN,$btnES,$lHeaderNote))
+$btnES.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnES $false
+$pHeader.Controls.AddRange(@($lAppTitle,$lAppSub,$lLangLbl,$btnEN,$btnES,$lHeaderNote))
 $form.Controls.Add($pHeader)
 
 $pMain=New-Pnl 0 $headerH $formW ($formH-$headerH) $script:BG
@@ -1715,47 +1578,6 @@ $btnMySW_C.Add_Click({
     else { $script:lMySW_Avail.Text=(T "S3Available")+"  ?"; $script:lMySW_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
 })
 
-function Do-InstallFFmpeg([bool]$force) {
-    Log-Info (T 'LogCheckingFF')
-    $installed=(Get-InstalledVersions).ffmpeg
-    $remoteVer,$asset=Get-FFmpegLatest
-    if (-not $asset -or -not $remoteVer) {
-        if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
-        Log-Error (T 'LogFFNotFound')
-        return $false
-    }
-    $state = Get-VersionState $installed $remoteVer
-    if (-not $force -and $installed -and ($state -eq 'latest' -or $state -eq 'newer')) {
-        Log-OK ([string]::Format((T 'LogFFUpToDate'),$installed))
-        $script:CheckedFFAvailable=$remoteVer
-        Refresh-VersionLabels
-        return $true
-    }
-    if (-not (Ensure-7zr)) { return $false }
-    Ensure-TempDir
-    $archPath=Join-Path $script:TempDir $asset.name
-    $extPath=Join-Path $script:TempDir 'ffmpeg_extracted'
-    if (-not (Download-File $asset.browser_download_url $archPath 'LogFFDownload')) { return $false }
-    Log-Info (T 'LogFFExtracting')
-    if (Expand-7z $archPath $extPath) {
-        $fe=Get-ChildItem -Path $extPath -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
-        $fp=Get-ChildItem -Path $extPath -Recurse -Filter 'ffplay.exe' | Select-Object -First 1
-        if ($fe -and $fp) {
-            Copy-Item $fe.FullName -Destination (Join-Path $script:SD 'ffmpeg.exe') -Force
-            Copy-Item $fp.FullName -Destination (Join-Path $script:SD 'ffplay.exe') -Force
-            Save-InstalledVersions -ffmpeg $remoteVer
-            $script:CheckedFFAvailable=$remoteVer
-            Log-OK ([string]::Format((T 'LogFFDone'),$remoteVer))
-            Refresh-VersionLabels
-            return $true
-        }
-        Log-Error (T 'LogFFNotFound')
-        return $false
-    }
-    Log-Error ([string]::Format((T 'LogFFError'),'Extraction failed'))
-    return $false
-}
-
 $btnFF_M.Add_Click({ $u = $(if ((Get-FFmpegMode) -eq 'stable') { $FFmpegLatestPage } else { $FFmpegReleasesPage }); Log-Info ('[manual] Opening: ' + $u); if (-not (Open-Url $u)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
 $btnMpv_M.Add_Click({ Log-Info ('[manual] Opening: ' + $MpvLatestPage); if (-not (Open-Url $MpvLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
 $btnMySW_M.Add_Click({ Log-Info ('[manual] Opening: ' + $MyLatestPage); if (-not (Open-Url $MyLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
@@ -1864,13 +1686,8 @@ function Apply-Lang([string]$lang) {
     Style-LangBtn $btnEN ($lang -eq "EN")
     Style-LangBtn $btnES ($lang -eq "ES")
 
-    # ★ Update window title ★
     $form.Text = T 'Title'
-
     $lAppSub.Text=T "HeaderSub"; $lLangLbl.Text=T "LangLabel"; $lHeaderNote.Text=T "HeaderNote"
-    $l7zChoice.Text=T "SevenZipChoice"
-    $rbUseInstalled7zYes.Text=T "SevenZipYes"
-    $rbUseInstalled7zNo.Text=T "SevenZipNo"
 
     foreach ($card in @($card1,$card2,$card3,$card4,$card5,$card6)) {
         $tL=$card.Controls | Where-Object {
@@ -1899,7 +1716,6 @@ function Apply-Lang([string]$lang) {
     $script:rbFFStable.Text = T "S1ModeStable"
     $script:rbFFDaily.Text  = T "S1ModeDaily"
     if ($script:lStatusLbl) { $script:lStatusLbl.Text = T "StatusLbl" }
-    # ── STATUS label: re-translate current status text ─────────────────────────
     $knownStatusKeys = @('StatusReady','StatusChecking','StatusDownloading','StatusDone','StatusUpToDate')
     $otherLang = if ($lang -eq 'EN') { 'ES' } else { 'EN' }
     $matched = $false
@@ -1915,7 +1731,6 @@ function Apply-Lang([string]$lang) {
         $script:lStatus.Text = T 'StatusReady'
         $script:lStatus.ForeColor = $script:MUTED
     }
-    # ── LOG: preserve existing entries when changing language ───────────────────
     if (-not $script:LogBox.TextLength) {
         Log-Info (T 'LogReady')
     }
@@ -1937,9 +1752,6 @@ $btnES.Add_Click({
 $rbV1.Add_CheckedChanged({ if ($rbV1.Checked) { Update-MpvAvailableForSelection } })
 $rbV2.Add_CheckedChanged({ if ($rbV2.Checked) { Update-MpvAvailableForSelection } })
 $rbV3.Add_CheckedChanged({ if ($rbV3.Checked) { Update-MpvAvailableForSelection } })
-
-$rbUseInstalled7zYes.Add_CheckedChanged({ if ($rbUseInstalled7zYes.Checked) { $script:PreferInstalled7Zip = $true } })
-$rbUseInstalled7zNo.Add_CheckedChanged({ if ($rbUseInstalled7zNo.Checked) { $script:PreferInstalled7Zip = $false } })
 
 # ============================================================
 #  INIT

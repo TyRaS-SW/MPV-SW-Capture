@@ -1,4 +1,4 @@
-# Stream_MSCGUI.ps1 - By TyRaS-SW
+# Stream_MSCGUI.ps1 - By TyRaS-SW (Revised)
 # GUI Tool for OBS + win-capture-audio integration
 # EN/ES GUI - PowerShell 5+ (Windows 10/11)
 
@@ -45,7 +45,6 @@ function Load-GUILanguage {
             }
         } catch {}
     }
-    # Si no existe o es inválido, devolver "EN" y crear el archivo
     Save-GUILanguage "EN"
     return "EN"
 }
@@ -477,9 +476,6 @@ function Get-OBSUserConfig {
     return $null
 }
 
-# ============================================================
-# NUEVO: Find-OBSRoot (solo usa ruta guardada, sin registro)
-# ============================================================
 function Find-OBSRoot {
     param([string]$Mode = $script:CurrentOBSMode)
     Log-Info (T "LogDetecting")
@@ -1360,38 +1356,24 @@ function Restore-OBSConfiguration {
 }
 
 # ============================================================
-# PLUGIN FUNCTIONS (FIXED - uses DLL location to find root)
+# PLUGIN FUNCTIONS (Revised - secure download)
 # ============================================================
-function Get-GitHubRelease {
-    param([string]$url)
-    try {
-        $headers = @{
-            'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'
-            'Accept' = 'application/vnd.github+json'
-        }
-        $token = $env:GITHUB_TOKEN
-        if ($token) { $headers['Authorization'] = "Bearer $token" }
-        return Invoke-RestMethod -Uri $url -Headers $headers -UseBasicParsing -TimeoutSec 15
-    } catch {
-        $errorMsg = $_.Exception.Message
-        if ($errorMsg -match "429" -or $errorMsg -match "rate limit") {
-            Log-Warn "GitHub API rate limit reached."
-        } else {
-            Log-Warn "GitHub API error: $errorMsg"
-        }
-        return $null
-    }
-}
 
-function Download-File {
+# Configurar TLS 1.2 para todas las descargas
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+function Download-FileSecure {
     param([string]$url, [string]$out, [string]$logMsg)
     Log-Info ($logMsg + " " + [System.IO.Path]::GetFileName($out))
     try {
-        $ProgressPreference='SilentlyContinue'
-        Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing
-        $ProgressPreference='Continue'
+        $client = New-Object System.Net.WebClient
+        $client.Headers.Add("User-Agent", "MPV-SW-Capture-StreamManager/1.0")
+        $client.DownloadFile($url, $out)
         return $true
-    } catch { Log-Error $_.Exception.Message; return $false }
+    } catch {
+        Log-Error $_.Exception.Message
+        return $false
+    }
 }
 
 function Install-WinCaptureAudio {
@@ -1417,12 +1399,9 @@ function Install-WinCaptureAudio {
             'Accept' = 'application/vnd.github+json'
         }
         $token = $env:GITHUB_TOKEN
-        if ($token) {
-            $headers['Authorization'] = "Bearer $token"
-            Log-Info "[Plugin] Using GITHUB_TOKEN from environment"
-        }
+        if ($token) { $headers['Authorization'] = "Bearer $token" }
         
-        Log-Info "[Plugin] Fetching releases list from GitHub API..."
+        Log-Info "[Plugin] Fetching releases from GitHub API..."
         $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get -TimeoutSec 10
         
         if (-not $response -or $response.Count -eq 0) {
@@ -1434,13 +1413,13 @@ function Install-WinCaptureAudio {
         Log-Info "[Plugin] Latest release: $($latestRelease.name) (Pre-release: $($latestRelease.prerelease))"
         
         if (-not $latestRelease.assets) {
-            Log-Error "[Plugin] No assets found in the latest release."
+            Log-Error "[Plugin] No assets found."
             return $false
         }
         
         $asset = $latestRelease.assets | Where-Object { $_.name -match '\.zip$' -and $_.name -match 'win-capture-audio' } | Select-Object -First 1
         if (-not $asset) {
-            Log-Error "[Plugin] No .zip asset found in the latest release."
+            Log-Error "[Plugin] No .zip asset found."
             Log-Info "[Plugin] Available assets: $($latestRelease.assets.name -join ', ')"
             return $false
         }
@@ -1454,12 +1433,14 @@ function Install-WinCaptureAudio {
         $zipPath = Join-Path $tempDir $asset.name
         
         Log-Info "[Plugin] Downloading: $($asset.name) ($([math]::Round($asset.size/1MB, 2)) MB)"
-        $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $downloadUrl -OutFile $zipPath -Headers $headers -TimeoutSec 30
-        $ProgressPreference = 'Continue'
+        
+        if (-not (Download-FileSecure $downloadUrl $zipPath "[Plugin]")) {
+            Log-Error "[Plugin] Download failed."
+            return $false
+        }
         
         if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) {
-            Log-Error "[Plugin] Downloaded file is empty or missing."
+            Log-Error "[Plugin] Downloaded file is empty."
             return $false
         }
         Log-Info "[Plugin] Downloaded $((Get-Item $zipPath).Length) bytes"
@@ -1475,20 +1456,17 @@ function Install-WinCaptureAudio {
             return $false
         }
         
-        # FIND THE DLL AND DETERMINE THE ROOT FOLDER
-        Log-Info "[Plugin] Searching for win-capture-audio.dll in extracted files..."
+        # Búsqueda de DLL y copia de archivos a obsRoot
         $foundDll = Get-ChildItem -Path $extractPath -Recurse -Filter "win-capture-audio.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
-        
         if (-not $foundDll) {
-            Log-Error "[Plugin] Could not find win-capture-audio.dll in the extracted ZIP."
+            Log-Error "[Plugin] win-capture-audio.dll not found in extracted files."
             return $false
         }
-        
         Log-Info "[Plugin] Found DLL at: $($foundDll.FullName)"
         
+        # Determinar la raíz de extracción (donde está la carpeta obs-plugins)
         $dllDir = $foundDll.Directory
         $rootExtract = $null
-        
         $currentDir = $dllDir
         while ($currentDir -and $currentDir.FullName -ne $extractPath) {
             if (Test-Path (Join-Path $currentDir.FullName "obs-plugins")) {
@@ -1498,7 +1476,6 @@ function Install-WinCaptureAudio {
             }
             $currentDir = $currentDir.Parent
         }
-        
         if (-not $rootExtract) {
             $parent = $dllDir.Parent.Parent
             if ($parent -and $parent.Name -eq "obs-plugins") {
@@ -1510,6 +1487,7 @@ function Install-WinCaptureAudio {
             }
         }
         
+        # Copiar todos los archivos a obsRoot
         $files = Get-ChildItem -Path $rootExtract -Recurse -File
         $copiedCount = 0
         foreach ($file in $files) {
@@ -1546,30 +1524,21 @@ function Install-WinCaptureAudio {
         }
         
     } catch {
+        # Manejo de errores de GitHub API y descarga
         $errorMsg = $_.Exception.Message
         $statusCode = $null
         if ($_.Exception.Response) {
-            try { 
-                $statusCode = [int]$_.Exception.Response.StatusCode 
-                Log-Info "[Plugin] HTTP Status Code: $statusCode"
-            } catch {}
+            try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {}
         }
         
         if ($errorMsg -match "429" -or $errorMsg -match "rate limit" -or $statusCode -eq 429) {
-            Log-Error "[Plugin] GitHub API rate limit reached. Please wait a few minutes and try again."
+            Log-Error "[Plugin] GitHub API rate limit reached. Wait a few minutes."
         } elseif ($errorMsg -match "403" -or $statusCode -eq 403) {
             Log-Error "[Plugin] GitHub API access denied (403). A token may be required."
         } elseif ($errorMsg -match "404" -or $statusCode -eq 404) {
-            Log-Error "[Plugin] Plugin not found on GitHub. Opening releases page for manual download..."
-            try {
-                Start-Process $releasesPage
-                Log-Info "[Plugin] Opened: $releasesPage"
-            } catch {
-                Log-Warn "[Plugin] Could not open browser. Please visit: $releasesPage"
-            }
+            Log-Error "[Plugin] Plugin not found. Opening releases page..."
+            try { Start-Process $releasesPage } catch { Log-Warn "[Plugin] Could not open browser. Visit: $releasesPage" }
             Log-Info "[Plugin] After manual installation, click 'Check Plugin' to verify."
-        } elseif ($errorMsg -match "timeout") {
-            Log-Error "[Plugin] Download timed out. Please check your internet connection."
         } else {
             Log-Error "[Plugin] Error: $errorMsg"
             if ($statusCode) { Log-Error "[Plugin] HTTP Status: $statusCode" }
@@ -1986,7 +1955,7 @@ function Update-OBSDisplay {
     Update-OSDDisplay
 }
 
-# --- NUEVO: Browse OBS Folder (manual) ---
+# --- Browse OBS Folder (manual) ---
 $btnOBSBrowse.Add_Click({
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $dialog.Description = "Select the OBS Studio folder (e.g., C:\Program Files\obs-studio)"
@@ -2369,7 +2338,6 @@ $rbModeInstalled.Add_CheckedChanged({
         if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
             $script:OBSRoot = $root
         } else {
-            # No se detecta automáticamente; el usuario debe usar Browse
             $script:OBSRoot = $null
             Log-Warn "[OBS] No saved Installed path. Please use 'Browse OBS Folder' to select the OBS folder."
         }
