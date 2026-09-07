@@ -1,0 +1,16 @@
+# Third-party binaries - installed by Installer_MPV-SW-Capture, not source.
+# Each is ~100 MB, over GitHub's 100 MB file limit.
+mpv.exe
+ffmpeg.exe
+ffplay.exe
+
+# Machine-specific runtime state
+data/boost.txt
+data/capture_mode.txt
+
+# Generated shortcut (paths are absolute to one machine)
+MPV-SW-Capture.lnk
+
+# Captures
+_screenshots/
+_recordings/
