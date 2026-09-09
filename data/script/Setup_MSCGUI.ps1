@@ -695,6 +695,10 @@ function Apply-Lang([string]$lang) {
             $lScanStatus.ForeColor = $script:ERROR_C
             $lScanStatus.Text = T "S1NoFfplay"
         }
+        "scan_error" {
+            $lScanStatus.ForeColor = $script:ERROR_C
+            $lScanStatus.Text = [string]::Format((T "ErrStatus"), $script:LastScanError)
+        }
         default { $lScanStatus.Text = "" }
     }
 
@@ -766,12 +770,15 @@ $btnES.Add_Click({
 })
 
 $btnScan.Add_Click({
+    if ($script:LastScanState -eq "scanning") { return }
+    $btnScan.Enabled = $false
+    $btnApply.Enabled = $false
     $script:LastScanState = "scanning"
     $lScanStatus.ForeColor = $script:MUTED
     $lScanStatus.Text = (T "S1Scanning")
     $form.Refresh()
 
-    $tmpFile = [System.IO.Path]::GetTempFileName()
+    $proc = $null
 
     try {
         $ffplayLocal = Join-Path $script:RootDir "ffplay.exe"
@@ -798,12 +805,23 @@ $btnScan.Add_Click({
         $proc.StartInfo = $psi
         [void]$proc.Start()
 
-        $stdout = $proc.StandardOutput.ReadToEnd()
-        $stderr = $proc.StandardError.ReadToEnd()
-        $proc.WaitForExit()
+        # Drain both pipes concurrently: reading stdout first can deadlock
+        # when the device listing fills stderr's pipe buffer.
+        $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+        $stderrTask = $proc.StandardError.ReadToEndAsync()
+        $scanClock = [System.Diagnostics.Stopwatch]::StartNew()
+        while (-not ($proc.HasExited -and $stdoutTask.IsCompleted -and $stderrTask.IsCompleted)) {
+            if ($scanClock.Elapsed.TotalSeconds -ge 15) {
+                throw "Device scan timed out after 15 seconds. Close other capture apps and retry."
+            }
+            [System.Windows.Forms.Application]::DoEvents()
+            if ($form.IsDisposed) { return }
+            Start-Sleep -Milliseconds 25
+        }
+        $stdout = $stdoutTask.GetAwaiter().GetResult()
+        $stderr = $stderrTask.GetAwaiter().GetResult()
 
         $content = ($stdout + "`r`n" + $stderr)
-        [System.IO.File]::WriteAllText($tmpFile, $content, [System.Text.Encoding]::UTF8)
 
         $vD = @()
         $aD = @()
@@ -849,13 +867,21 @@ $btnScan.Add_Click({
         }
     }
     catch {
-        $script:LastScanState = "no_ffplay"
+        $script:LastScanState = "scan_error"
+        $script:LastScanError = $_.Exception.Message
         $script:LastVideoCount = $null; $script:LastAudioCount = $null
         $lScanStatus.ForeColor = $script:ERROR_C
-        $lScanStatus.Text = ((T "S1NoFfplay") + " " + $_.Exception.Message)
+        $lScanStatus.Text = [string]::Format((T "ErrStatus"), $script:LastScanError)
     }
     finally {
-        if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force }
+        if ($null -ne $proc) {
+            try { if (-not $proc.HasExited) { $proc.Kill() } } catch {}
+            $proc.Dispose()
+        }
+        if (-not $form.IsDisposed) {
+            $btnScan.Enabled = $true
+            $btnApply.Enabled = $true
+        }
     }
 })
 
