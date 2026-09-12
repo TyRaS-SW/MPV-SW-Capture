@@ -150,5 +150,9 @@ mp.register_script_message("audio-boost-reset", function() set_boost(MIN_BOOST) 
 local mode = get_mode()
 publish_mode(mode)
 mp.set_property("user-data/audio-boost", tostring(get_boost()))
-if mode == "mpv" then mp.add_timeout(0.2, function() apply_native_boost(get_boost()) end) end
+if mode == "mpv" then
+    mp.add_timeout(0.2, function()
+        apply_native_boost(get_boost())
+    end)
+end
 mp.msg.info("[audio_mode] active mode: " .. mode)
