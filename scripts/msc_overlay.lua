@@ -324,6 +324,7 @@ local function schedule_boost_send(value)
             mp.commandv("script-message-to", "audio_mode", "audio-boost-set", tostring(value))
         else
             ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        end
     end)
 end
 

@@ -55,29 +55,32 @@ if not exist "%watchdog_ps1%" (
 )
 
 :: --- START MPV-SW-Capture ---
-if /I "%audio_mode%"=="mpv" (
- set "capture_source=av://dshow:video="%video_device%":audio="%audio_device%""
- set "native_audio_args=--audio-client-name=MPV-SW-Capture --volume-max=1000 --volume-gain-max=12.1"
-) else (
- set "capture_source=av://dshow:video="%video_device%""
- set "native_audio_args="
-)
+if /I "%audio_mode%"=="mpv" goto :native_mpv_audio
+set "capture_source=av://dshow:video="%video_device%""
+set "native_audio_args="
+goto :start_mpv
+
+:native_mpv_audio
+set "capture_source=av://dshow:video="%video_device%":audio="%audio_device%""
+set "native_audio_args=--audio-client-name=MPV-SW-Capture --volume-max=1000 --volume-gain-max=12.1"
+
+:start_mpv
 start "" /b "%prog1_path%" --no-border %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%
 
 set "SDL_AUDIODRIVER=wasapi"
 set "SDL_AUDIO_SAMPLES=128"
 
-if /I "%audio_mode%"=="ffplay" (
- :: Start volume monitor
- start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
+if /I not "%audio_mode%"=="ffplay" goto :start_watchdog
+:: Start volume monitor
+start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
 
- :: Small pause so monitor is ready before ffplay
- ping 127.0.0.1 -n 2 >nul
+:: Small pause so monitor is ready before ffplay
+ping 127.0.0.1 -n 2 >nul
 
- :: --- START FFPLAY via ffplayboost.ps1 start ---
- start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayboost_ps1%" start >nul 2>&1
-)
+:: --- START FFPLAY via ffplayboost.ps1 start ---
+start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayboost_ps1%" start >nul 2>&1
 
+:start_watchdog
 :: --- START EXTERNAL WATCHDOG ---
 :: Independent process. Kills ffplay when mpv exits, even on crash.
 start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%watchdog_ps1%" >nul 2>&1
