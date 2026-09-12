@@ -1618,7 +1618,7 @@ function render()
 end
 
 -- ------------------------------------------------------------
--- Edge volume slider
+-- Edge audio sliders
 -- Appears only when the pointer reaches the far-left edge of the video.
 -- ------------------------------------------------------------
 edge_render = function()
@@ -1632,26 +1632,37 @@ edge_render = function()
     local oh = mp.get_property_number("osd-height") or RH
     local rail_h = math.min(260, math.max(160, oh - 120))
     local rail_y = math.floor((oh - rail_h) / 2)
-    local rail_x, rail_w = 0, 58
-    local track_x, track_w = 30, 10
+    local rail_x, rail_w = 0, 104
+    local track_x, boost_x, track_w = 28, 72, 10
     local track_y, track_h = rail_y + 34, rail_h - 68
     local volume = math.max(0, math.min(100, tonumber(audio.volume) or 100))
-    local fill_h = math.floor(track_h * volume / 100 + 0.5)
-    local fill_y = track_y + track_h - fill_h
+    local boost = math.max(100, math.min(BOOST, tonumber(audio.boost) or 100))
+    local volume_h = math.floor(track_h * volume / 100 + 0.5)
+    local boost_h = math.floor(track_h * (boost - 100) / (BOOST - 100) + 0.5)
+    local volume_y = track_y + track_h - volume_h
+    local boost_y = track_y + track_h - boost_h
 
     edge_hit = {
         panel = { rail_x, rail_y, rail_x + rail_w, rail_y + rail_h },
-        bar = { x1 = 12, x2 = 52, y1 = track_y, y2 = track_y + track_h },
+        bars = {
+            { x1 = 10, x2 = 50, y1 = track_y, y2 = track_y + track_h, meter = "volume" },
+            { x1 = 54, x2 = 96, y1 = track_y, y2 = track_y + track_h, meter = "boost" },
+        },
     }
 
     local a = assdraw.ass_new()
     rect(a, rail_x, rail_y, rail_w, rail_h, C.panel, 0x12)
     rect(a, rail_w - 1, rail_y, 1, rail_h, C.edge, 0x00)
     rect(a, track_x, track_y, track_w, track_h, C.track, 0x00)
-    rect(a, track_x, fill_y, track_w, fill_h, C.accent, 0x00)
-    rect(a, 25, fill_y - 2, 20, 4, C.hi, 0x00)
+    rect(a, track_x, volume_y, track_w, volume_h, C.accent, 0x00)
+    rect(a, 23, volume_y - 2, 20, 4, C.hi, 0x00)
+    rect(a, boost_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, boost_x, boost_y, track_w, boost_h, C.amber, 0x00)
+    rect(a, 67, boost_y - 2, 20, 4, C.hi, 0x00)
     text(a, 29, rail_y + 17, "VOL", C.dim, 11, true, 5)
+    text(a, 77, rail_y + 17, "BST", C.dim, 11, true, 5)
     text(a, 29, rail_y + rail_h - 15, string.format("%d", volume), C.hi, 12, true, 5)
+    text(a, 77, rail_y + rail_h - 15, string.format("%d", boost), C.hi, 12, true, 5)
 
     edge_ov.res_x, edge_ov.res_y = ow, oh
     edge_ov.data = a.text
@@ -1690,23 +1701,37 @@ local function edge_show()
     edge_render()
     mp.add_forced_key_binding("MBTN_LEFT", "msc_edge_lmb", function(e)
         local x, y = pos()
-        if e.event == "down" and edge_hit and x and y and inside(edge_hit.bar, x, y) then
-            edge_drag = true
-            edge_set_from_y(y)
+        if e.event == "down" and edge_hit and x and y then
+            for _, bar in ipairs(edge_hit.bars or {}) do
+                if inside(bar, x, y) then
+                    edge_drag = bar
+                    edge_set_from_y(y, bar)
+                    break
+                end
+            end
         elseif e.event == "up" and edge_drag then
+            local meter = edge_drag.meter
             edge_drag = false
-            schedule_volume_send(audio.volume or 100)
+            if meter == "boost" then
+                schedule_boost_send(audio.boost or 100)
+            else
+                schedule_volume_send(audio.volume or 100)
+            end
         end
     end, { complex = true })
     edge_bound = true
 end
 
-edge_set_from_y = function(y)
-    if not edge_hit or not edge_hit.bar or not y then return end
-    local b = edge_hit.bar
+edge_set_from_y = function(y, bar)
+    local b = bar or edge_drag
+    if not b or not y then return end
     local f = (b.y2 - y) / (b.y2 - b.y1)
     f = math.max(0, math.min(1, f))
-    audio.volume = math.floor(f * 100 + 0.5)
+    if b.meter == "boost" then
+        audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
+    else
+        audio.volume = math.floor(f * 100 + 0.5)
+    end
     edge_render()
 end
 
@@ -1716,7 +1741,7 @@ local function edge_mousemove()
     if not x then return end
 
     if edge_drag then
-        edge_set_from_y(y)
+        edge_set_from_y(y, edge_drag)
         return
     end
 
