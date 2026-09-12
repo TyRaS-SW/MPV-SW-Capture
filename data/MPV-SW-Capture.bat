@@ -14,8 +14,8 @@ set "prog1_name=mpv.exe"
 set "prog2_name=ffplay.exe"
 
 :: --- LEAVE EMPTY TO USE THE DEFAULT DEVICE ---
-SET "video_device="
-SET "audio_device="
+SET "video_device=USB3.0 Capture"
+SET "audio_device=Digital Audio Interface (USB3.0 Capture)"
 
 set "ffplay_volume=100"
 set "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
