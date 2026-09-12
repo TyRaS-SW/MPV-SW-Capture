@@ -38,6 +38,7 @@ local sx, sy = 1, 1
 local hide_timer = nil
 local edge_visible, edge_drag, edge_bound = false, false, false
 local edge_hide_timer, edge_hit = nil, nil
+local edge_window_dragging = nil
 local edge_render, edge_set_from_y, inside, pos
 local audio_refreshed = false
 local boost_debounce = nil      -- timer for debounced boost send
@@ -1669,6 +1670,10 @@ local function edge_hide()
     edge_visible = false
     edge_hit = nil
     edge_unbind()
+    if edge_window_dragging ~= nil then
+        mp.set_property("window-dragging", edge_window_dragging and "yes" or "no")
+        edge_window_dragging = nil
+    end
     edge_render()
 end
 
@@ -1676,6 +1681,11 @@ local function edge_show()
     if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
     if edge_visible then return end
     edge_visible = true
+    -- mpv enables click-and-drag window movement by default. Disable it only
+    -- while this rail is available, otherwise Windows can treat a slider drag
+    -- as a request to move the capture window.
+    edge_window_dragging = mp.get_property_bool("window-dragging", true)
+    mp.set_property("window-dragging", "no")
     audio_refresh()
     edge_render()
     mp.add_forced_key_binding("MBTN_LEFT", "msc_edge_lmb", function(e)
