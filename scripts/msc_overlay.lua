@@ -33,8 +33,12 @@ local hover_screenshot, hover_record, hover_lang = false, false, false
 local audio = { volume = nil, boost = 100, muted = false, pending = false, version = 0 }
 local hit = {}
 local ov = mp.create_osd_overlay("ass-events")
+local edge_ov = mp.create_osd_overlay("ass-events")
 local sx, sy = 1, 1
 local hide_timer = nil
+local edge_visible, edge_drag, edge_bound = false, false, false
+local edge_hide_timer, edge_hit = nil, nil
+local edge_render, edge_set_from_y, inside, pos
 local audio_refreshed = false
 local boost_debounce = nil      -- timer for debounced boost send
 local volume_debounce = nil     -- timer for debounced volume send
@@ -266,9 +270,9 @@ local function audio_refresh(attempt)
     ps("data/ffplayvol.ps1", { "get", "ffplay" }, function(ok, r)
         if current_version ~= audio.version then return end
         local n = ok and r and num(r.stdout)
-        if not n and attempt < 8 and visible then
+        if not n and attempt < 8 and (visible or edge_visible) then
             mp.add_timeout(0.5, function()
-                if visible then audio_refresh(attempt + 1) end
+                if visible or edge_visible then audio_refresh(attempt + 1) end
             end)
             return
         end
@@ -279,6 +283,7 @@ local function audio_refresh(attempt)
             if b then audio.boost = b end
             audio.pending = false
             if visible then render() end
+            if edge_visible then edge_render() end
         end)
     end)
 end
@@ -1612,15 +1617,121 @@ function render()
 end
 
 -- ------------------------------------------------------------
+-- Edge volume slider
+-- Appears only when the pointer reaches the far-left edge of the video.
+-- ------------------------------------------------------------
+edge_render = function()
+    if not edge_visible then
+        edge_ov.data = ""
+        edge_ov:update()
+        return
+    end
+
+    local ow = mp.get_property_number("osd-width") or RW
+    local oh = mp.get_property_number("osd-height") or RH
+    local rail_h = math.min(260, math.max(160, oh - 120))
+    local rail_y = math.floor((oh - rail_h) / 2)
+    local rail_x, rail_w = 0, 58
+    local track_x, track_w = 30, 10
+    local track_y, track_h = rail_y + 34, rail_h - 68
+    local volume = math.max(0, math.min(100, tonumber(audio.volume) or 100))
+    local fill_h = math.floor(track_h * volume / 100 + 0.5)
+    local fill_y = track_y + track_h - fill_h
+
+    edge_hit = {
+        panel = { rail_x, rail_y, rail_x + rail_w, rail_y + rail_h },
+        bar = { x1 = 12, x2 = 52, y1 = track_y, y2 = track_y + track_h },
+    }
+
+    local a = assdraw.ass_new()
+    rect(a, rail_x, rail_y, rail_w, rail_h, C.panel, 0x12)
+    rect(a, rail_w - 1, rail_y, 1, rail_h, C.edge, 0x00)
+    rect(a, track_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, track_x, fill_y, track_w, fill_h, C.accent, 0x00)
+    rect(a, 25, fill_y - 2, 20, 4, C.hi, 0x00)
+    text(a, 29, rail_y + 17, "VOL", C.dim, 11, true, 5)
+    text(a, 29, rail_y + rail_h - 15, string.format("%d", volume), C.hi, 12, true, 5)
+
+    edge_ov.res_x, edge_ov.res_y = ow, oh
+    edge_ov.data = a.text
+    edge_ov:update()
+end
+
+local function edge_unbind()
+    if not edge_bound then return end
+    mp.remove_key_binding("msc_edge_lmb")
+    edge_bound = false
+end
+
+local function edge_hide()
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    edge_drag = false
+    edge_visible = false
+    edge_hit = nil
+    edge_unbind()
+    edge_render()
+end
+
+local function edge_show()
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    if edge_visible then return end
+    edge_visible = true
+    audio_refresh()
+    edge_render()
+    mp.add_forced_key_binding("MBTN_LEFT", "msc_edge_lmb", function(e)
+        local x, y = pos()
+        if e.event == "down" and edge_hit and x and y and inside(edge_hit.bar, x, y) then
+            edge_drag = true
+            edge_set_from_y(y)
+        elseif e.event == "up" and edge_drag then
+            edge_drag = false
+            schedule_volume_send(audio.volume or 100)
+        end
+    end, { complex = true })
+    edge_bound = true
+end
+
+edge_set_from_y = function(y)
+    if not edge_hit or not edge_hit.bar or not y then return end
+    local b = edge_hit.bar
+    local f = (b.y2 - y) / (b.y2 - b.y1)
+    f = math.max(0, math.min(1, f))
+    audio.volume = math.floor(f * 100 + 0.5)
+    edge_render()
+end
+
+local function edge_mousemove()
+    if visible then return end
+    local x, y = pos()
+    if not x then return end
+
+    if edge_drag then
+        edge_set_from_y(y)
+        return
+    end
+
+    -- The first 10 pixels are the reveal zone; once shown, the whole rail
+    -- remains interactive and fades one second after the pointer leaves it.
+    if x <= 10 or (edge_hit and inside(edge_hit.panel, x, y)) then
+        edge_show()
+        return
+    end
+
+    if edge_visible and not edge_hide_timer then
+        edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+    end
+end
+
+-- ------------------------------------------------------------
 -- Input handling
 -- ------------------------------------------------------------
-local function inside(box, x, y)
+inside = function(box, x, y)
     if not box then return false end
     local x1, y1, x2, y2 = box[1] or box.x1, box[2] or box.y1, box[3] or box.x2, box[4] or box.y2
     return x >= x1 and x <= x2 and y >= y1 and y <= y2
 end
 
-local function pos()
+pos = function()
     local m = mp.get_property_native("mouse-pos")
     return m and m.x, m and m.y
 end
@@ -1962,6 +2073,7 @@ end
 -- ------------------------------------------------------------
 function show()
     if visible then return end
+    edge_hide()
     visible = true
     cancel_hide_timer()
     if section > #SECTIONS then section = 1 end
@@ -2000,7 +2112,11 @@ mp.observe_property("osd-width", "number", function()
     if visible then render() end
 end)
 
-mp.register_event("shutdown", hide)
+mp.observe_property("mouse-pos", "native", edge_mousemove)
+mp.register_event("shutdown", function()
+    hide()
+    edge_hide()
+end)
 
 msg.info("MSC overlay loaded. Use script-message toggle-overlay.")
 
