@@ -33,6 +33,10 @@ This setup **splits the workload**:
 
 Both programs run silently, stay in sync, and together deliver minimal‑lag gameplay with audio and video.
 
+### Native MPV audio for streaming
+
+The **Audio** menu also offers **MPV Native (Discord/Stream)**. This makes MPV open both the capture card video and audio device, so Discord, OBS, and similar application-audio capture features can pick up MPV-SW-Capture directly. Select it, then restart MPV-SW-Capture for the change to take effect. Switch back to **FFplay Low Latency** for the original lowest-latency audio path.
+
 ---
 
 ## 📦 Requirements

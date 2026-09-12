@@ -8,6 +8,8 @@ MPV-SW-Capture.lnk
 _record/
 _screenshots/
 scripts/.installed-versions.json
+data/boost.txt
+data/boost_restart.flag
 *.log
 *.bak
 Thumbs.db

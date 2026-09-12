@@ -19,6 +19,14 @@ SET "audio_device=Digital Audio Interface (USB3.0 Capture)"
 
 set "ffplay_volume=100"
 set "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
+set "audio_mode_file=%ROOT_DIR%\data\audio_mode.txt"
+set "audio_mode=ffplay"
+
+:: Audio architecture: ffplay is the latency-first default. In mpv mode the
+:: DirectShow audio source is opened by MPV itself, enabling application-audio
+:: capture for Discord/OBS and similar tools.
+if exist "%audio_mode_file%" set /p "audio_mode=" < "%audio_mode_file%"
+if /I not "%audio_mode%"=="mpv" set "audio_mode=ffplay"
 
 set "ffplayvol_ps1=%ROOT_DIR%\data\ffplayvol.ps1"
 set "ffplayvol_dll=%ROOT_DIR%\data\FfplayVolWrapper.dll"
@@ -47,19 +55,28 @@ if not exist "%watchdog_ps1%" (
 )
 
 :: --- START MPV-SW-Capture ---
-start "" /b "%prog1_path%" --no-border av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0
+if /I "%audio_mode%"=="mpv" (
+ set "capture_source=av://dshow:video="%video_device%":audio="%audio_device%""
+ set "native_audio_args=--audio-client-name=MPV-SW-Capture --volume-max=1000 --volume-gain-max=12.1"
+) else (
+ set "capture_source=av://dshow:video="%video_device%""
+ set "native_audio_args="
+)
+start "" /b "%prog1_path%" --no-border %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%
 
 set "SDL_AUDIODRIVER=wasapi"
 set "SDL_AUDIO_SAMPLES=128"
 
-:: Start volume monitor
-start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
+if /I "%audio_mode%"=="ffplay" (
+ :: Start volume monitor
+ start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
 
-:: Small pause so monitor is ready before ffplay
-ping 127.0.0.1 -n 2 >nul
+ :: Small pause so monitor is ready before ffplay
+ ping 127.0.0.1 -n 2 >nul
 
-:: --- START FFPLAY via ffplayboost.ps1 start ---
-start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayboost_ps1%" start >nul 2>&1
+ :: --- START FFPLAY via ffplayboost.ps1 start ---
+ start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayboost_ps1%" start >nul 2>&1
+)
 
 :: --- START EXTERNAL WATCHDOG ---
 :: Independent process. Kills ffplay when mpv exits, even on crash.
