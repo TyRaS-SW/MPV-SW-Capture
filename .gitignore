@@ -1,0 +1,16 @@
+# Runtime dependencies downloaded or installed by the application.
+mpv.exe
+ffmpeg.exe
+ffplay.exe
+
+# Machine-local/generated content.
+MPV-SW-Capture.lnk
+_record/
+_screenshots/
+scripts/.installed-versions.json
+data/boost.txt
+data/boost_restart.flag
+*.log
+*.bak
+Thumbs.db
+Desktop.ini

@@ -261,6 +261,10 @@ local function ps(rel, args, cb)
     end)
 end
 
+local function using_native_audio()
+    return mp.get_property("user-data/audio-mode") == "mpv"
+end
+
 -- `attempt` is internal: when the first call comes back empty (ffplay not
 -- running yet), retry every 500ms up to 8 times (4 seconds total).
 local function audio_refresh(attempt)
@@ -268,6 +272,15 @@ local function audio_refresh(attempt)
     audio.version = audio.version + 1
     local current_version = audio.version
     audio.pending = true
+    if using_native_audio() then
+        audio.volume = math.floor((mp.get_property_number("volume") or 100) + 0.5)
+        audio.muted = mp.get_property_bool("mute", false)
+        audio.boost = tonumber(mp.get_property("user-data/audio-boost")) or 100
+        audio.pending = false
+        if visible then render() end
+        if edge_visible then edge_render() end
+        return
+    end
     ps("data/ffplayvol.ps1", { "get", "ffplay" }, function(ok, r)
         if current_version ~= audio.version then return end
         local n = ok and r and num(r.stdout)
@@ -295,7 +308,11 @@ local function schedule_volume_send(value)
     if volume_debounce then volume_debounce:kill(); volume_debounce = nil end
     volume_debounce = mp.add_timeout(0.4, function()
         volume_debounce = nil
-        ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
+        if using_native_audio() then
+            mp.commandv("script-message-to", "audio_mode", "audio-volume-set", tostring(value))
+        else
+            ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
+        end
     end)
 end
 
@@ -303,7 +320,10 @@ local function schedule_boost_send(value)
     if boost_debounce then boost_debounce:kill(); boost_debounce = nil end
     boost_debounce = mp.add_timeout(0.5, function()
         boost_debounce = nil
-        ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        if using_native_audio() then
+            mp.commandv("script-message-to", "audio_mode", "audio-boost-set", tostring(value))
+        else
+            ps("data/ffplayboost.ps1", { "set", tostring(value) })
     end)
 end
 
@@ -325,6 +345,10 @@ local function boostset(v)
 end
 
 local function mute()
+    if using_native_audio() then
+        mp.commandv("script-message-to", "audio_mode", "audio-mute")
+        return
+    end
     ps("data/ffplayvol.ps1", { "togglemute", "ffplay" }, function(ok, r)
         if ok and r then
             audio.muted = not (r.stdout or ""):match("unmuted")
@@ -2145,6 +2169,35 @@ end)
 
 mp.observe_property("osd-width", "number", function()
     if visible then render() end
+    if edge_visible then edge_render() end
+end)
+
+-- Native MPV audio changes happen in-process, so reflect them immediately in
+-- both the full Audio page and the edge sliders.
+mp.observe_property("volume", "number", function(_, value)
+    if using_native_audio() and value then
+        audio.volume = math.floor(value + 0.5)
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("mute", "bool", function(_, value)
+    if using_native_audio() then
+        audio.muted = value and true or false
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-boost", "string", function(_, value)
+    if using_native_audio() and value then
+        audio.boost = tonumber(value) or 100
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-mode", "string", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
 end)
 
 mp.observe_property("mouse-pos", "native", edge_mousemove)
