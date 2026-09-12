@@ -103,7 +103,6 @@ function Get-RootDir {
     return $scriptDir
 }
 $script:RootDir = Get-RootDir
-$script:SD = $script:RootDir
 
 # ============================================================
 #  LANGUAGE PERSISTENCE
@@ -181,8 +180,8 @@ $FontBold         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawi
 $FontBtn          = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $FontSmall        = New-Object System.Drawing.Font("Segoe UI",  8, [System.Drawing.FontStyle]::Regular)
 $FontNote         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Regular)
-$FontSectionTitle = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Bold)
-$FontLangBtn      = New-Object System.Drawing.Font("Segoe UI",  11, [System.Drawing.FontStyle]::Bold)
+$FontSectionTitle = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Bold)
+$FontLangBtn      = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
 $FontSmallBold    = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
 
 # ============================================================
@@ -203,7 +202,6 @@ $script:Lang["EN"] = @{
     S1Scanning  = "Scanning..."
     S1Found     = "{0} video,  {1} audio device(s) found"
     S1NoDevices = "No devices found. Is ffplay in PATH?"
-    S1NoFfplay  = "ffplay not found. Check your PATH."
 
     S2Title     = "SELECT DATE FORMAT FOR FILE NAMES IN SCREENSHOTS AND RECORDS"
     S2Opt1      = "Japan / Korea  (yyyy-MM-dd)"
@@ -236,7 +234,7 @@ $script:Lang["EN"] = @{
     StatusReady = "Ready. Scan devices then click Apply Setup."
     ApplyBtn    = "Apply Setup"
     ErrSelect   = "Select video and audio devices first!"
-    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - menu.conf`n  - scripts\record.lua`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
+    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n`nNote: menu.conf and the overlay language are now handled by scripts\lang\OSDLang.dat, and are NOT modified by Setup.`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
     DoneTitle   = "MPV-SW-Capture Setup"
     DoneStatus  = "Setup complete! All files updated."
     ErrStatus   = "Error: {0}"
@@ -244,9 +242,8 @@ $script:Lang["EN"] = @{
     FfplayFound    = "ffplay.exe: Found!"
     FfplayNotFound = "ffplay.exe: NOT Found!"
     MenuFound      = "menu.conf: Found!"
-    MenuNotFound   = "menu.conf: NOT Found!"
-    MenuToSpanish  = "MENU translated to Spanish!"
-    MenuToEnglish  = "MENU translated to English!"
+    ApplyLangBtn   = "Apply Language"
+    MenuToLanguage = "Menu language: {0}!"
 }
 $script:Lang["ES"] = @{
     Title       = "MPV-SW-Capture - Configuracion"
@@ -262,7 +259,6 @@ $script:Lang["ES"] = @{
     S1Scanning  = "Buscando..."
     S1Found     = "{0} video,  {1} dispositivo(s) de audio encontrado(s)"
     S1NoDevices = "No se encontraron dispositivos. Esta ffplay en el PATH?"
-    S1NoFfplay  = "ffplay no encontrado. Revisa tu PATH."
 
     S2Title     = "SELECCIONA EL FORMATO DE FECHA PARA CAPTURAS Y GRABACIONES"
     S2Opt1      = "Japon / Corea  (yyyy-MM-dd)"
@@ -295,7 +291,7 @@ $script:Lang["ES"] = @{
     StatusReady = "Listo. Busca dispositivos y luego haz clic en Aplicar."
     ApplyBtn    = "Aplicar"
     ErrSelect   = "Selecciona los dispositivos de video y audio primero!"
-    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - menu.conf`n  - scripts\record.lua`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
+    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n`nNota: menu.conf y el idioma del overlay ahora se manejan desde scripts\lang\OSDLang.dat, y NO son modificados por el Setup.`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
     DoneTitle   = "Configuracion MPV-SW-Capture"
     DoneStatus  = "Configuracion completa! Todos los archivos actualizados."
     ErrStatus   = "Error: {0}"
@@ -303,9 +299,8 @@ $script:Lang["ES"] = @{
     FfplayFound    = "ffplay.exe: Encontrado!"
     FfplayNotFound = "ffplay.exe: NO Encontrado!"
     MenuFound      = "menu.conf: Encontrado!"
-    MenuNotFound   = "menu.conf: NO Encontrado!"
-    MenuToSpanish  = "MENU traducido al Espanol!"
-    MenuToEnglish  = "MENU traducido al Ingles!"
+    ApplyLangBtn   = "Aplicar Idioma"
+    MenuToLanguage = "Idioma del menu: {0}!"
 }
 
 $script:CurrentLang = "EN"
@@ -314,6 +309,8 @@ $script:LastAudioCount = $null
 $script:LastScanState  = "none"
 $script:LastStatusState = "ready"
 $script:LastErrorText   = ""
+$script:LastScanError   = ""
+$script:LastMenuLangSet = ""
 
 function T { param([string]$key) return $script:Lang[$script:CurrentLang][$key] }
 
@@ -395,10 +392,6 @@ function Style-LangBtn([System.Windows.Forms.Button]$btn,[bool]$active) {
     }
 }
 
-function Get-AppDir {
-    return $script:RootDir
-}
-
 function New-CardXY(
     [System.Windows.Forms.Control]$parent,
     [int]$x,[int]$y,[int]$w,[int]$h,
@@ -430,27 +423,64 @@ function New-CardXY(
 }
 
 # ============================================================
-#  FUNCIÓN PARA ACTUALIZAR current_lang EN SCRIPTS LUA
+#  MENU LANGUAGE HELPERS
+#  - OSDLang.dat: the currently active language code (1 word).
+#  - language_list.dat: the list of available language codes.
+#  The overlay reads OSDLang.dat at runtime and translates
+#  menu.conf in memory. menu.conf itself is never modified.
 # ============================================================
-function Set-ScriptLanguage([string]$path, [string]$lang, [System.Text.Encoding]$enc) {
-    # Si el archivo no existe, lo creamos con la línea current_lang
-    if (-not (Test-Path $path)) {
-        $langValue = if ($lang -eq "ES") { "es" } else { "en" }
-        $content = "local current_lang = `"$langValue`"`r`n`r`n"
-        [System.IO.File]::WriteAllText($path, $content, $enc)
-        return
+function Get-MenuLanguage {
+    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    if (Test-Path $OSDLangFile) {
+        try {
+            $content = [System.IO.File]::ReadAllText($OSDLangFile, [System.Text.Encoding]::UTF8)
+            $content = $content.Trim().ToLower()
+            if ($content -ne "") { return $content }
+        } catch {}
     }
-    $content = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
-    $langValue = if ($lang -eq "ES") { "es" } else { "en" }
-    $pattern = 'local\s+current_lang\s*=\s*"(?:en|es)"'
-    $replace = 'local current_lang = "' + $langValue + '"'
-    if ($content -match $pattern) {
-        $content = [regex]::Replace($content, $pattern, $replace, 1)
-    } else {
-        # Si no existe, insertar al principio
-        $content = 'local current_lang = "' + $langValue + '"' + "`r`n" + $content
+    return "en"
+}
+
+function Set-MenuLanguage([string]$lang) {
+    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    $dir = Split-Path -Parent $OSDLangFile
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    [System.IO.File]::WriteAllText($OSDLangFile, $lang, [System.Text.Encoding]::UTF8)
+}
+
+# Reads scripts\lang\language_list.dat and returns the list of codes.
+# Falls back to en/es if the file is missing or empty.
+function Get-AvailableMenuLanguages {
+    $listFile = Join-Path $script:RootDir "scripts\lang\language_list.dat"
+    $fallback = @("en", "es")
+    if (-not (Test-Path $listFile)) { return $fallback }
+    try {
+        $lines  = [System.IO.File]::ReadAllLines($listFile, [System.Text.Encoding]::UTF8)
+        $parsed = @()
+        foreach ($line in $lines) {
+            $clean = $line.Trim().ToLower()
+            if ($clean -ne "" -and -not $clean.StartsWith("#")) {
+                if ($parsed -notcontains $clean) { $parsed += $clean }
+            }
+        }
+        if ($parsed.Count -gt 0) { return $parsed }
+    } catch {}
+    return $fallback
+}
+
+# Selects the given language in the ComboBox, if present.
+function Select-MenuLanguageCombo([string]$lang) {
+    if (-not $cbMenuLang) { return }
+    $lang = ("" + $lang).ToLower()
+    for ($i = 0; $i -lt $cbMenuLang.Items.Count; $i++) {
+        if ($cbMenuLang.Items[$i].ToString().ToLower() -eq $lang) {
+            $cbMenuLang.SelectedIndex = $i
+            return
+        }
     }
-    [System.IO.File]::WriteAllText($path, $content, $enc)
+    if ($cbMenuLang.Items.Count -gt 0 -and $cbMenuLang.SelectedIndex -lt 0) {
+        $cbMenuLang.SelectedIndex = 0
+    }
 }
 
 # ============================================================
@@ -514,7 +544,7 @@ function Get-FfplayStatus {
 }
 function Get-MenuStatus {
     if (Test-Path (Join-Path $script:RootDir "menu.conf")) { return (T "MenuFound"), $script:EXE_OK }
-    else { return (T "MenuNotFound"), $script:EXE_ERR }
+    else { return ("menu.conf: NOT Found!"), $script:EXE_ERR }
 }
 
 $lExeFFplay   = New-Lbl "" 520 18 220 16 $FontSmall $script:EXE_OK
@@ -532,13 +562,6 @@ $card3 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH    "S3Title" $null    $f
 $card4 = New-CardXY $pMain $rightX $row2Y $cardW $cMidH    "S4Title" $null    $false
 $card5 = New-CardXY $pMain $leftX  $row2Y $cardW $cMidH    "S5Title" $null    $false
 $card6 = New-CardXY $pMain $rightX $row3Y $cardW $cBottomH "ActionsTitle" $null $false
-
-$card1.Tag="S1"
-$card2.Tag="S2"
-$card3.Tag="S3"
-$card4.Tag="S4"
-$card5.Tag="S5"
-$card6.Tag="ACT"
 
 # --- Card 1: Devices ---
 $lVidLbl  = New-Lbl (T "S1VidLbl") 14 38 220 18 $FontBold $script:TEXT
@@ -638,10 +661,20 @@ $pnlAutoCheck.Controls.AddRange(@($lAutoCheckLabel, $rbAutoCheckNo, $rbAutoCheck
 $card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck))
 
 # --- Card 6: Actions ---
+# ComboBox (left) + Button (right) for choosing the overlay language.
+$cbMenuLang = New-Object System.Windows.Forms.ComboBox
+$cbMenuLang.Location      = [System.Drawing.Point]::new(14,42)
+$cbMenuLang.Size          = [System.Drawing.Size]::new(88,28)
+$cbMenuLang.DropDownStyle = 'DropDownList'
+$cbMenuLang.Font          = $FontSub
+$cbMenuLang.BackColor     = $script:CARD
+$cbMenuLang.ForeColor     = $script:TEXT
+$cbMenuLang.FlatStyle     = 'Flat'
+
 $btnMenuToggle = New-Object System.Windows.Forms.Button
-$btnMenuToggle.Text     = "MENU: English <-> Espanol"
-$btnMenuToggle.Location = [System.Drawing.Point]::new(14,36)
-$btnMenuToggle.Size     = [System.Drawing.Size]::new(220,40)
+$btnMenuToggle.Text     = (T "ApplyLangBtn")
+$btnMenuToggle.Location = [System.Drawing.Point]::new(108,36)
+$btnMenuToggle.Size     = [System.Drawing.Size]::new(126,40)
 Style-Btn $btnMenuToggle $script:ACCENT3 $script:BG
 $btnMenuToggle.Font = $FontBtn
 
@@ -652,10 +685,10 @@ $btnApply.Text = (T "ApplyBtn")
 $btnApply.Location = [System.Drawing.Point]::new(402,36)
 $btnApply.Size     = [System.Drawing.Size]::new(120,40)
 Style-Btn $btnApply $script:ACCENT2 $script:BG
-$card6.Controls.AddRange(@($btnMenuToggle,$lStatus,$btnApply))
+$card6.Controls.AddRange(@($cbMenuLang,$btnMenuToggle,$lStatus,$btnApply))
 
 # ============================================================
-#  LANGUAGE SWITCH
+#  LANGUAGE SWITCH (GUI only)
 # ============================================================
 function Apply-Lang([string]$lang) {
     $script:CurrentLang = $lang
@@ -691,9 +724,9 @@ function Apply-Lang([string]$lang) {
             $lScanStatus.ForeColor = $script:ERROR_C
             $lScanStatus.Text = T "S1NoDevices"
         }
-        "no_ffplay" {
+        "scan_error" {
             $lScanStatus.ForeColor = $script:ERROR_C
-            $lScanStatus.Text = T "S1NoFfplay"
+            $lScanStatus.Text = [string]::Format((T "ErrStatus"), $script:LastScanError)
         }
         default { $lScanStatus.Text = "" }
     }
@@ -731,16 +764,15 @@ function Apply-Lang([string]$lang) {
 
     switch ($script:LastStatusState) {
         "ready"          { $lStatus.ForeColor = $script:MUTED;   $lStatus.Text = T "StatusReady" }
-        "menu_not_found" { $lStatus.ForeColor = $script:ERROR_C; $lStatus.Text = T "MenuNotFound" }
-        "menu_to_es"     { $lStatus.ForeColor = $script:SUCCESS; $lStatus.Text = T "MenuToSpanish" }
-        "menu_to_en"     { $lStatus.ForeColor = $script:SUCCESS; $lStatus.Text = T "MenuToEnglish" }
+        "menu_lang_set"  { $lStatus.ForeColor = $script:SUCCESS; $lStatus.Text = [string]::Format((T "MenuToLanguage"), $script:LastMenuLangSet) }
         "done"           { $lStatus.ForeColor = $script:SUCCESS; $lStatus.Text = T "DoneStatus" }
         "err_select"     { $lStatus.ForeColor = $script:ERROR_C; $lStatus.Text = T "ErrSelect" }
         "custom_error"   { $lStatus.ForeColor = $script:ERROR_C; $lStatus.Text = [string]::Format((T "ErrStatus"), $script:LastErrorText) }
         default          { $lStatus.ForeColor = $script:MUTED;   $lStatus.Text = T "StatusReady" }
     }
 
-    $btnApply.Text = T "ApplyBtn"
+    $btnApply.Text      = T "ApplyBtn"
+    $btnMenuToggle.Text = T "ApplyLangBtn"
 
     $ffText, $ffColor = Get-FfplayStatus
     $lExeFFplay.Text = $ffText
@@ -754,7 +786,7 @@ function Apply-Lang([string]$lang) {
 }
 
 # ============================================================
-#  EVENTOS
+#  EVENTS
 # ============================================================
 $btnEN.Add_Click({
     Apply-Lang "EN"
@@ -765,13 +797,23 @@ $btnES.Add_Click({
     Save-GUILanguage "ES"
 })
 
+# ============================================================
+#  SCAN DEVICES
+#  Reads stdout and stderr concurrently to avoid deadlock:
+#  ffplay writes the device list to stderr; reading stdout to
+#  completion first can block when stderr's pipe buffer fills.
+#  A timeout and WinForms event pumping keep the UI responsive.
+# ============================================================
 $btnScan.Add_Click({
+    if ($script:LastScanState -eq "scanning") { return }
+    $btnScan.Enabled  = $false
+    $btnApply.Enabled = $false
     $script:LastScanState = "scanning"
     $lScanStatus.ForeColor = $script:MUTED
     $lScanStatus.Text = (T "S1Scanning")
     $form.Refresh()
 
-    $tmpFile = [System.IO.Path]::GetTempFileName()
+    $proc = $null
 
     try {
         $ffplayLocal = Join-Path $script:RootDir "ffplay.exe"
@@ -798,12 +840,25 @@ $btnScan.Add_Click({
         $proc.StartInfo = $psi
         [void]$proc.Start()
 
-        $stdout = $proc.StandardOutput.ReadToEnd()
-        $stderr = $proc.StandardError.ReadToEnd()
-        $proc.WaitForExit()
+        # Drain both pipes concurrently to avoid deadlock when the
+        # device listing is large enough to fill stderr's pipe buffer.
+        $stdoutTask = $proc.StandardOutput.ReadToEndAsync()
+        $stderrTask = $proc.StandardError.ReadToEndAsync()
+        $scanClock  = [System.Diagnostics.Stopwatch]::StartNew()
+
+        while (-not ($proc.HasExited -and $stdoutTask.IsCompleted -and $stderrTask.IsCompleted)) {
+            if ($scanClock.Elapsed.TotalSeconds -ge 30) {
+                throw "Device scan timed out after 30 seconds. Close other capture apps and retry."
+            }
+            [System.Windows.Forms.Application]::DoEvents()
+            if ($form.IsDisposed) { return }
+            Start-Sleep -Milliseconds 25
+        }
+
+        $stdout = $stdoutTask.GetAwaiter().GetResult()
+        $stderr = $stderrTask.GetAwaiter().GetResult()
 
         $content = ($stdout + "`r`n" + $stderr)
-        [System.IO.File]::WriteAllText($tmpFile, $content, [System.Text.Encoding]::UTF8)
 
         $vD = @()
         $aD = @()
@@ -849,141 +904,58 @@ $btnScan.Add_Click({
         }
     }
     catch {
-        $script:LastScanState = "no_ffplay"
+        $script:LastScanState = "scan_error"
+        $script:LastScanError = $_.Exception.Message
         $script:LastVideoCount = $null; $script:LastAudioCount = $null
         $lScanStatus.ForeColor = $script:ERROR_C
-        $lScanStatus.Text = ((T "S1NoFfplay") + " " + $_.Exception.Message)
+        $lScanStatus.Text = [string]::Format((T "ErrStatus"), $script:LastScanError)
     }
     finally {
-        if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force }
+        if ($null -ne $proc) {
+            try { if (-not $proc.HasExited) { $proc.Kill() } } catch {}
+            try { $proc.Dispose() } catch {}
+        }
+        if (-not $form.IsDisposed) {
+            $btnScan.Enabled  = $true
+            $btnApply.Enabled = $true
+        }
     }
 })
 
 # ============================================================
-#  BOTÓN MENU (con las nuevas traducciones y tools_launcher)
+#  MENU LANGUAGE BUTTON
+#  Writes the selected language from the ComboBox into
+#  scripts\lang\OSDLang.dat. The overlay reads it at runtime
+#  and translates menu.conf in memory. menu.conf is NEVER modified.
+#  After changing, restart MPV (or send script-message reload-lang)
+#  so the overlay picks up the new language.
 # ============================================================
 $btnMenuToggle.Add_Click({
-    $menuPath = Join-Path $script:RootDir "menu.conf"
-    if (-not (Test-Path $menuPath)) {
-        $script:LastStatusState = "menu_not_found"
+    if ($cbMenuLang.SelectedIndex -lt 0) { return }
+    $targetLang = ("" + $cbMenuLang.SelectedItem).Trim().ToLower()
+    if ($targetLang -eq "") { return }
+
+    try {
+        Set-MenuLanguage $targetLang
+        $script:LastStatusState = "menu_lang_set"
+        $script:LastMenuLangSet = $targetLang.ToUpper()
+        $lStatus.ForeColor = $script:SUCCESS
+        $lStatus.Text = [string]::Format((T "MenuToLanguage"), $script:LastMenuLangSet)
+    } catch {
+        $script:LastStatusState = "custom_error"
+        $script:LastErrorText = $_.Exception.Message
         $lStatus.ForeColor = $script:ERROR_C
-        $lStatus.Text = T "MenuNotFound"
-        return
+        $lStatus.Text = [string]::Format((T "ErrStatus"), $_.Exception.Message)
     }
 
-    $utf8 = New-Object System.Text.UTF8Encoding $false
-    $menu = [System.IO.File]::ReadAllText($menuPath, [System.Text.Encoding]::UTF8)
-
-    # Mapas de traducción (incluyendo las nuevas claves de TOOLS)
-    $mapEN = @{
-        'CERRAR MPV-SW-Capture'='CLOSE MPV-SW-Capture'; 'Videojuegos'='VideoGame'; 'Rellenar Ventana'='Fill Screen'; 'Solo Nitidez'='Only Sharpen'; 'Limpiar Shaders'='Clean Shaders'; 'AYUDA'='HELP'; 'RECORTES'='CROPS'; 'Borrar Recorte'='Clear Crop'; 'Recorte Eliminado'='Crop Cleared'
-        'MARCOS'='BEZELS'; 'Borrar Marcos'='Clear Bezels'; 'Marcos Eliminados'='Bezels Cleared'
-        'VENTANA'='WINDOW'; 'TAMANO'='SIZE'; 'Pantalla Completa'='Fullscreen'; 'POSICION'='POSITION'
-        'Arriba Izquierda'='Top Left'; 'Arriba Derecha'='Top Right'; 'Arriba Centro'='Top Center'
-        'Centro Izquierda'='Center Left'; 'Centro Derecha'='Center Right'; 'Abajo Centro'='Bottom Center'
-        'Abajo Izquierda'='Bottom Left'; 'Abajo Derecha'='Bottom Right'; 'Siempre Visible'='Always On Top'
-        'Estirar Ventana'='Stretch Window'; 'Modo Mini'='Mini Mode'; '"Modo Mini"'='"Mini Mode"'
-        'CAPTURA'='CAPTURE'; 'Capturar Imagen'='Take Screenshot'; 'Grabar Video'='Record Video'
-        'AUDIO'='AUDIO'; 'Silenciar/Activar sonido'='Mute/Unmute'
-        'OPCIONES DE VIDEO'='VIDEO OPTIONS'; 'VIDEO'='VIDEO'; 'Cambiar a Perfil ICC Automatico'='Change to Auto ICC Profile'; 'Alternar Deband'='Toggle Deband'
-        'Deband:'='Deband:'; 'Alternar Desentrelazado'='Toggle Deinterlace'; 'Desentrelazado:'='Deinterlace:'
-        'Bordes'='Borders'
-        'OTROS'='OTHERS'; 'Limpiar TODO'='Clean ALL'; '"Limpiando TODO"'='"Cleaning ALL"'
-        'Informacion de Stream'='Info Stream'; 'CENTRO'='CENTER'; 'Especial'='Special'
-        'FORMAS'='SHAPES'; 'Interpolacion de Movimiento'='Motion Interpolation'; 'Limpiar Forma'='Clean Shape'; 'Forma Limpiada'='Shape Cleared'
-        'Curvatura'='Curvature'; 'Orillas Oscuras'='Edge Darkening'
-        'Barril Ancho'='Wide Barrel'; 'Esquinas Redondeadas'='Rounded Corners'
-        'Inclinado'='Tilted'; 'Invertido'='Inverted'
-        'Perspectiva Pinball'='Pinball Perspective';
-        'Keystone Hacia Adentro (Zoom Inferior Bajo)'='Inward Keystone (Low Bottom Zoom)'
-        'ROTACION'='ROTATION'; 'Girar a la Derecha'='Rotate Clockwise'; 'Girar a la Izquierda'='Rotate Counter-Clockwise'; 'Restablecer Rotacion'='Reset Rotation'; 'OTRAS OPCIONES'='OTHER OPTIONS'; 'Borde de Ventana'='Window Border'; 'Barra de Titulo'='Title Bar'; 'Quitar TODO'='Remove ALL'; 'Girado +90°'='Rotated +90°'; 'Girado -90°'='Rotated -90°'; 'Rotacion Reiniciada'='Rotation Reset'; 'Borde: ${border}'='Border: ${border}'; 'Barra de Titulo: ${border}'='Title Bar: ${border}'; 'Ambos Quitados'='Removed Both'; 'Ocultar Mensajes OSD'='Hide OSD Messages'; 'Espejo OFF'='Mirror OFF'; 'Espejo ON'='Mirror ON'; 'Modo Espejo'='Mirror Mode'; 'Revisa la Ultima Version de MSC'='Check Latest MSC Version'; 'Abre la Web de MPV-SW-Capture'='Open MPV-SW-Capture Website'; 'Discord de MPV-SW-Capture'='MPV-SW-Capture Discord'; 'Abriendo sitio web...'='Opening website...'; 'Abriendo Discord...'='Opening Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'='https://tyras-sw.github.io/MPV-SW-Capture/'
-        'HERRAMIENTAS'='TOOLS'
-        'Abrir Administrador Marcos'='Open Bezel Manager'
-        'Abrir Administrador de Video'='Open Video Manager'
-        'Abrir Asistente de Stream'='Open Stream Helper'
-        'INSTALADORES'='INSTALLERS'
-        'Abrir INSTALADOR'='Run INSTALLER'
-        'Abrir CONFIGURADOR'='Run SETUP'
-    }
-
-    $mapES = @{
-        'CLOSE MPV-SW-Capture'='CERRAR MPV-SW-Capture'; 'VideoGame'='Videojuegos'; 'Fill Screen'='Rellenar Ventana'; 'Only Sharpen'='Solo Nitidez'; 'Clean Shaders'='Limpiar Shaders'; 'HELP'='AYUDA'; 'CROPS'='RECORTES'; 'Clear Crop'='Borrar Recorte'; 'Crop Cleared'='Recorte Eliminado'
-        'BEZELS'='MARCOS'; 'Clear Bezels'='Borrar Marcos'; 'Bezels Cleared'='Marcos Eliminados'
-        'WINDOW'='VENTANA'; 'SIZE'='TAMANO'; 'Fullscreen'='Pantalla Completa'; 'POSITION'='POSICION'
-        'Top Left'='Arriba Izquierda'; 'Top Right'='Arriba Derecha'; 'Top Center'='Arriba Centro'
-        'Center Left'='Centro Izquierda'; 'Center Right'='Centro Derecha'; 'Bottom Center'='Abajo Centro'
-        'Bottom Left'='Abajo Izquierda'; 'Bottom Right'='Abajo Derecha'; 'Always On Top'='Siempre Visible'
-        'Stretch Window'='Estirar Ventana'; 'Mini Mode'='Modo Mini'; '"Mini Mode"'='"Modo Mini"'
-        'CAPTURE'='CAPTURA'; 'Take Screenshot'='Capturar Imagen'; 'Record Video'='Grabar Video'
-        'AUDIO'='AUDIO'; 'Mute/Unmute'='Silenciar/Activar sonido'
-        'VIDEO OPTIONS'='OPCIONES DE VIDEO'; 'VIDEO'='VIDEO'; 'Change to Auto ICC Profile'='Cambiar a Perfil ICC Automatico'; 'Toggle Deband'='Alternar Deband'
-        'Deband:'='Deband:'; 'Toggle Deinterlace'='Alternar Desentrelazado'; 'Deinterlace:'='Desentrelazado:'
-        'Borders'='Bordes'
-        'OTHERS'='OTROS'; 'Clean ALL'='Limpiar TODO'; '"Cleaning ALL"'='"Limpiando TODO"'
-        'Info Stream'='Informacion de Stream'; 'CENTER'='CENTRO'; 'Special'='Especial'
-        'SHAPES'='FORMAS'; 'Motion Interpolation'='Interpolacion de Movimiento'; 'Clean Shape'='Limpiar Forma'; 'Shape Cleared'='Forma Limpiada'
-        'Curvature'='Curvatura'; 'Edge Darkening'='Orillas Oscuras'
-        'Wide Barrel'='Barril Ancho'; 'Rounded Corners'='Esquinas Redondeadas'
-        'Tilted'='Inclinado'; 'Inverted'='Invertido'
-        'Pinball Perspective'='Perspectiva Pinball';
-        'Inward Keystone (Low Bottom Zoom)'='Keystone Hacia Adentro (Zoom Inferior Bajo)'
-        'ROTATION'='ROTACION'; 'Rotate Clockwise'='Girar a la Derecha'; 'Rotate Counter-Clockwise'='Girar a la Izquierda'; 'Reset Rotation'='Restablecer Rotacion'; 'OTHER OPTIONS'='OTRAS OPCIONES'; 'Window Border'='Borde de Ventana'; 'Title Bar'='Barra de Titulo'; 'Remove ALL'='Quitar TODO'; 'Rotated +90°'='Girado +90°'; 'Rotated -90°'='Girado -90°'; 'Rotation Reset'='Rotacion Reiniciada'; 'Border: ${border}'='Borde: ${border}'; 'Title Bar: ${border}'='Barra de Titulo: ${border}'; 'Removed Both'='Ambos Quitados'; 'Hide OSD Messages'='Ocultar Mensajes OSD'; 'Mirror OFF'='Espejo OFF'; 'Mirror ON'='Espejo ON'; 'Mirror Mode'='Modo Espejo'; 'Check Latest MSC Version'='Revisa la Ultima Version de MSC'; 'Open MPV-SW-Capture Website'='Abre la Web de MPV-SW-Capture'; 'MPV-SW-Capture Discord'='Discord de MPV-SW-Capture'; 'Opening website...'='Abriendo sitio web...'; 'Opening Discord...'='Abriendo Discord...'; 'https://tyras-sw.github.io/MPV-SW-Capture/'='https://tyras-sw.github.io/MPV-SW-Capture/?lang=es'
-        'TOOLS'='HERRAMIENTAS'
-        'Open Bezel Manager'='Abrir Administrador Marcos'
-        'Open Video Manager'='Abrir Administrador de Video'
-        'Open Stream Helper'='Abrir Asistente de Stream'
-        'INSTALLERS'='INSTALADORES'
-        'Run INSTALLER'='Abrir INSTALADOR'
-        'Run SETUP'='Abrir CONFIGURADOR'
-    }
-
-    # Detectar si el menú está en inglés o español (usando palabras clave)
-    $englishHits = 0
-    $spanishHits = 0
-
-    foreach ($probe in @('VideoGame','Only Sharpen','Clean Shaders','VIDEO OPTIONS','Change to Auto ICC Profile','Toggle Deband','Toggle Deinterlace','Other Video Options','Auto ICC')) {
-        if ($menu.Contains($probe)) { $englishHits++ }
-    }
-    foreach ($probe in @('Videojuegos','Solo Nitidez','Limpiar Shaders','OPCIONES DE VIDEO','Cambiar a Perfil ICC Automatico','Alternar Deband','Alternar Desentrelazado','Otras Opciones de Video','ICC Automatico')) {
-        if ($menu.Contains($probe)) { $spanishHits++ }
-    }
-
-    $isEnglish = $englishHits -ge $spanishHits
-
-    # Traducir el menú
-    if ($isEnglish) {
-        foreach ($k in $mapES.Keys) { $menu = $menu.Replace($k, $mapES[$k]) }
-        [System.IO.File]::WriteAllText($menuPath, $menu, $utf8)
-        $script:LastStatusState = "menu_to_es"
-        $lStatus.ForeColor = $script:SUCCESS
-        $lStatus.Text = T "MenuToSpanish"
-    } else {
-        foreach ($k in $mapEN.Keys) { $menu = $menu.Replace($k, $mapEN[$k]) }
-        [System.IO.File]::WriteAllText($menuPath, $menu, $utf8)
-        $script:LastStatusState = "menu_to_en"
-        $lStatus.ForeColor = $script:SUCCESS
-        $lStatus.Text = T "MenuToEnglish"
-    }
-
-    # Actualizar current_lang en los scripts que lo usan
-    $langToSet = if ($isEnglish) { "ES" } else { "EN" }
-
-    $scriptsToUpdate = @(
-        "scripts\check_version.lua",
-        "scripts\mirror_toggle.lua",
-        "scripts\autocompress.lua",
-        "scripts\shader_init.lua",
-        "scripts\tools_launcher.lua"   # <--- NUEVO
-    )
-
-    foreach ($relPath in $scriptsToUpdate) {
-        $fullPath = Join-Path $script:RootDir $relPath
-        Set-ScriptLanguage $fullPath $langToSet $utf8
-    }
+    $form.Refresh()
 })
 
 # ============================================================
-#  BOTÓN APPLY (sin cambios)
+#  APPLY BUTTON
+#  Writes device names, date format, shader init, record time
+#  and window/border preferences into the respective files.
+#  Does NOT touch menu.conf or OSDLang.dat.
 # ============================================================
 $btnApply.Add_Click({
     if ($cbVideo.SelectedIndex -lt 0 -or $cbAudio.SelectedIndex -lt 0) {
@@ -1050,11 +1022,11 @@ $btnApply.Add_Click({
             [System.IO.File]::WriteAllText($cf, $c, $utf8)
         }
 
-        # --- Actualizar MPV-SW-Capture.bat para borde y barra de título ---
+        # --- Update MPV-SW-Capture.bat for border / title bar ---
         $batPath = Join-Path $root "data\MPV-SW-Capture.bat"
         if (Test-Path $batPath) {
             $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
-            
+
             if ($rbBorderNo.Checked) {
                 $borderArg = "--no-border"
                 $titleArg = ""
@@ -1065,19 +1037,19 @@ $btnApply.Add_Click({
                 $borderArg = "--border"
                 $titleArg = ""
             }
-            
+
             $batContent = $batContent -replace '--no-border ', ''
             $batContent = $batContent -replace '--no-border', ''
             $batContent = $batContent -replace '--border ', ''
             $batContent = $batContent -replace '--border', ''
             $batContent = $batContent -replace '--title-bar=\S+ ', ''
             $batContent = $batContent -replace '--title-bar=\S+', ''
-            
+
             $pattern = '(start "" /b "%prog1_path%" )'
             $replacement = '${1}' + $borderArg + ' ' + $titleArg + ' '
             $batContent = $batContent -replace $pattern, $replacement
             $batContent = $batContent -replace '  +', ' '
-            
+
             [System.IO.File]::WriteAllText($batPath, $batContent, $utf8)
         }
 
@@ -1205,6 +1177,12 @@ IconFile=$($root)\data\icon\msc-shortcut.ico
 # ============================================================
 #  INIT
 # ============================================================
+# Populate the menu-language ComboBox from language_list.dat
+$menuLangs = Get-AvailableMenuLanguages
+$cbMenuLang.Items.Clear()
+foreach ($l in $menuLangs) { [void]$cbMenuLang.Items.Add($l.ToUpper()) }
+Select-MenuLanguageCombo (Get-MenuLanguage)
+
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang
 

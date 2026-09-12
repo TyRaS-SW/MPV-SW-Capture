@@ -1,3 +1,4 @@
+local current_lang = "en"
 -- check_version.lua - For MPV-SW-Capture - By TyRaS-SW
 -- Check for latest MSC version. Reads script-opts from command line or mpv.conf.
 
@@ -5,11 +6,51 @@ local mp = require "mp"
 local utils = require "mp.utils"
 local msg = require "mp.msg"
 
--- Default language (can be changed to "es" for Spanish)
-local current_lang = "en"
+-- -------------------------------------------------------------------------
+-- Cargar osd_messages de forma segura
+-- -------------------------------------------------------------------------
+local osd
+local function get_script_path()
+    local info = debug.getinfo(1, "S")
+    return info and info.source:match("@?(.*/)") or ""
+end
+
+local script_dir = get_script_path()
+local osd_path = script_dir .. "osd_messages.lua"
+
+local ok, err = pcall(function()
+    local loaded = dofile(osd_path)
+    if loaded and type(loaded.get) == "function" and type(loaded.show) == "function" then
+        osd = loaded
+    else
+        error("osd_messages.lua does not return a table with get/show functions")
+    end
+end)
+
+if not ok then
+    -- Fallback: funciones básicas
+    osd = {
+        get = function(key) return key end,
+        show = function(key, duration)
+            local text = key
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end,
+        safe_osd_message = function(text, duration)
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end
+    }
+    print("check_version: Using fallback OSD (osd_messages.lua not loaded). Error: " .. tostring(err))
+else
+    print("check_version: osd_messages.lua loaded from " .. osd_path)
+end
 
 -- 🔧 DURATION OF FINAL MESSAGE (in seconds)
--- Adjust this value to control how long the final result message stays on screen.
 local FINAL_MSG_DURATION = 4.0
 
 -- Read script-opts for auto-check
@@ -29,7 +70,7 @@ local auto_check = tonumber(get_script_opt("msc_check_version_auto")) or 0
 -- Online mpv.conf URL
 local VERSION_URL = "https://raw.githubusercontent.com/TyRaS-SW/MPV-SW-Capture/main/mpv.conf"
 
--- Get script directory
+-- Get script directory (for local mpv.conf)
 local function get_script_dir()
     local info = debug.getinfo(1, "S")
     if info and info.source then
@@ -78,49 +119,23 @@ local function download_content_silent(url)
     return nil
 end
 
--- Safe OSD message: respects osd-duration (hides if 0), otherwise shows message.
--- duration is in seconds (if not given, osd-duration converted to seconds)
-local function safe_osd_message(text, duration)
-    local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
-    if osd_duration_ms == 0 then
-        return  -- OSD hidden, do not show
-    end
-    -- If no specific duration provided, use osd-duration converted to seconds
-    if duration == nil then
-        duration = osd_duration_ms / 1000
-    end
-    mp.osd_message(text, duration)
-end
-
 -- Main version check function
 local function show_version_status()
     local success, err = pcall(function()
-        -- Initial message (no fixed duration, uses osd-duration converted)
-        if current_lang == "es" then
-            safe_osd_message("Buscando actualizaciones...")
-        else
-            safe_osd_message("Checking for updates...")
-        end
+        -- Initial message
+        osd.show("checkversion_checking")
 
         -- Get local mpv.conf path
         local script_dir = get_script_dir()
         if not script_dir then
-            if current_lang == "es" then
-                safe_osd_message("ERROR: No se pudo obtener el directorio del script")
-            else
-                safe_osd_message("ERROR: Could not get script directory")
-            end
+            osd.show("checkversion_error_dir", FINAL_MSG_DURATION)
             return
         end
 
         local conf_path = script_dir .. "/../mpv.conf"
         local file = io.open(conf_path, "r")
         if not file then
-            if current_lang == "es" then
-                safe_osd_message("ERROR: No se encontró mpv.conf local")
-            else
-                safe_osd_message("ERROR: Local mpv.conf not found")
-            end
+            osd.show("checkversion_error_conf", FINAL_MSG_DURATION)
             return
         end
         local local_content = file:read("*all")
@@ -128,38 +143,22 @@ local function show_version_status()
 
         local local_version_str = get_version_from_conf(local_content)
         if not local_version_str then
-            if current_lang == "es" then
-                safe_osd_message("ERROR: No se encontró versión local")
-            else
-                safe_osd_message("ERROR: Local version not found")
-            end
+            osd.show("checkversion_error_local", FINAL_MSG_DURATION)
             return
         end
 
-        -- Fetch online version (no fixed duration)
-        if current_lang == "es" then
-            safe_osd_message("Verificando versión online...")
-        else
-            safe_osd_message("Checking online version...")
-        end
+        -- Fetch online version
+        osd.show("checkversion_checking_online")
 
         local online_content = download_content_silent(VERSION_URL)
         if not online_content or online_content == "" then
-            if current_lang == "es" then
-                safe_osd_message("ERROR: No se pudo verificar la versión online")
-            else
-                safe_osd_message("ERROR: Could not check online version")
-            end
+            osd.show("checkversion_error_online", FINAL_MSG_DURATION)
             return
         end
 
         local online_version_str = get_version_from_conf(online_content)
         if not online_version_str then
-            if current_lang == "es" then
-                safe_osd_message("ERROR: No se encontró versión online")
-            else
-                safe_osd_message("ERROR: Online version not found")
-            end
+            osd.show("checkversion_error_online_version", FINAL_MSG_DURATION)
             return
         end
 
@@ -167,33 +166,21 @@ local function show_version_status()
         local local_ver = parse_version(local_version_str)
         local online_ver = parse_version(online_version_str)
 
-        local msg_text = ""
+        local msg_text
         if online_ver > local_ver then
-            if current_lang == "es" then
-                msg_text = "🔄 Nueva v" .. online_version_str .. " (actual v" .. local_version_str .. ")\nUsa el instalador."
-            else
-                msg_text = "🔄 New v" .. online_version_str .. " (current v" .. local_version_str .. ")\nUse the installer."
-            end
+            msg_text = string.format(osd.get("checkversion_new_version"), online_version_str, local_version_str)
         elseif online_ver == local_ver then
-            if current_lang == "es" then
-                msg_text = "✅ Tienes la última versión: v" .. local_version_str
-            else
-                msg_text = "✅ You have the latest version: v" .. local_version_str
-            end
+            msg_text = string.format(osd.get("checkversion_latest"), local_version_str)
         else
-            if current_lang == "es" then
-                msg_text = "⚠️ Tienes v" .. local_version_str .. " > online v" .. online_version_str .. "\nNo actualices."
-            else
-                msg_text = "⚠️ You have v" .. local_version_str .. " > online v" .. online_version_str .. "\nDo not update."
-            end
+            msg_text = string.format(osd.get("checkversion_newer_local"), local_version_str, online_version_str)
         end
-        -- 🔧 Use FINAL_MSG_DURATION to control MSG duration
-        safe_osd_message(msg_text, FINAL_MSG_DURATION)
+        -- Use FINAL_MSG_DURATION
+        osd.safe_osd_message(msg_text, FINAL_MSG_DURATION)
     end)
 
     if not success then
         local err_msg = tostring(err)
-        safe_osd_message("ERROR: " .. err_msg, FINAL_MSG_DURATION)
+        osd.safe_osd_message("ERROR: " .. err_msg, FINAL_MSG_DURATION)
         msg.error("Version check error: " .. err_msg)
     end
 end

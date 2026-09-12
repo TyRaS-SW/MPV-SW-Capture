@@ -1,0 +1,194 @@
+# MENUMSG_es.dat - By TyRaS-SW
+# Spanish translations for MPV-SW-Capture menu.conf
+# Organized by section for easier maintenance.
+
+# ============================================================
+#  ROOT SECTIONS
+# ============================================================
+SHADERS=SHADERS
+SHAPES=FORMAS
+CROPS=RECORTES
+BEZELS=MARCOS
+WINDOW=VENTANA
+CAPTURE=CAPTURA
+VIDEO OPTIONS=OPCIONES DE VIDEO
+AUDIO=AUDIO
+OTHERS=OTROS
+
+# ============================================================
+#  TABS
+# ============================================================
+4K=4K
+TV=TV
+VideoGame=Videojuegos
+Special=Especial
+SIZE=TAMAÑO
+POSITION=POSICIÓN
+ROTATION=ROTACIÓN
+OTHER OPTIONS=OTRAS OPCIONES
+WINDOW EXTRAS=EXTRAS DE VENTANA
+
+# ============================================================
+#  SHADERS
+# ============================================================
+Only Sharpen=Solo Nitidez
+Clean Shaders=Limpiar Shaders
+Handheld Dot Matrix=Matriz de Puntos Portátil
+GB LCD Color Screen=Colores de Pantalla LCD GB
+Broken LCD TV=TV LCD Rota
+LCD Dust=LCD con Polvo
+Inverted Colors=Colores Invertidos
+
+# ============================================================
+#  SHAPES
+# ============================================================
+Clean Shape=Limpiar Forma
+Shape Cleared=Forma Limpiada
+Curvature=Curvatura
+Edge Darkening=Bordes Oscuros
+Wide Barrel=Barril Ancho
+Rounded Corners=Esquinas Redondeadas
+Tilted=Inclinado
+Inverted=Invertido
+Pinball Perspective=Perspectiva Pinball
+Inward Keystone (Low Bottom Zoom)=Keystone Hacia Adentro (Zoom Inferior Bajo)
+
+# ============================================================
+#  CROPS
+# ============================================================
+Clear Crop=Borrar Recorte
+Crop Cleared=Recorte Eliminado
+Generic=Genérico
+(Small)=(Pequeño)
+(Default Size)=(Tamaño por Defecto)
+(Pixel Perfect)=(Pixel Perfecto)
+NSO N64 (Mario 64 Size)=NSO N64 (Tamaño Mario 64)
+NSO N64 (DK64 Widescreen Size)=NSO N64 (Tamaño Panorámico DK64)
+NSO: 『N64/GC』 (Full 4:3)=NSO: 『N64/GC』 (4:3 Completo)
+
+# ============================================================
+#  BEZELS
+# ============================================================
+Clear Bezels=Borrar Marcos
+Bezels Cleared=Marcos Eliminados
+Fit Full 16:9 to Bezel=Ajustar 16:9 Completo al Marco
+Full 4꞉3 BG ⌗1 (90s TV)=4:3 Completo BG ⌗1 (90s TV)
+
+# ============================================================
+#  WINDOW - SIZE
+# ============================================================
+Fullscreen=Pantalla Completa
+Mini Mode=Modo Mini
+"Mini Mode"="Modo Mini"
+
+# ============================================================
+#  WINDOW - POSITION
+# ============================================================
+Top Left=Arriba Izquierda
+Top Right=Arriba Derecha
+Top Center=Arriba Centro
+Center Left=Centro Izquierda
+CENTER=CENTRO
+Center Right=Centro Derecha
+Bottom Center=Abajo Centro
+Bottom Left=Abajo Izquierda
+Bottom Right=Abajo Derecha
+
+# ============================================================
+#  WINDOW - ROTATION
+# ============================================================
+Rotate Clockwise=Girar a la Derecha
+Rotate Counter-Clockwise=Girar a la Izquierda
+Reset Rotation=Restablecer Rotación
+Rotated +90°=Girado +90°
+Rotated -90°=Girado -90°
+Rotation Reset=Rotación Reiniciada
+Mirror Mode=Modo Espejo
+
+# ============================================================
+#  WINDOW - OTHER OPTIONS
+# ============================================================
+Window Border=Borde de Ventana
+Title Bar=Barra de Título
+Remove ALL=Quitar TODO
+Border: ${border}=Borde: ${border}
+Title Bar: ${border}=Barra de Título: ${border}
+Removed Both=Ambos Quitados
+
+# ============================================================
+#  WINDOW - EXTRAS
+# ============================================================
+Always On Top=Siempre Visible
+Stretch Window=Estirar Ventana
+
+# ============================================================
+#  CAPTURE
+# ============================================================
+Take Screenshot=Tomar Captura de Pantalla
+Record Video=Grabar Video
+
+# ============================================================
+#  VIDEO OPTIONS
+# ============================================================
+VIDEO=VIDEO
+Fill Screen=Rellenar Ventana
+Change to Auto ICC Profile=Cambiar a Perfíl ICC Automático
+Auto ICC=ICC Automático
+ICC Profile=Perfil ICC
+Toggle Deband=Alternar Deband
+Deband:=Deband:
+Toggle Deinterlace=Alternar Desentrelazado
+Deinterlace:=Desentrelazado:
+Borders=Bordes
+Motion Interpolation=Interpolación de Movimiento
+Other Video Options=Otras Opciones de Video
+
+# ============================================================
+#  AUDIO
+# ============================================================
+Mute/Unmute=Silenciar/Activar sonido
+
+# ============================================================
+#  OTHERS - TOOLS
+# ============================================================
+TOOLS=HERRAMIENTAS
+Open Bezel Manager=Abrir Administrador de Marcos
+Open Video Manager=Abrir Administrador de Video
+Open Stream Helper=Abrir Asistente de Stream
+
+# ============================================================
+#  OTHERS - INSTALLERS
+# ============================================================
+INSTALLERS=INSTALADORES
+Run INSTALLER=Ejecutar INSTALADOR
+Run SETUP=Ejecutar CONFIGURACIÓN
+
+# ============================================================
+#  OTHERS - HELP
+# ============================================================
+HELP=AYUDA
+Check Latest MSC Version=Revisar Última Versión de MSC
+Open MPV-SW-Capture Website=Abrir Sitio Web de MPV-SW-Capture
+MPV-SW-Capture Discord=Discord de MPV-SW-Capture
+
+# ============================================================
+#  OTHERS - ACTIONS
+# ============================================================
+Clean ALL=Limpiar TODO
+Hide OSD Messages=Ocultar Mensajes OSD
+Info Stream=Información de Stream
+CLOSE MPV-SW-Capture=CERRAR MPV-SW-Capture
+
+# ============================================================
+#  COMMANDS - show-text messages
+# ============================================================
+"Cleaning ALL"="Limpiando TODO"
+Opening website...=Abriendo sitio web...
+Opening Discord...=Abriendo Discord...
+OSD Show Mode=Mostrar OSD
+OSD Hidden Mode=Ocultar OSD
+
+# ============================================================
+#  COMMANDS - URLs
+# ============================================================
+https://tyras-sw.github.io/MPV-SW-Capture/=https://tyras-sw.github.io/MPV-SW-Capture/?lang=es

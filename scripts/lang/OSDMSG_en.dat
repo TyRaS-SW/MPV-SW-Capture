@@ -1,0 +1,66 @@
+# OSDMSG_en.dat - By TyRaS-SW
+# English OSD messages for MPV-SW-Capture scripts
+# Keep %s placeholders intact.
+
+# ============================================================
+#  NSORETRO (Bezel fit messages)
+# ============================================================
+nsoretro_no_bezel=Select a Bezel first!
+nsoretro_fill_on=Fit Full 16:9 to Bezel: ON
+nsoretro_fill_off=Fit Full 16:9 to Bezel: OFF
+nsoretro_reset=Bezel Fit: Reset
+
+# ============================================================
+#  MIRROR
+# ============================================================
+mirrortoggle_on=Mirror ON
+mirrortoggle_off=Mirror OFF
+
+# ============================================================
+#  AUTOCOMPRESS (Recording)
+# ============================================================
+autocompress_processing=Processing and merging...
+autocompress_wait_processing=⏳ Wait! Previous recording still processing...
+autocompress_mkdir_fail=Could not create _record folder
+autocompress_merge_error=❌ Error while merging recording
+autocompress_recording_label=🔴 RECORDING
+autocompress_finishing_label=⏳ Finishing Recording Video, please wait!
+autocompress_done_label=✅ Finished!
+
+# ============================================================
+#  CHECK VERSION
+# ============================================================
+checkversion_checking=Checking for updates...
+checkversion_checking_online=Checking online version...
+checkversion_error_dir=ERROR: Could not get script directory
+checkversion_error_conf=ERROR: Local mpv.conf not found
+checkversion_error_local=ERROR: Local version not found
+checkversion_error_online=ERROR: Could not check online version
+checkversion_error_online_version=ERROR: Online version not found
+checkversion_new_version=🔄 New v%s (current v%s). Use the installer.
+checkversion_latest=✅ You have the latest version: v%s
+checkversion_newer_local=⚠️ You have v%s > online v%s. Do not update.
+
+# ============================================================
+#  SHADER INIT
+# ============================================================
+shaderinit_osd_on=✅ OSD Show Mode and ✅ Record Enabled
+shaderinit_osd_off=🙈 OSD Hidden Mode and 🔒 Record Disabled
+
+# ============================================================
+#  MOTION INTERPOLATION
+# ============================================================
+motioninterp_on=Motion Interpolation: ON
+motioninterp_off=Motion Interpolation: OFF
+
+# ============================================================
+#  TOOLS LAUNCHER
+# ============================================================
+toolslauncher_bezel_name=Bezel Manager
+toolslauncher_video_name=Video Manager
+toolslauncher_stream_name=Stream Helper
+toolslauncher_install_name=Installer
+toolslauncher_setup_name=Setup
+toolslauncher_opening=Opening %s
+toolslauncher_error_dir=Error: Could not determine MPV-SW-Capture directory
+toolslauncher_error_notfound=Error: Tool script not found

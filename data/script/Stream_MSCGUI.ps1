@@ -8,20 +8,6 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
 
 # ============================================================
-# APPMODELID
-# ============================================================
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-public static class TaskbarAppId {
-    [DllImport("shell32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
-    public static extern int SetCurrentProcessExplicitAppUserModelID(string AppID);
-}
-"@
-$script:AppUserModelID = "TyRaS.MPVSWCapture.StreamHelper"
-try { [TaskbarAppId]::SetCurrentProcessExplicitAppUserModelID($script:AppUserModelID) | Out-Null } catch {}
-
-# ============================================================
 # ROOT DIRECTORY DETECTION
 # ============================================================
 function Get-RootDir {
@@ -1398,8 +1384,6 @@ function Install-WinCaptureAudio {
             'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'
             'Accept' = 'application/vnd.github+json'
         }
-        $token = $env:GITHUB_TOKEN
-        if ($token) { $headers['Authorization'] = "Bearer $token" }
         
         Log-Info "[Plugin] Fetching releases from GitHub API..."
         $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get -TimeoutSec 10
@@ -2149,49 +2133,56 @@ $btnOBSDLPortable.Add_Click({
 # --- Open OBS ---
 $btnOBSOpen.Add_Click({
     $path = $btnOBSOpen.Tag
+
+    # Si el botón contiene un instalador de OBS descargado, ábrelo.
     if ($path -and (Test-Path $path)) {
-        try { Start-Process $path } catch { Log-Error "Cannot open installer." }
-        return
+        try {
+            Start-Process -FilePath $path
+            return
+        }
+        catch {
+            Log-Error "[OBS] Cannot open installer: $($_.Exception.Message)"
+            return
+        }
     }
+
+    # Si existe una instalación de OBS seleccionada, abre obs64.exe directamente.
     if ($script:OBSRoot -and (Test-Path (Join-Path $script:OBSRoot "bin\64bit\obs64.exe"))) {
         $obsExe = Join-Path $script:OBSRoot "bin\64bit\obs64.exe"
-        $isPortable = ($script:CurrentOBSMode -eq "Portable")
-        $args = if ($isPortable) { "--portable" } else { "" }
         $workingDir = Join-Path $script:OBSRoot "bin\64bit"
-        
-        $shortcutPath = Join-Path $env:TEMP "obs_shortcut.lnk"
-        if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue }
+        $args = if ($script:CurrentOBSMode -eq "Portable") { "--portable" } else { $null }
+
         try {
-            $ws = New-Object -ComObject WScript.Shell
-            $sc = $ws.CreateShortcut($shortcutPath)
-            $sc.TargetPath = $obsExe
-            $sc.Arguments = $args
-            $sc.WorkingDirectory = $workingDir
-            $sc.Save()
-            Start-Process $shortcutPath
-            Log-Info "[OBS] Opened OBS via shortcut: $shortcutPath (WorkingDir: $workingDir)"
-        } catch {
-            Log-Error "[OBS] Failed to create shortcut: $($_.Exception.Message)"
-            try {
-                Start-Process -FilePath $obsExe -WorkingDirectory $workingDir -ArgumentList $args
-                Log-Info "[OBS] Opened OBS directly (fallback) with WorkingDir: $workingDir"
-            } catch {
-                Log-Error "[OBS] Could not open OBS: $($_.Exception.Message)"
-                [System.Windows.Forms.MessageBox]::Show(
-                    "Could not open OBS automatically.`n`nPlease open OBS manually from: $obsExe",
-                    "MPV-SW-Capture Stream Manager",
-                    [System.Windows.Forms.MessageBoxButtons]::OK,
-                    [System.Windows.Forms.MessageBoxIcon]::Warning
-                )
+            if ([string]::IsNullOrWhiteSpace($args)) {
+                Start-Process -FilePath $obsExe -WorkingDirectory $workingDir
             }
+            else {
+                Start-Process -FilePath $obsExe `
+                    -WorkingDirectory $workingDir `
+                    -ArgumentList $args
+            }
+
+            Log-Info "[OBS] Opened OBS directly with WorkingDir: $workingDir"
         }
-    } else {
-        Log-Warn "[OBS] No OBS executable found. Please download and install OBS first."
+        catch {
+            Log-Error "[OBS] Could not open OBS: $($_.Exception.Message)"
+
+            [System.Windows.Forms.MessageBox]::Show(
+                "Could not open OBS automatically.`n`nPlease open OBS manually from:`n$obsExe",
+                "MPV-SW-Capture Stream Manager",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
+        }
+    }
+    else {
+        Log-Error "[OBS] OBS executable was not found."
+
         [System.Windows.Forms.MessageBox]::Show(
-            "No OBS executable found.`n`nPlease click 'Download OBS Installer' to download it, or locate OBS using 'Browse OBS Folder'.",
+            "OBS was not found. Please use 'Browse OBS Folder' to select the OBS installation folder.",
             "MPV-SW-Capture Stream Manager",
             [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
+            [System.Windows.Forms.MessageBoxIcon]::Warning
         )
     }
 })

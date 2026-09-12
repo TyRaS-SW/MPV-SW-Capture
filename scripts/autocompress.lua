@@ -1,11 +1,50 @@
+local current_lang = "en"
 -- autocompress.lua - For MPV-SW-Capture - By TyRaS-SW
 
 local mp = require "mp"
 local utils = require "mp.utils"
 
--- Default language (change to "es" for Spanish)
-local current_lang = "en"  -- "en" or "es"
+-- -------------------------------------------------------------------------
+-- Cargar osd_messages de forma segura
+-- -------------------------------------------------------------------------
+local osd
+local function get_script_path()
+    local info = debug.getinfo(1, "S")
+    return info and info.source:match("@?(.*/)") or ""
+end
 
+local script_dir = get_script_path()
+local osd_path = script_dir .. "osd_messages.lua"
+
+local ok, err = pcall(function()
+    local loaded = dofile(osd_path)
+    if loaded and type(loaded.get) == "function" and type(loaded.show) == "function" then
+        osd = loaded
+    else
+        error("osd_messages.lua does not return a table with get/show functions")
+    end
+end)
+
+if not ok then
+    -- Fallback: funciones básicas
+    osd = {
+        get = function(key) return key end,
+        show = function(key, duration)
+            local text = key
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end
+    }
+    print("autocompress: Using fallback OSD (osd_messages.lua not loaded). Error: " .. tostring(err))
+else
+    print("autocompress: osd_messages.lua loaded from " .. osd_path)
+end
+
+-- -------------------------------------------------------------------------
+-- Variables de estado
+-- -------------------------------------------------------------------------
 local is_recording = false
 local is_processing = false
 local rec_timer = nil
@@ -38,12 +77,12 @@ end
 
 local cwd = get_cwd()
 
-local function get_script_path()
+local function get_script_path_full()
     return debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or ""
 end
 
 local function load_external_data(filename, default_data)
-    local script_dir = get_script_path()
+    local script_dir = get_script_path_full()
     local file_path = script_dir .. filename
     local chunk = loadfile(file_path)
 
@@ -64,6 +103,9 @@ local record_data = load_external_data("record.lua", {
     max_record_time = 120
 })
 
+-- -------------------------------------------------------------------------
+-- Funciones de utilidad
+-- -------------------------------------------------------------------------
 local function update_menu_state(state)
     is_recording = state
     mp.set_property_bool("user-data/is_recording", state)
@@ -101,12 +143,7 @@ local function start_recording_osd(total)
             elapsed = total_now
         end
 
-        local label
-        if current_lang == "es" then
-            label = "🔴 GRABANDO"
-        else
-            label = "🔴 RECORDING"
-        end
+        local label = osd.get("autocompress_recording_label")
         local txt = string.format("%s %s / %s", label, fmt_time(elapsed), fmt_time(total_now))
         mp.commandv("show-text", txt, "1000")
     end)
@@ -153,15 +190,14 @@ local function get_output_path(record_dir)
     return string.format("%s\\MSC_%s.mp4", record_dir, stamp)
 end
 
+-- -------------------------------------------------------------------------
+-- Finalizar y unir
+-- -------------------------------------------------------------------------
 local function finalize_and_merge(target_time)
     stop_recording_osd()
     mp.commandv("show-text", "", "1")
 
-    if current_lang == "es" then
-        mp.osd_message("Procesando y uniendo...", 3)
-    else
-        mp.osd_message("Processing and merging...", 3)
-    end
+    osd.show("autocompress_processing", 3)
 
     mp.set_property("stream-record", "")
 
@@ -173,11 +209,8 @@ local function finalize_and_merge(target_time)
 
     is_processing = true
 
-    if current_lang == "es" then
-        mp.commandv("show-text", "⏳ Finalizando grabación de video, ¡espera!", "6000")
-    else
-        mp.commandv("show-text", "⏳ Finishing Recording Video, please wait!", "6000")
-    end
+    local finishing_label = osd.get("autocompress_finishing_label")
+    mp.commandv("show-text", finishing_label, "6000")
 
     mp.add_timeout(finalize_delay_seconds, function()
         kill_audio_ffmpeg()
@@ -205,18 +238,11 @@ local function finalize_and_merge(target_time)
                 is_processing = false
 
                 if result and result.status == 0 then
-                    if current_lang == "es" then
-                        mp.commandv("show-text", "✅¡Finalizado!", "2000")
-                    else
-                        mp.commandv("show-text", "✅Finished!", "2000")
-                    end
+                    local done_label = osd.get("autocompress_done_label")
+                    mp.commandv("show-text", done_label, "2000")
                     mp.add_timeout(2, clean_temporals)
                 else
-                    if current_lang == "es" then
-                        mp.osd_message("❌ Error al unir la grabación", 3)
-                    else
-                        mp.osd_message("❌ Error while merging recording", 3)
-                    end
+                    osd.show("autocompress_merge_error", 3)
                     if err then
                         mp.msg.error("Merge error: " .. tostring(err))
                     end
@@ -226,6 +252,9 @@ local function finalize_and_merge(target_time)
     end)
 end
 
+-- -------------------------------------------------------------------------
+-- Detener grabación
+-- -------------------------------------------------------------------------
 local function stop_recording()
     if not is_recording then
         return
@@ -242,20 +271,17 @@ local function stop_recording()
     finalize_and_merge(record_target_time)
 end
 
+-- -------------------------------------------------------------------------
+-- Toggle record (script-message)
+-- -------------------------------------------------------------------------
 mp.register_script_message("toggle-record", function()
-    -- ============================
-    -- 🔒 BLOCK RECORD IN STREAMER MODE
-    -- ============================
+    -- Bloquear en modo streamer
     if mp.get_property_number("osd-duration") == 0 then
-    return
-end
+        return
+    end
 
     if is_processing and not is_recording then
-        if current_lang == "es" then
-            mp.osd_message("⏳ ¡Espera! La grabación anterior aún se está procesando...", 2)
-        else
-            mp.osd_message("⏳ Wait! Previous recording still processing...", 2)
-        end
+        osd.show("autocompress_wait_processing", 2)
         return
     end
 
@@ -270,11 +296,7 @@ end
 
         if not ensure_record_dir(record_dir) then
             update_menu_state(false)
-            if current_lang == "es" then
-                mp.osd_message("No se pudo crear la carpeta _record", 3)
-            else
-                mp.osd_message("Could not create _record folder", 3)
-            end
+            osd.show("autocompress_mkdir_fail", 3)
             return
         end
 

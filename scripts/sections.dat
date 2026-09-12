@@ -1,0 +1,26 @@
+# sections.dat - Root sections recognized by the overlay sidebar
+# One section per line. Comments start with #.
+#
+# Format:   <key>              → grid layout (default)
+#           <key>=grid         → grid layout (explicit)
+#           <key>=list         → vertical list layout
+#
+# Keys are normalized: lowercase, no emojis, no symbols.
+# Order of APPEARANCE in the sidebar is decided by menu.conf, not by this file.
+#
+# To add a new section:
+#   1. Add its normalized key here
+#   2. Add the section in menu.conf
+#   3. Restart mpv or send: script-message reload-lang
+
+shaders=grid
+shapes=grid
+crops=grid
+bezels=grid
+window=grid
+capture=grid
+video options=toggle-grid
+audio=grid
+others=grid
+help=grid
+tools=grid

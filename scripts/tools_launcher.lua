@@ -1,3 +1,4 @@
+local current_lang = "en"
 -- tools_launcher.lua - For MPV-SW-Capture - By TyRaS-SW
 -- Launch tools from the menu (Bezel, Video and more)
 -- with OSD messages and language support.
@@ -6,50 +7,64 @@ local mp = require "mp"
 local utils = require "mp.utils"
 local msg = require "mp.msg"
 
--- ============================================================
--- LANGUAGE SUPPORT
--- ============================================================
-local current_lang = "en"  -- "en" or "es"
-
-local tool_names = {
-    bezel = { en = "Bezel Manager", es = "Administrador de Marcos" },
-    video = { en = "Video Manager", es = "Administrador de Video" },
-    stream = { en = "Stream Helper", es = "Asistente de Stream" },
-    install = { en = "Installer", es = "Instalador" },
-    setup = { en = "Setup", es = "Configuración" },
-}
-
--- ============================================================
--- SAFE OSD MESSAGE (respects osd-duration)
--- ============================================================
-local function safe_osd_message(text, duration)
-    local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
-    if osd_duration_ms == 0 then
-        return  -- OSD hidden, do not show
-    end
-    if duration == nil then
-        duration = osd_duration_ms / 1000
-    end
-    mp.osd_message(text, duration)
+-- -------------------------------------------------------------------------
+-- Cargar osd_messages de forma segura
+-- -------------------------------------------------------------------------
+local osd
+local function get_script_path()
+    local info = debug.getinfo(1, "S")
+    return info and info.source:match("@?(.*/)") or ""
 end
 
--- ============================================================
+local script_dir = get_script_path()
+local osd_path = script_dir .. "osd_messages.lua"
+
+local ok, err = pcall(function()
+    local loaded = dofile(osd_path)
+    if loaded and type(loaded.get) == "function" then
+        osd = loaded
+    else
+        error("osd_messages.lua does not return a table with get function")
+    end
+end)
+
+if not ok then
+    -- Fallback: funciones básicas
+    osd = {
+        get = function(key) return key end,
+        show = function(key, duration)
+            local text = key
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end,
+        safe_osd_message = function(text, duration)
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end
+    }
+    print("tools_launcher: Using fallback OSD (osd_messages.lua not loaded). Error: " .. tostring(err))
+else
+    print("tools_launcher: osd_messages.lua loaded from " .. osd_path)
+end
+
+-- -------------------------------------------------------------------------
 -- GET MPV ROOT DIRECTORY (where mpv.conf and data/ are)
--- ============================================================
+-- -------------------------------------------------------------------------
 local function get_mpv_root()
-    -- config-path usually points to the folder containing mpv.conf
     local config_path = mp.get_property("config-path")
     if config_path and config_path ~= "" then
         return config_path:gsub("\\", "/")
     end
 
-    -- Fallback: use working directory
     local wd = mp.get_property("working-directory")
     if wd and wd ~= "" then
         return wd:gsub("\\", "/")
     end
 
-    -- Last resort: use script directory (go up two levels from scripts/)
     local info = debug.getinfo(1, "S")
     if info and info.source then
         local script_path = info.source:match("^@(.*)$")
@@ -64,13 +79,13 @@ local function get_mpv_root()
     return "."
 end
 
--- ============================================================
+-- -------------------------------------------------------------------------
 -- RUN A TOOL (PowerShell script)
--- ============================================================
+-- -------------------------------------------------------------------------
 local function run_tool(tool_key, script_relative_path)
     local root = get_mpv_root()
     if not root or root == "" then
-        safe_osd_message("Error: Could not determine mpv directory", 3)
+        osd.show("toolslauncher_error_dir", 3)
         return
     end
 
@@ -79,7 +94,7 @@ local function run_tool(tool_key, script_relative_path)
     -- Check if the script exists
     local file = io.open(full_path, "r")
     if not file then
-        safe_osd_message("Error: Tool script not found", 3)
+        osd.show("toolslauncher_error_notfound", 3)
         msg.error("Script not found: " .. full_path)
         return
     end
@@ -97,25 +112,22 @@ local function run_tool(tool_key, script_relative_path)
         playback_only = false
     })
 
-    -- Show friendly OSD message
-    local name = tool_names[tool_key]
-    if name then
-        local display = name[current_lang] or name.en
-        if current_lang == "es" then
-            safe_osd_message("Abriendo " .. display, 2)
-        else
-            safe_osd_message("Opening " .. display, 2)
-        end
-    else
-        safe_osd_message("Opening tool", 2)
+    -- Show friendly OSD message with tool name
+    local name_key = "toolslauncher_" .. tool_key .. "_name"
+    local display_name = osd.get(name_key)
+    if display_name == name_key then
+        -- fallback: use tool_key as name
+        display_name = tool_key
     end
+    local msg_text = string.format(osd.get("toolslauncher_opening"), display_name)
+    osd.safe_osd_message(msg_text, 2)
 
     msg.info("Launched: " .. full_path)
 end
 
--- ============================================================
+-- -------------------------------------------------------------------------
 -- REGISTER SCRIPT-MESSAGES FOR EACH TOOL
--- ============================================================
+-- -------------------------------------------------------------------------
 mp.register_script_message("launch-bezel", function()
     run_tool("bezel", "data/script/Bezel_MSCGUI.ps1")
 end)

@@ -1,0 +1,66 @@
+# OSDMSG_es.dat - By TyRaS-SW
+# Spanish OSD messages for MPV-SW-Capture scripts
+# Keep %s placeholders intact.
+
+# ============================================================
+#  NSORETRO (Bezel fit messages)
+# ============================================================
+nsoretro_no_bezel=Selecciona un Marco primero!
+nsoretro_fill_on=Ajuste 16:9 al Marco: ACTIVADO
+nsoretro_fill_off=Ajuste 16:9 al Marco: DESACTIVADO
+nsoretro_reset=Ajuste de bezel: Reiniciado
+
+# ============================================================
+#  MIRROR
+# ============================================================
+mirrortoggle_on=Espejo ACTIVADO
+mirrortoggle_off=Espejo DESACTIVADO
+
+# ============================================================
+#  AUTOCOMPRESS (Recording)
+# ============================================================
+autocompress_processing=Procesando y uniendo...
+autocompress_wait_processing=⏳ ¡Espera! La grabación anterior aún se está procesando...
+autocompress_mkdir_fail=No se pudo crear la carpeta _record
+autocompress_merge_error=❌ Error al unir la grabación
+autocompress_recording_label=🔴 GRABANDO
+autocompress_finishing_label=⏳ Finalizando grabación de video, ¡espera!
+autocompress_done_label=✅ ¡Finalizado!
+
+# ============================================================
+#  CHECK VERSION
+# ============================================================
+checkversion_checking=Buscando actualizaciones...
+checkversion_checking_online=Verificando versión online...
+checkversion_error_dir=ERROR: No se pudo obtener el directorio del script
+checkversion_error_conf=ERROR: No se encontró mpv.conf local
+checkversion_error_local=ERROR: No se encontró versión local
+checkversion_error_online=ERROR: No se pudo verificar la versión online
+checkversion_error_online_version=ERROR: No se encontró versión online
+checkversion_new_version=🔄 Nueva v%s (actual v%s). Usa el instalador.
+checkversion_latest=✅ Tienes la última versión: v%s
+checkversion_newer_local=⚠️ Tienes v%s > online v%s. No actualices.
+
+# ============================================================
+#  SHADER INIT
+# ============================================================
+shaderinit_osd_on=✅ Mostrar OSD y ✅ Grabación Activada
+shaderinit_osd_off=🙈 Ocultar OSD y 🔒 Grabación Desactivada
+
+# ============================================================
+#  MOTION INTERPOLATION
+# ============================================================
+motioninterp_on=Interpolación de movimiento: ACTIVADO
+motioninterp_off=Interpolación de movimiento: DESACTIVADO
+
+# ============================================================
+#  TOOLS LAUNCHER
+# ============================================================
+toolslauncher_bezel_name=Administrador de Marcos
+toolslauncher_video_name=Administrador de Video
+toolslauncher_stream_name=Asistente de Stream
+toolslauncher_install_name=Instalador
+toolslauncher_setup_name=Configuración
+toolslauncher_opening=Abriendo %s
+toolslauncher_error_dir=Error: No se pudo determinar el directorio de MPV-SW-Capture
+toolslauncher_error_notfound=Error: Script de herramienta no encontrado

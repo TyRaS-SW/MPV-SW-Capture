@@ -1,0 +1,30 @@
+# ASMENU_es.dat -  - By TyRaS-SW - Textos internos de msc_overlay.lua (Español)
+
+Quick=Opciones Rápidas
+CAPTURE=CAPTURA
+HELP=AYUDA
+Take Screenshot=Tomar Captura de Pantalla
+Record Video=Grabar Video
+Clean ALL=Limpiar TODO
+Check Latest MSC Version=Revisar Última Versión de MSC
+Open MPV-SW-Capture Website=Abrir Sitio Web de MPV-SW-Capture
+MPV-SW-Capture Discord=Discord de MPV-SW-Capture
+Hide OSD Messages=Ocultar Mensajes OSD
+Info Stream=Información de Stream
+Help=Ayuda
+SETTINGS=CONFIGURACIÓN
+Switch Language=Cambiar Idioma
+
+Volume=Volumen
+Audio Boost=Amplificación
+MUTED=SILENCIADO
+no signal=sin señal
+
+CLEAN ALL=LIMPIAR TODO
+Close MPV-SW-Capture=Cerrar MPV-SW-Capture
+
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=TECLADO: [FLECHAS] Mover. [ENTER] Aplicar. [TAB] Cambiar de sección. [ESC] Cerrar menú.
+MOUSE: Click any section to choose an option.=RATÓN: Haz clic en cualquier sección para elegir una opción.
+
+SCREENSHOT_HEADER=CAPTURA PANTALLA
+RECORD_HEADER=GRABAR VIDEO

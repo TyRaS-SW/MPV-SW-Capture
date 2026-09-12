@@ -1,0 +1,31 @@
+# ASMENU_en.dat - By TyRaS-SW - English strings for msc_overlay.lua
+# Exact match (case-insensitive fallback)
+
+Quick=Quick Options
+CAPTURE=CAPTURE
+HELP=HELP
+Take Screenshot=Take Screenshot
+Record Video=Record Video
+Clean ALL=Clean ALL
+Check Latest MSC Version=Check Latest MSC Version
+Open MPV-SW-Capture Website=Open MPV-SW-Capture Website
+MPV-SW-Capture Discord=MPV-SW-Capture Discord
+Hide OSD Messages=Hide OSD Messages
+Info Stream=Info Stream
+Help=Help
+SETTINGS=SETTINGS
+Switch Language=Switch Language
+
+Volume=Volume
+Audio Boost=Audio Boost
+MUTED=MUTED
+no signal=no signal
+
+CLEAN ALL=CLEAN ALL
+Close MPV-SW-Capture=Close MPV-SW-Capture
+
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.
+MOUSE: Click any section to choose an option.=MOUSE: Click any section to choose an option.
+
+SCREENSHOT_HEADER=TAKE SCREENSHOT
+RECORD_HEADER=RECORD VIDEO

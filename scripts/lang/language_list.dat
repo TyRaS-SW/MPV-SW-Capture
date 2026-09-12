@@ -1,0 +1,18 @@
+# language_list.dat - By TyRaS-SW
+# Available languages for the overlay
+# Order defines the cycle order of the "Switch Language" button.
+# One language code per line.
+#
+# To add a new language:
+#   1. Add its code below (e.g. "fr" for French).
+#   2. Create scripts/lang/MENUMSG_fr.dat
+#      (You can copy MENUMSG_es.dat and edit ONLY the right text. Left and right text are separated by an '=')
+#   3. Create scripts/lang/ASMENU_fr.dat
+#      (You can copy ASMENU_en.dat and edit ONLY the right text. Left and right text are separated by an '=')
+#   4. Create scripts/lang/OSDMSG_fr.dat
+#      (You can copy OSDMSG_en.dat and edit ONLY the right text. Left and right text are separated by an '=')
+#   5. Restart mpv (or send: script-message reload-lang)
+
+en
+es
+jp

@@ -1,34 +1,63 @@
+local current_lang = "en"
 -- mirror_toggle.lua - For MPV-SW-Capture - By TyRaS-SW
 -- Toggle mirror effect with OSD, language support, and menu tick
 local mp = require "mp"
 
--- Default language (change to "es" for Spanish)
-local current_lang = "en"  -- "en" or "es"
-
--- Safe OSD message: respects osd-duration (hides if 0), otherwise uses given duration (in seconds)
-local function safe_osd_message(text, duration)
-    local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
-    if osd_duration_ms == 0 then
-        return  -- OSD hidden, do not show
-    end
-    -- If no specific duration provided, use osd-duration converted to seconds
-    if duration == nil then
-        duration = osd_duration_ms / 1000
-    end
-    mp.osd_message(text, duration)
+-- -------------------------------------------------------------------------
+-- Cargar osd_messages de forma segura (con dofile y ruta del script)
+-- -------------------------------------------------------------------------
+local osd
+local function get_script_path()
+    local info = debug.getinfo(1, "S")
+    return info and info.source:match("@?(.*/)") or ""
 end
 
--- Get current video filter list
+local script_dir = get_script_path()
+local osd_path = script_dir .. "osd_messages.lua"
+
+local ok, err = pcall(function()
+    local loaded = dofile(osd_path)
+    if loaded and type(loaded.get) == "function" and type(loaded.show) == "function" then
+        osd = loaded
+    else
+        error("osd_messages.lua does not return a table with get/show functions")
+    end
+end)
+
+if not ok then
+    -- Fallback: funciones básicas sin traducción
+    osd = {
+        get = function(key) return key end,
+        show = function(key, duration)
+            local text = key
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end,
+        safe_osd_message = function(text, duration)
+            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
+            if osd_duration_ms == 0 then return end
+            if duration == nil then duration = osd_duration_ms / 1000 end
+            mp.osd_message(text, duration)
+        end
+    }
+    print("mirror_toggle: Using fallback OSD (osd_messages.lua not loaded). Error: " .. tostring(err))
+else
+    print("mirror_toggle: osd_messages.lua loaded from " .. osd_path)
+end
+
+-- -------------------------------------------------------------------------
+-- Funciones de filtro
+-- -------------------------------------------------------------------------
 local function get_vf_list()
     return mp.get_property_native("vf", {})
 end
 
--- Set video filter list
 local function set_vf_list(list)
     mp.set_property_native("vf", list)
 end
 
--- Check if hflip is present in the filter list
 local function has_hflip(list)
     for _, f in ipairs(list) do
         if type(f) == "table" and f.name == "hflip" then
@@ -38,7 +67,9 @@ local function has_hflip(list)
     return false
 end
 
--- Update user-data/mirror_active based on current vf state
+-- -------------------------------------------------------------------------
+-- Actualizar user-data para el menú
+-- -------------------------------------------------------------------------
 local function update_mirror_user_data()
     local vf_list = get_vf_list()
     local active = has_hflip(vf_list)
@@ -46,13 +77,16 @@ local function update_mirror_user_data()
     return active
 end
 
--- Toggle mirror
+-- -------------------------------------------------------------------------
+-- Toggle mirror usando osd.show() para mensajes
+-- -------------------------------------------------------------------------
 local function toggle_mirror()
+    print("mirror_toggle: toggle_mirror called")
     local vf_list = get_vf_list()
     local hflip_present = has_hflip(vf_list)
 
     if hflip_present then
-        -- Remove hflip from list
+        -- Eliminar hflip
         local new_list = {}
         for _, f in ipairs(vf_list) do
             if not (type(f) == "table" and f.name == "hflip") then
@@ -60,41 +94,38 @@ local function toggle_mirror()
             end
         end
         set_vf_list(new_list)
-        -- Show OFF message
-        if current_lang == "es" then
-            safe_osd_message("Espejo OFF", 1.5)
-        else
-            safe_osd_message("Mirror OFF", 1.5)
-        end
+        osd.show("mirrortoggle_off", 1.5)
+        print("mirror_toggle: Mirror OFF")
     else
-        -- Insert hflip at the BEGINNING (before any other filter)
+        -- Insertar hflip al principio
         local new_list = { { name = "hflip" } }
         for _, f in ipairs(vf_list) do
             table.insert(new_list, f)
         end
         set_vf_list(new_list)
-        -- Show ON message
-        if current_lang == "es" then
-            safe_osd_message("Espejo ON", 1.5)
-        else
-            safe_osd_message("Mirror ON", 1.5)
-        end
+        osd.show("mirrortoggle_on", 1.5)
+        print("mirror_toggle: Mirror ON")
     end
 
-    -- Update user-data for menu tick
     update_mirror_user_data()
 end
 
--- Observe changes to vf property to keep user-data in sync
+-- -------------------------------------------------------------------------
+-- Observar cambios en vf para mantener user-data sincronizado
+-- -------------------------------------------------------------------------
 mp.observe_property("vf", "native", function()
     update_mirror_user_data()
 end)
 
--- Initialize user-data at startup
+-- -------------------------------------------------------------------------
+-- Inicializar
+-- -------------------------------------------------------------------------
 update_mirror_user_data()
 
--- Register script-message for menu integration
+-- Registrar script-message para integración con menú
 mp.register_script_message("toggle-mirror", toggle_mirror)
 
--- Optional keyboard shortcut (M key)
+-- Atajo de teclado opcional (tecla M)
 mp.add_key_binding("m", "toggle-mirror", toggle_mirror)
+
+print("mirror_toggle: Script loaded successfully")

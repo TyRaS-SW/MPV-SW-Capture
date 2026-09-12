@@ -1,0 +1,32 @@
+# ASMENU_jp.dat - By TyRaS-SW
+# Japanese strings for msc_overlay.lua
+# Exact match (case-insensitive fallback)
+
+Quick=クイックオプション
+CAPTURE=キャプチャ
+HELP=ヘルプ
+Take Screenshot=スクリーンショット
+Record Video=録画
+Clean ALL=すべてクリア
+Check Latest MSC Version=最新のMSCバージョンを確認
+Open MPV-SW-Capture Website=MPV-SW-Capture サイトを開く
+MPV-SW-Capture Discord=MPV-SW-Capture Discord
+Hide OSD Messages=OSDメッセージを隠す
+Info Stream=ストリーム情報
+Help=ヘルプ
+SETTINGS=設定
+Switch Language=言語切替
+
+Volume=音量
+Audio Boost=オーディオブースト
+MUTED=ミュート
+no signal=信号なし
+
+CLEAN ALL=すべてクリア
+Close MPV-SW-Capture=MPV-SW-Capture を終了
+
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=キーボード: [矢印キー] 移動. [ENTER] 適用. [TAB] 次のセクション. [ESC] メニューを閉じる.
+MOUSE: Click any section to choose an option.=マウス: 任意のセクションをクリックして選択.
+
+SCREENSHOT_HEADER=撮影
+RECORD_HEADER=録画

@@ -1,0 +1,194 @@
+# MENUMSG_jp.dat - By TyRaS-SW
+# Japanese translations for MPV-SW-Capture menu.conf
+# Organized by section for easier maintenance.
+
+# ============================================================
+#  ROOT SECTIONS
+# ============================================================
+SHADERS=シェーダー
+SHAPES=シェイプ
+CROPS=クロップ
+BEZELS=ベゼル
+WINDOW=ウィンドウ
+CAPTURE=キャプチャ
+VIDEO OPTIONS=ビデオオプション
+AUDIO=オーディオ
+OTHERS=その他
+
+# ============================================================
+#  TABS
+# ============================================================
+4K=4K
+TV=テレビ
+VideoGame=ゲーム
+Special=特殊
+SIZE=サイズ
+POSITION=位置
+ROTATION=回転
+OTHER OPTIONS=その他のオプション
+WINDOW EXTRAS=ウィンドウエクストラ
+
+# ============================================================
+#  SHADERS
+# ============================================================
+Only Sharpen=シャープのみ
+Clean Shaders=シェーダーをクリア
+Handheld Dot Matrix=携帯ドットマトリックス
+GB LCD Color Screen=GB LCD カラー画面
+Broken LCD TV=壊れた液晶テレビ
+LCD Dust=液晶のホコリ
+Inverted Colors=反転色
+
+# ============================================================
+#  SHAPES
+# ============================================================
+Clean Shape=シェイプをクリア
+Shape Cleared=シェイプをクリアしました
+Curvature=湾曲
+Edge Darkening=エッジ暗化
+Wide Barrel=ワイドバレル
+Rounded Corners=角丸
+Tilted=傾斜
+Inverted=反転
+Pinball Perspective=ピンボール遠近法
+Inward Keystone (Low Bottom Zoom)=内向き台形 (下部ズーム低)
+
+# ============================================================
+#  CROPS
+# ============================================================
+Clear Crop=クロップをクリア
+Crop Cleared=クロップをクリアしました
+Generic=汎用
+(Small)=(小)
+(Default Size)=(デフォルトサイズ)
+(Pixel Perfect)=(ピクセルパーフェクト)
+NSO N64 (Mario 64 Size)=NSO N64 (マリオ64サイズ)
+NSO N64 (DK64 Widescreen Size)=NSO N64 (DK64 ワイドサイズ)
+NSO: 『N64/GC』 (Full 4:3)=NSO: 『N64/GC』 (フル 4:3)
+
+# ============================================================
+#  BEZELS
+# ============================================================
+Clear Bezels=ベゼルをクリア
+Bezels Cleared=ベゼルをクリアしました
+Fit Full 16:9 to Bezel=16:9 をベゼルに合わせる
+Full 4꞉3 BG ⌗1 (90s TV)=フル 4:3 BG ⌗1 (90年代テレビ)
+
+# ============================================================
+#  WINDOW - SIZE
+# ============================================================
+Fullscreen=全画面
+Mini Mode=ミニモード
+"Mini Mode"="ミニモード"
+
+# ============================================================
+#  WINDOW - POSITION
+# ============================================================
+Top Left=左上
+Top Right=右上
+Top Center=上中央
+Center Left=左中央
+CENTER=中央
+Center Right=右中央
+Bottom Center=下中央
+Bottom Left=左下
+Bottom Right=右下
+
+# ============================================================
+#  WINDOW - ROTATION
+# ============================================================
+Rotate Clockwise=時計回りに回転
+Rotate Counter-Clockwise=反時計回りに回転
+Reset Rotation=回転をリセット
+Rotated +90°=+90° 回転
+Rotated -90°=-90° 回転
+Rotation Reset=回転をリセットしました
+Mirror Mode=ミラーモード
+
+# ============================================================
+#  WINDOW - OTHER OPTIONS
+# ============================================================
+Window Border=ウィンドウ枠
+Title Bar=タイトルバー
+Remove ALL=すべて削除
+Border: ${border}=ウィンドウ枠: ${border}
+Title Bar: ${border}=タイトルバー: ${border}
+Removed Both=両方削除しました
+
+# ============================================================
+#  WINDOW - EXTRAS
+# ============================================================
+Always On Top=常に最前面
+Stretch Window=ウィンドウを伸縮
+
+# ============================================================
+#  CAPTURE
+# ============================================================
+Take Screenshot=スクリーンショット
+Record Video=録画
+
+# ============================================================
+#  VIDEO OPTIONS
+# ============================================================
+VIDEO=ビデオ
+Fill Screen=画面いっぱい
+Change to Auto ICC Profile=自動ICCプロファイルに変更
+Auto ICC=自動ICC
+ICC Profile=ICCプロファイル
+Toggle Deband=デバンド切替
+Deband:=デバンド:
+Toggle Deinterlace=インターレース解除切替
+Deinterlace:=インターレース:
+Borders=枠
+Motion Interpolation=モーション補間
+Other Video Options=その他のビデオオプション
+
+# ============================================================
+#  AUDIO
+# ============================================================
+Mute/Unmute=ミュート切替
+
+# ============================================================
+#  OTHERS - TOOLS
+# ============================================================
+TOOLS=ツール
+Open Bezel Manager=ベゼルマネージャーを開く
+Open Video Manager=ビデオマネージャーを開く
+Open Stream Helper=ストリームヘルパーを開く
+
+# ============================================================
+#  OTHERS - INSTALLERS
+# ============================================================
+INSTALLERS=インストーラー
+Run INSTALLER=インストーラー実行
+Run SETUP=セットアップ実行
+
+# ============================================================
+#  OTHERS - HELP
+# ============================================================
+HELP=ヘルプ
+Check Latest MSC Version=最新のMSCバージョンを確認
+Open MPV-SW-Capture Website=MPV-SW-Capture サイトを開く
+MPV-SW-Capture Discord=MPV-SW-Capture Discord
+
+# ============================================================
+#  OTHERS - ACTIONS
+# ============================================================
+Clean ALL=すべてクリア
+Hide OSD Messages=OSDメッセージを隠す
+Info Stream=ストリーム情報
+CLOSE MPV-SW-Capture=MPV-SW-Capture を終了
+
+# ============================================================
+#  COMMANDS - show-text messages
+# ============================================================
+"Cleaning ALL"="すべてクリア中"
+Opening website...=ウェブサイトを開いています...
+Opening Discord...=Discordを開いています...
+OSD Show Mode=OSD 表示モード
+OSD Hidden Mode=OSD 非表示モード
+
+# ============================================================
+#  COMMANDS - URLs
+# ============================================================
+https://tyras-sw.github.io/MPV-SW-Capture/=https://tyras-sw.github.io/MPV-SW-Capture/?lang=jp

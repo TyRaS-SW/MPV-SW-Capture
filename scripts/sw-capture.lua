@@ -2,6 +2,11 @@
 -- Uses a global PowerShell named mutex to prevent relaunches.
 -- No temporary lock files.
 
+if mp.get_opt("skip") == "1" then
+    mp.msg.info("[sw-capture] launcher instance detected, capture startup skipped")
+    return
+end
+
 local function get_root_dir()
     local script_path = debug.getinfo(1, 'S').source:sub(2)
     script_path = script_path:gsub('/', '\\')

@@ -8,25 +8,27 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
 
 # ============================================================
-#  APPMODELID (to show icon in taskbar)
+#  SHORTCUT CREATOR (Pure PowerShell, no C#)
 # ============================================================
-Add-Type @"
-using System;
-using System.Runtime.InteropServices;
-
-public static class TaskbarAppId {
-    [DllImport("shell32.dll", SetLastError=true, CharSet=CharSet.Unicode)]
-    public static extern int SetCurrentProcessExplicitAppUserModelID(string AppID);
+function New-Shortcut {
+    param([string]$lnkPath, [string]$targetPath, [string]$workingDir, [string]$iconPath, [int]$iconIndex = 0)
+    try {
+        $ws = New-Object -ComObject WScript.Shell
+        $sc = $ws.CreateShortcut($lnkPath)
+        $sc.TargetPath = $targetPath
+        $sc.WorkingDirectory = $workingDir
+        if ($iconPath) {
+            $sc.IconLocation = "$iconPath, $iconIndex"
+        }
+        $sc.Save()
+        return $true
+    } catch {
+        return $false
+    }
 }
-"@
-
-$script:AppUserModelID = "TyRaS.MPVSWCapture.Installer"
-try {
-    [TaskbarAppId]::SetCurrentProcessExplicitAppUserModelID($script:AppUserModelID) | Out-Null
-} catch {}
 
 # ============================================================
-#  ROBUST PATH DETECTION (simplified)
+#  ROBUST PATH DETECTION
 # ============================================================
 function Get-ScriptDir {
     try { if ($PSCommandPath) { return (Split-Path -Parent $PSCommandPath) } } catch {}
@@ -36,20 +38,18 @@ function Get-ScriptDir {
 
 function Get-RootDir {
     $scriptDir = Get-ScriptDir
-    # If the script is inside data/script, go up two levels to get the root
     if ((Split-Path $scriptDir -Leaf) -eq 'script' -and (Split-Path (Split-Path $scriptDir -Parent) -Leaf) -eq 'data') {
         $root = Split-Path -Parent (Split-Path -Parent $scriptDir)
         return $root
     }
-    # Fallback: use the script's directory as root (for compatibility)
     return $scriptDir
 }
 
 $script:RootDir = Get-RootDir
-$script:ScriptDir = Get-ScriptDir  # Should be data/script
+$script:ScriptDir = Get-ScriptDir
 
 # ============================================================
-#  LANGUAGE PERSISTENCE (shared with other tools)
+#  LANGUAGE PERSISTENCE
 # ============================================================
 $script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
 
@@ -77,7 +77,7 @@ function Save-GUILanguage([string]$lang) {
 }
 
 # ============================================================
-#  FORM ICON (prioritizes data\icon\installmsc.ico)
+#  FORM ICON
 # ============================================================
 function Get-AppIcon {
     try {
@@ -98,7 +98,7 @@ function Get-AppIcon {
 }
 
 # ============================================================
-#  COLOR PALETTE  (amber/orange - distinct from Setup blue)
+#  COLOR PALETTE
 # ============================================================
 $script:BG      = [System.Drawing.Color]::FromArgb(18,  17,  14)
 $script:SURFACE = [System.Drawing.Color]::FromArgb(28,  26,  20)
@@ -111,8 +111,6 @@ $script:MUTED   = [System.Drawing.Color]::FromArgb(140, 130, 110)
 $script:SUCCESS = [System.Drawing.Color]::FromArgb(72,  199, 116)
 $script:ERROR_C = [System.Drawing.Color]::FromArgb(255, 100, 100)
 $script:NOTE_C  = [System.Drawing.Color]::FromArgb(220, 200, 130)
-$script:EXE_OK  = [System.Drawing.Color]::FromArgb(50,  160,  80)
-$script:EXE_ERR = [System.Drawing.Color]::FromArgb(180,  50,  50)
 
 # ============================================================
 #  FONTS
@@ -226,6 +224,15 @@ $script:Lang["EN"] = @{
     IconUpdate        = "!"
     IconNewer         = "?"
     IconMissing       = "x"
+    ExtraToolsTitle   = "EXTRA TOOLS for MPV-SW-Capture"
+    ExtraToolsInstall = "INSTALL EXTRA TOOLS"
+    ExtraToolsCheckbox = "Install Extra Tools with Install / Update All?"
+    ExtraToolsInstalled = "Extra Tools installed successfully."
+    ExtraToolsNotFound = "No TOOLS ZIP found in the latest release."
+    ExtraToolsAlreadyInstalled = "Extra Tools are already installed."
+    ExtraToolsLogInstall = "[ExtraTools] Installing..."
+    ExtraToolsLogDone = "[ExtraTools] Done."
+    ExtraToolsLogError = "[ExtraTools] Error: {0}"
 }
 $script:Lang["ES"] = @{
     Title         = "MPV-SW-Capture - Instalador / Actualizador"
@@ -324,15 +331,25 @@ $script:Lang["ES"] = @{
     IconUpdate        = "!"
     IconNewer         = "?"
     IconMissing       = "x"
+    ExtraToolsTitle   = "HERRAMIENTAS ADICIONALES para MPV-SW-Capture"
+    ExtraToolsInstall = "INSTALAR HERRAMIENTAS"
+    ExtraToolsCheckbox = "Instalar Herramientas Adicionales con Install / Update ALL?"
+    ExtraToolsInstalled = "Herramientas Adicionales instaladas correctamente."
+    ExtraToolsNotFound = "No se encontró ningún ZIP de TOOLS en la última release."
+    ExtraToolsAlreadyInstalled = "Las Herramientas Adicionales ya están instaladas."
+    ExtraToolsLogInstall = "[ExtraTools] Instalando..."
+    ExtraToolsLogDone = "[ExtraTools] Completado."
+    ExtraToolsLogError = "[ExtraTools] Error: {0}"
 }
 
 $script:CurrentLang = "EN"
 function T { param([string]$key) return $script:Lang[$script:CurrentLang][$key] }
 
 # ============================================================
-#  PATHS & APIS (now using $script:RootDir)
+#  PATHS & APIS
 # ============================================================
-$script:SD = $script:RootDir  # All files are installed in the root folder
+$script:SD = $script:RootDir
+$script:ToolsDir = Join-Path $script:SD "tools"
 $script:TempDir     = Join-Path $script:RootDir "_temp_installer"
 $script:VersionFile = Join-Path $script:RootDir "scripts\.installed-versions.json"
 $script:GitHubTokenFile = Join-Path $script:RootDir "scripts\.github-token.txt"
@@ -355,6 +372,7 @@ $script:CheckedFFAvailable = $null
 $script:CheckedMpvAvailable = $null
 $script:CheckedMyAvailable = $null
 $script:GitHubRateLimited = $false
+$script:ExtraToolsZipPattern = "*TOOLS*.zip"
 
 function Get-GitHubToken {
     if ($env:GITHUB_TOKEN) { return $env:GITHUB_TOKEN.Trim() }
@@ -376,7 +394,7 @@ function Get-FFmpegMode {
 }
 
 # ============================================================
-#  UI HELPERS  (same as Setup)
+#  UI HELPERS
 # ============================================================
 function New-Lbl([string]$text,[int]$x,[int]$y,[int]$w,[int]$h,
                  [System.Drawing.Font]$font,[System.Drawing.Color]$color) {
@@ -480,12 +498,25 @@ function Get-InstalledVersions {
     return [PSCustomObject]@{ ffmpeg=""; mpv=""; mpvVariant=""; mpvsw="" }
 }
 function Save-InstalledVersions {
-    param([string]$ffmpeg="",[string]$mpv="",[string]$mpvVariant="",[string]$mpvsw="")
+    param(
+        [string]$ffmpeg,
+        [string]$mpv,
+        [string]$mpvVariant,
+        [string]$mpvsw
+    )
     $e = Get-InstalledVersions
-    if ($ffmpeg)     { $e | Add-Member -Force -NotePropertyName ffmpeg     -NotePropertyValue $ffmpeg }
-    if ($mpv)        { $e | Add-Member -Force -NotePropertyName mpv        -NotePropertyValue $mpv }
-    if ($mpvVariant) { $e | Add-Member -Force -NotePropertyName mpvVariant -NotePropertyValue $mpvVariant }
-    if ($mpvsw)      { $e | Add-Member -Force -NotePropertyName mpvsw      -NotePropertyValue $mpvsw }
+    if ($PSBoundParameters.ContainsKey('ffmpeg')) {
+        $e | Add-Member -Force -NotePropertyName ffmpeg -NotePropertyValue $ffmpeg
+    }
+    if ($PSBoundParameters.ContainsKey('mpv')) {
+        $e | Add-Member -Force -NotePropertyName mpv -NotePropertyValue $mpv
+    }
+    if ($PSBoundParameters.ContainsKey('mpvVariant')) {
+        $e | Add-Member -Force -NotePropertyName mpvVariant -NotePropertyValue $mpvVariant
+    }
+    if ($PSBoundParameters.ContainsKey('mpvsw')) {
+        $e | Add-Member -Force -NotePropertyName mpvsw -NotePropertyValue $mpvsw
+    }
     $sd = Join-Path $script:SD "scripts"
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
     $e | ConvertTo-Json | Set-Content $script:VersionFile -Encoding UTF8
@@ -554,18 +585,9 @@ function Sync-MpvExeVersionFromOffline {
         return $false
     }
     if ($json.mpv -eq $offline) { return $false }
-    # Only sync if JSON is empty (avoid overwriting a good canonical tag)
     if ($json.mpv -and $json.mpv -ne '') { return $false }
     Save-InstalledVersions -ffmpeg $json.ffmpeg -mpv $offline -mpvVariant $json.mpvVariant -mpvsw $json.mpvsw
     return $true
-}
-
-function Sync-OfflineInstalledVersions {
-    $changed = $false
-    if (Sync-FFmpegVersionFromOffline) { $changed = $true }
-    if (Sync-MpvExeVersionFromOffline) { $changed = $true }
-    if (Sync-MpvSwVersionFromOffline) { $changed = $true }
-    return $changed
 }
 
 function Sync-MpvSwVersionFromOffline {
@@ -575,6 +597,14 @@ function Sync-MpvSwVersionFromOffline {
     if ($json.mpvsw -eq $offline) { return $false }
     Save-InstalledVersions -ffmpeg $json.ffmpeg -mpv $json.mpv -mpvVariant $json.mpvVariant -mpvsw $offline
     return $true
+}
+
+function Sync-OfflineInstalledVersions {
+    $changed = $false
+    if (Sync-FFmpegVersionFromOffline) { $changed = $true }
+    if (Sync-MpvExeVersionFromOffline) { $changed = $true }
+    if (Sync-MpvSwVersionFromOffline) { $changed = $true }
+    return $changed
 }
 
 function Get-MpvHashFragment([string]$v) {
@@ -911,7 +941,6 @@ function Expand-Archive7z {
         if (-not (Test-Path $dest)) {
             New-Item -ItemType Directory -Path $dest -Force | Out-Null
         }
-        # Usar tar.exe (nativo de Windows 10/11) para extraer .7z
         $tarExe = if (Test-Path "$env:SystemRoot\System32\tar.exe") { "$env:SystemRoot\System32\tar.exe" } else { "tar.exe" }
         $p = Start-Process -FilePath $tarExe -ArgumentList @("-xf", "`"$archive`"", "-C", "`"$dest`"") -Wait -PassThru -WindowStyle Minimized
         if ($p.ExitCode -eq 0) {
@@ -950,7 +979,7 @@ function Download-File([string]$url,[string]$out,[string]$logKey) {
 }
 
 # ============================================================
-#  INSTALLATION FUNCTIONS (using tar.exe)
+#  INSTALLATION FUNCTIONS
 # ============================================================
 function Do-InstallFFmpeg([bool]$force) {
     Log-Info (T 'LogCheckingFF')
@@ -1044,9 +1073,6 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
     return $false
 }
 
-# ============================================================
-#  MODIFIED: Do-InstallMySW (handles root folder in ZIP)
-# ============================================================
 function Do-InstallMySW([bool]$force) {
     Log-Info (T 'LogCheckingMySW')
     [void](Sync-MpvSwVersionFromOffline)
@@ -1077,13 +1103,11 @@ function Do-InstallMySW([bool]$force) {
     if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
     Log-Info (T 'LogMySWExtracting')
     if (Expand-ArchiveZip $zipPath $extPath) {
-        # --- DETECT IF ZIP HAS ROOT FOLDER ---
         $items = Get-ChildItem -Path $extPath -Force
         $directories = $items | Where-Object { $_.PSIsContainer }
         $files = $items | Where-Object { -not $_.PSIsContainer }
         $sourceRoot = $extPath
         if ($directories.Count -eq 1 -and $files.Count -eq 0) {
-            # Only one folder and no unsorted files -> use that folder as origin
             $sourceRoot = $directories[0].FullName
             Log-Info "[Extract] ZIP contains a root folder: $($directories[0].Name). Extracting its contents."
         } else {
@@ -1115,6 +1139,71 @@ function Do-InstallMySW([bool]$force) {
         return $true
     }
     Log-Error ([string]::Format((T 'LogMySWError'),'Extraction failed'))
+    return $false
+}
+
+# ============================================================
+#  EXTRA TOOLS INSTALLATION (SIMPLE, NO MANIFEST)
+# ============================================================
+function Do-InstallExtraTools([bool]$force) {
+    Log-Info (T 'ExtraToolsLogInstall')
+    $r = Get-MyLatestRelease
+    if (-not $r) {
+        if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
+        Log-Error ([string]::Format((T 'LogApiError'), 'MPV-SW-Capture', 'latest release unavailable'))
+        return $false
+    }
+    $asset = $r.assets | Where-Object { $_.name -like $script:ExtraToolsZipPattern } | Select-Object -First 1
+    if (-not $asset) {
+        Log-Error (T 'ExtraToolsNotFound')
+        return $false
+    }
+    Ensure-TempDir
+    $zipPath = Join-Path $script:TempDir $asset.name
+    $extPath = Join-Path $script:TempDir 'extratools_extracted'
+    if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
+    if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
+    Log-Info (T 'LogMySWExtracting')
+    if (Expand-ArchiveZip $zipPath $extPath) {
+        # Detect root folder
+        $items = Get-ChildItem -Path $extPath -Force
+        $directories = $items | Where-Object { $_.PSIsContainer }
+        $files = $items | Where-Object { -not $_.PSIsContainer }
+        $sourceRoot = $extPath
+        if ($directories.Count -eq 1 -and $files.Count -eq 0) {
+            $sourceRoot = $directories[0].FullName
+            Log-Info "[Extract] Extra Tools ZIP contains a root folder: $($directories[0].Name). Extracting its contents."
+        } else {
+            Log-Info "[Extract] Extra Tools ZIP contains files directly in root. Extracting from root."
+        }
+
+        $allFiles = Get-ChildItem -Path $sourceRoot -Recurse -File
+        if (-not $allFiles -or $allFiles.Count -eq 0) {
+            Log-Error ([string]::Format((T 'ExtraToolsLogError'), 'ZIP contains no files'))
+            return $false
+        }
+
+        $copied = 0
+        foreach ($f in $allFiles) {
+            $relPath = $f.FullName.Substring($sourceRoot.Length).TrimStart('\','/')
+            if ([string]::IsNullOrWhiteSpace($relPath)) { continue }
+
+            $destFile = Join-Path $script:SD $relPath
+            $destDir = Split-Path -Parent $destFile
+            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+            Copy-Item -Path $f.FullName -Destination $destFile -Force
+            $copied++
+        }
+
+        if ($copied -gt 0) {
+            Log-OK (T 'ExtraToolsInstalled')
+            return $true
+        } else {
+            Log-Warn "[ExtraTools] No files were copied."
+            return $false
+        }
+    }
+    Log-Error ([string]::Format((T 'ExtraToolsLogError'), 'Extraction failed'))
     return $false
 }
 
@@ -1220,9 +1309,9 @@ function Refresh-SummaryCard {
             $state = Get-VersionState $it.Ver $it.Avail
             switch ($state) {
                 "latest"   { $icon = T "IconLatest";  $lineColor = $script:SUCCESS; $msg = T "SumLatest" }
-                "outdated" { $icon = T "IconUpdate";  $lineColor = $script:NOTEC;   $msg = T "SumOutdated" }
+                "outdated" { $icon = T "IconUpdate";  $lineColor = $script:NOTE_C;   $msg = T "SumOutdated" }
                 "newer"    { $icon = T "IconNewer";   $lineColor = $script:ACCENT3; $msg = T "SumNewer" }
-                default     { $icon = T "IconMissing"; $lineColor = $script:ERRORC;  $msg = T "SumMissing" }
+                default     { $icon = T "IconMissing"; $lineColor = $script:ERROR_C;  $msg = T "SumMissing" }
             }
         }
 
@@ -1302,25 +1391,24 @@ function Refresh-InstalledNow {
 
 function Run-WithLock([scriptblock]$action) {
     foreach ($b in @($script:btnCheckAll,$script:btnUpdateAll,$script:btnForce,
-                     $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I)) { $b.Enabled=$false }
+                     $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I,
+                     $script:btnExtraInstall)) { $b.Enabled=$false }
     try { & $action } finally {
         Remove-TempDir
         foreach ($b in @($script:btnCheckAll,$script:btnUpdateAll,$script:btnForce,
-                         $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I)) { $b.Enabled=$true }
+                         $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I,
+                         $script:btnExtraInstall)) { $b.Enabled=$true }
     }
 }
 
 # ============================================================
-#  FORM  (same dimensions as Setup: 1140 x 550)
+#  FORM
 # ============================================================
 $formW=1140; $formH=550; $headerH=68
 $leftX=20; $cardW=550; $colGap=16; $rightX=$leftX+$cardW+$colGap
 $row1Y=10; $row2Y=190; $row3Y=385
 $cTopH=170; $cMidH=185; $cBotH=85
 
-# ============================================================
-#  FORM CREATION (using the correct Get-AppIcon)
-# ============================================================
 $form=New-Object System.Windows.Forms.Form
 try { $appIcon = Get-AppIcon; if($appIcon){ $form.Icon = $appIcon } } catch {}
 $form.ShowInTaskbar = $true
@@ -1349,9 +1437,7 @@ $form.Controls.Add($pHeader)
 $pMain=New-Pnl 0 $headerH $formW ($formH-$headerH) $script:BG
 $form.Controls.Add($pMain)
 
-# ============================================================
-#  CARD 1  ffmpeg + ffplay  (top-left)
-# ============================================================
+# --- CARD 1 ---
 $card1=New-CardXY $pMain $leftX $row1Y $cardW $cTopH "S1Title"; $card1.Tag="S1"
 $lFF_Desc=New-Lbl (T "S1Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
 $card1.Controls.Add($lFF_Desc)
@@ -1391,9 +1477,7 @@ $rbFFStable.Checked=$true
 $card1.Controls.AddRange(@($rbFFStable,$rbFFDaily))
 $script:rbFFStable=$rbFFStable; $script:rbFFDaily=$rbFFDaily
 
-# ============================================================
-#  CARD 2  mpv  (top-right)
-# ============================================================
+# --- CARD 2 ---
 $card2=New-CardXY $pMain $rightX $row1Y $cardW $cTopH "S2Title"; $card2.Tag="S2"
 $lMpv_Desc=New-Lbl (T "S2Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
 $card2.Controls.Add($lMpv_Desc)
@@ -1435,17 +1519,15 @@ elseif ($_sv -eq "aarch64") { $rbV1.Checked=$false; $rbV3.Checked=$true }
 $card2.Controls.AddRange(@($rbV1,$rbV2,$rbV3))
 $script:rbV1=$rbV1; $script:rbV2=$rbV2; $script:rbV3=$rbV3
 
-# ============================================================
-#  CARD 3  MPV-SW-Capture  (mid-left) + Log box
-# ============================================================
+# --- CARD 3 (MPV-SW-Capture + Extra Tools) ---
 $card3=New-CardXY $pMain $leftX $row2Y $cardW $cMidH "S3Title"; $card3.Tag="S3"
-$lMySW_Desc=New-Lbl (T "S3Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
+$lMySW_Desc=New-Lbl (T "S3Desc") 14 30 ($cardW-248) 16 $FontSmall $script:MUTED
 $card3.Controls.Add($lMySW_Desc)
-$lMySW_Inst=New-Lbl "" 14 52 ($cardW-204) 18 $FontBold $script:NOTE_C; $card3.Controls.Add($lMySW_Inst)
+$lMySW_Inst=New-Lbl "" 14 52 ($cardW-234) 14 $FontBold $script:NOTE_C; $card3.Controls.Add($lMySW_Inst)
 $script:lMySW_Inst=$lMySW_Inst
-$lMySW_Avail=New-Lbl "" 14 72 340 18 $FontSmall $script:MUTED; $card3.Controls.Add($lMySW_Avail)
+$lMySW_Avail=New-Lbl "" 14 70 340 14 $FontSmall $script:MUTED; $card3.Controls.Add($lMySW_Avail)
 $script:lMySW_Avail=$lMySW_Avail
-$lMySW_Result=New-Lbl "" 14 168 515 26 $FontBold $script:TEXT; $card3.Controls.Add($lMySW_Result)
+$lMySW_Result=New-Lbl "" 14 88 315 14 $FontBold $script:TEXT; $card3.Controls.Add($lMySW_Result)
 $script:lMySW_Result=$lMySW_Result
 
 $btnMySW_C=New-Object System.Windows.Forms.Button
@@ -1461,37 +1543,56 @@ $btnMySW_I.Size=[System.Drawing.Size]::new(172,32); Style-Btn $btnMySW_I $script
 $card3.Controls.Add($btnMySW_I); $script:btnMySW_I=$btnMySW_I
 
 $btnMySW_M=New-Object System.Windows.Forms.Button
-$btnMySW_M.Text=T "S3BtnManual"; $btnMySW_M.Location=[System.Drawing.Point]::new(438,95)
+$btnMySW_M.Text=T "S3BtnManual"; $btnMySW_M.Location=[System.Drawing.Point]::new(438,94)
 $btnMySW_M.Size=[System.Drawing.Size]::new(94,28)
 Style-ManualBtn $btnMySW_M
 Set-ManualButtonVisibleText $btnMySW_M "MANUAL"
 $card3.Controls.Add($btnMySW_M); $script:btnMySW_M=$btnMySW_M
 
-$lLogLbl=New-Lbl "LOG" 14 110 40 14 $FontBold $script:MUTED; $card3.Controls.Add($lLogLbl)
-$logBox=New-Object System.Windows.Forms.RichTextBox
-$logBox.Location=[System.Drawing.Point]::new(14,128)
-$logBox.Size=[System.Drawing.Size]::new($cardW-28,40)
-$logBox.BackColor=[System.Drawing.Color]::FromArgb(22,20,15)
-$logBox.ForeColor=$script:TEXT; $logBox.Font=$FontMono
-$logBox.BorderStyle='None'; $logBox.ReadOnly=$true; $logBox.ScrollBars='Vertical'
-$card3.Controls.Add($logBox); $script:LogBox=$logBox
+# --- Extra Tools Section (solo instalación, sin desinstalación) ---
+$lExtraToolsTitle = New-Lbl (T 'ExtraToolsTitle') 14 108 400 14 $FontBold $script:ACCENT2
+$card3.Controls.Add($lExtraToolsTitle)
 
-# ============================================================
-#  CARD 4  Installed versions  (mid-right)
-# ============================================================
+$btnExtraInstall = New-Object System.Windows.Forms.Button
+$btnExtraInstall.Text = T 'ExtraToolsInstall'
+$btnExtraInstall.Location = [System.Drawing.Point]::new(14, 128)
+$btnExtraInstall.Size = [System.Drawing.Size]::new(200, 32)
+Style-Btn $btnExtraInstall $script:ACCENT2 $script:BG
+$card3.Controls.Add($btnExtraInstall)
+$script:btnExtraInstall = $btnExtraInstall
+
+$chkExtraWithAll = New-Object System.Windows.Forms.CheckBox
+$chkExtraWithAll.Text = T 'ExtraToolsCheckbox'
+$chkExtraWithAll.Location = [System.Drawing.Point]::new(14, 163)
+$chkExtraWithAll.Size = [System.Drawing.Size]::new(520, 22)
+$chkExtraWithAll.ForeColor = $script:TEXT
+$chkExtraWithAll.BackColor = [System.Drawing.Color]::Transparent
+$chkExtraWithAll.Checked = $false
+$card3.Controls.Add($chkExtraWithAll)
+$script:chkExtraWithAll = $chkExtraWithAll
+
+# --- CARD 4 (Installed versions + LOG) ---
 $card4=New-CardXY $pMain $rightX $row2Y $cardW $cMidH "S4Title"; $card4.Tag="S4"
 $lS4Lbl=New-Lbl (T "S4Label") 14 30 ($cardW-28) 16 $FontSmall $script:MUTED
 $card4.Controls.Add($lS4Lbl)
 $lS4Body=New-Object System.Windows.Forms.RichTextBox
-$lS4Body.Location=[System.Drawing.Point]::new(14,52)
-$lS4Body.Size=[System.Drawing.Size]::new($cardW-28,100)
+$lS4Body.Location=[System.Drawing.Point]::new(14,46)
+$lS4Body.Size=[System.Drawing.Size]::new($cardW-28,80)
 $lS4Body.Font=$FontMono; $lS4Body.ForeColor=$script:ACCENT
 $lS4Body.BackColor=[System.Drawing.Color]::FromArgb(38,35,26); $lS4Body.BorderStyle='None'; $lS4Body.ReadOnly=$true; $lS4Body.ScrollBars='None'; $lS4Body.AutoSize=$false
 $card4.Controls.Add($lS4Body); $script:lS4Body=$lS4Body
 
-# ============================================================
-#  CARD 5  Actions  (bottom-left)
-# ============================================================
+$lLogLbl=New-Lbl "LOG" 14 126 40 14 $FontBold $script:MUTED
+$card4.Controls.Add($lLogLbl)
+$logBox=New-Object System.Windows.Forms.RichTextBox
+$logBox.Location=[System.Drawing.Point]::new(14,142)
+$logBox.Size=[System.Drawing.Size]::new($cardW-28,40)
+$logBox.BackColor=[System.Drawing.Color]::FromArgb(22,20,15)
+$logBox.ForeColor=$script:TEXT; $logBox.Font=$FontMono
+$logBox.BorderStyle='None'; $logBox.ReadOnly=$true; $logBox.ScrollBars='Vertical'
+$card4.Controls.Add($logBox); $script:LogBox=$logBox
+
+# --- CARD 5 (Actions) ---
 $card5=New-CardXY $pMain $leftX $row3Y $cardW $cBotH "ActionsTitle"; $card5.Tag="ACT"
 
 $btnCheckAll=New-Object System.Windows.Forms.Button
@@ -1513,9 +1614,7 @@ Style-Btn $btnForce $script:SURFACE $script:ERROR_C
 $btnForce.FlatAppearance.BorderSize=1; $btnForce.FlatAppearance.BorderColor=$script:ERROR_C
 $card5.Controls.Add($btnForce); $script:btnForce=$btnForce
 
-# ============================================================
-#  CARD 6  Status  (bottom-right)
-# ============================================================
+# --- CARD 6 (Status) ---
 $card6=New-CardXY $pMain $rightX $row3Y $cardW $cBotH "ActionsTitle"; $card6.Tag="ACT6"
 $lStatusLbl=New-Lbl (T "StatusLbl") 14 28 60 14 $FontSmall $script:MUTED; $card6.Controls.Add($lStatusLbl); $script:lStatusLbl=$lStatusLbl
 $lStatus=New-Object System.Windows.Forms.Label
@@ -1527,17 +1626,17 @@ $lStatus.Text=T "StatusReady"; $lStatus.AutoSize=$false
 $card6.Controls.Add($lStatus); $script:lStatus=$lStatus
 
 # ============================================================
-#  BUTTON EVENTS
+#  BUTTON EVENTS (con sync offline)
 # ============================================================
 $btnFF_C.Add_Click({
-        if ($script:GitHubRateLimited) {
-            $script:lStatus.Text = (T 'StatusRateLimitInline')
-            $script:lStatus.ForeColor = $script:NOTE_C
-            Log-Warn (T 'LogRateLimit')
-            [System.Windows.Forms.Application]::DoEvents()
-            return
-        }
-
+    [void](Sync-OfflineInstalledVersions)
+    if ($script:GitHubRateLimited) {
+        $script:lStatus.Text = (T 'StatusRateLimitInline')
+        $script:lStatus.ForeColor = $script:NOTE_C
+        Log-Warn (T 'LogRateLimit')
+        [System.Windows.Forms.Application]::DoEvents()
+        return
+    }
     $script:lFF_Avail.Text=T "S1Checking"; [System.Windows.Forms.Application]::DoEvents()
     $ver,$a=Get-FFmpegLatest
     if ($a -and $ver) {
@@ -1558,40 +1657,54 @@ $btnFF_C.Add_Click({
             Refresh-SummaryCard
         }
     }
-    else { $script:lFF_Avail.Text=(T "S1Available")+"  ?"; $script:lFF_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
+    else { $script:lFF_Avail.Text=(T "S1Available")+"  ?"; $script:lFF_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
 })
+
 $btnMpv_C.Add_Click({
-        $script:lMpv_Avail.Text=T "S2Checking"; [System.Windows.Forms.Application]::DoEvents()
-    $r=Get-MpvLatestRelease
+    [void](Sync-OfflineInstalledVersions)
+    $script:lMpv_Avail.Text = T "S2Checking"
+    [System.Windows.Forms.Application]::DoEvents()
+    $r = Get-MpvLatestRelease
     if ($r) {
-        $script:CheckedMpvAvailable=$r.tag_name
+        $script:CheckedMpvAvailable = $r.tag_name
         $didCanon = Rewrite-MpvJsonToOnlineTag $r.tag_name
-        $script:lMpv_Avail.Text=(T "S2Available")+"  "+$r.tag_name
-        $script:lMpv_Avail.ForeColor=$script:SUCCESS
-        $iv=(Get-InstalledVersions).mpv
+        $script:lMpv_Avail.Text = (T "S2Available") + "  " + $r.tag_name
+        $script:lMpv_Avail.ForeColor = $script:SUCCESS
+        $iv = (Get-InstalledVersions).mpv
         if ($didCanon) {
-            $script:lMpv_Result.Text=(T "IconLatest")+" "+(T "S2Result")+"  "+(T "ResLatest")
-            $script:lMpv_Result.ForeColor=$script:TEXT
-            Refresh-VersionLabels
-            Refresh-SummaryCard
+            $script:lMpv_Result.Text = (T "IconLatest") + " " + (T "S2Result") + "  " + (T "ResLatest")
+            $script:lMpv_Result.ForeColor = $script:TEXT
         } elseif ((Get-MpvHashFragment $iv) -and (Get-MpvHashFragment $r.tag_name) -and (((Get-MpvHashFragment $iv).StartsWith((Get-MpvHashFragment $r.tag_name))) -or ((Get-MpvHashFragment $r.tag_name).StartsWith((Get-MpvHashFragment $iv))))) {
-            $script:lMpv_Result.Text=(T "IconLatest")+" "+(T "S2Result")+"  "+(T "ResLatest")
-            $script:lMpv_Result.ForeColor=$script:TEXT
-            Refresh-VersionLabels
-            Refresh-SummaryCard
+            $script:lMpv_Result.Text = (T "IconLatest") + " " + (T "S2Result") + "  " + (T "ResLatest")
+            $script:lMpv_Result.ForeColor = $script:TEXT
         } else {
-            $script:lMpv_Result.Text=(Get-ResultIcon $iv $r.tag_name)+" "+(T "S2Result")+"  "+(Get-ResultMessage $iv $r.tag_name)
-            $script:lMpv_Result.ForeColor=$script:TEXT
-            Refresh-SummaryCard
+            $script:lMpv_Result.Text = (Get-ResultIcon $iv $r.tag_name) + " " + (T "S2Result") + "  " + (Get-ResultMessage $iv $r.tag_name)
+            $script:lMpv_Result.ForeColor = $script:TEXT
         }
+        Refresh-VersionLabels
+        Refresh-SummaryCard
+    } else {
+        $script:lMpv_Avail.Text = (T "S2Available") + "  ?"
+        $script:lMpv_Avail.ForeColor = $script:ERROR_C
+        if ($script:GitHubRateLimited) {
+            Log-Warn (T 'LogRateLimit')
+            Set-BlockedStatus
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) {
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } else {
+            Set-ApiStatus '' $script:MUTED
+        }
+        Refresh-VersionLabels
     }
-    else { $script:lMpv_Avail.Text=(T "S2Available")+"  ?"; $script:lMpv_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
 })
+
 $btnMySW_C.Add_Click({
-        $script:lMySW_Avail.Text=T "S3Checking"; [System.Windows.Forms.Application]::DoEvents()
+    [void](Sync-OfflineInstalledVersions)
+    $script:lMySW_Avail.Text=T "S3Checking"; [System.Windows.Forms.Application]::DoEvents()
     $r=Get-MyLatestRelease
     if ($r) { $script:CheckedMyAvailable=$r.tag_name; $script:lMySW_Avail.Text=(T "S3Available")+"  "+$r.tag_name; $script:lMySW_Avail.ForeColor=$script:SUCCESS; $iv=(Get-InstalledVersions).mpvsw; $script:lMySW_Result.Text=(Get-ResultIcon $iv $r.tag_name)+" "+(T "S3Result")+"  "+(Get-ResultMessage $iv $r.tag_name); $script:lMySW_Result.ForeColor=$script:TEXT; Refresh-SummaryCard }
-    else { $script:lMySW_Avail.Text=(T "S3Available")+"  ?"; $script:lMySW_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
+    else { $script:lMySW_Avail.Text=(T "S3Available")+"  ?"; $script:lMySW_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
 })
 
 $btnFF_M.Add_Click({ $u = $(if ((Get-FFmpegMode) -eq 'stable') { $FFmpegLatestPage } else { $FFmpegReleasesPage }); Log-Info ('[manual] Opening: ' + $u); if (-not (Open-Url $u)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
@@ -1625,7 +1738,17 @@ $btnMySW_I.Add_Click({
     }
 })
 
+$btnExtraInstall.Add_Click({
+    Run-WithLock {
+        Set-Status (T "StatusDownloading") $script:NOTE_C
+        Do-InstallExtraTools $true
+        if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
+        Set-Status (T "StatusDone") $script:SUCCESS
+    }
+})
+
 $btnCheckAll.Add_Click({
+    [void](Sync-OfflineInstalledVersions)
     Clear-RemoteCache
     Set-Status (T "StatusChecking") $script:NOTE_C; [System.Windows.Forms.Application]::DoEvents()
     $ver,$a=Get-FFmpegLatest
@@ -1668,6 +1791,9 @@ $btnUpdateAll.Add_Click({
         Do-InstallFFmpeg $false
         Do-InstallMPV $v $false
         Do-InstallMySW $false
+        if ($script:chkExtraWithAll.Checked) {
+            Do-InstallExtraTools $false
+        }
         Refresh-InstalledNow
         if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
         Log-OK (T "LogAllDone")
@@ -1687,6 +1813,9 @@ $btnForce.Add_Click({
         Do-InstallFFmpeg $true
         Do-InstallMPV $v $true
         Do-InstallMySW $true
+        if ($script:chkExtraWithAll.Checked) {
+            Do-InstallExtraTools $true
+        }
         Refresh-InstalledNow
         if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
         Log-OK (T "LogAllDone")
@@ -1732,6 +1861,11 @@ function Apply-Lang([string]$lang) {
     $script:rbFFStable.Text = T "S1ModeStable"
     $script:rbFFDaily.Text  = T "S1ModeDaily"
     if ($script:lStatusLbl) { $script:lStatusLbl.Text = T "StatusLbl" }
+
+    $lExtraToolsTitle.Text = T 'ExtraToolsTitle'
+    $btnExtraInstall.Text = T 'ExtraToolsInstall'
+    $chkExtraWithAll.Text = T 'ExtraToolsCheckbox'
+
     $knownStatusKeys = @('StatusReady','StatusChecking','StatusDownloading','StatusDone','StatusUpToDate')
     $otherLang = if ($lang -eq 'EN') { 'ES' } else { 'EN' }
     $matched = $false
@@ -1753,9 +1887,6 @@ function Apply-Lang([string]$lang) {
     Refresh-VersionLabels; $form.Refresh()
 }
 
-# ============================================================
-#  BUTTON EVENTS (modificados para guardar idioma)
-# ============================================================
 $btnEN.Add_Click({
     Apply-Lang "EN"
     Save-GUILanguage "EN"
@@ -1769,15 +1900,8 @@ $rbV1.Add_CheckedChanged({ if ($rbV1.Checked) { Update-MpvAvailableForSelection 
 $rbV2.Add_CheckedChanged({ if ($rbV2.Checked) { Update-MpvAvailableForSelection } })
 $rbV3.Add_CheckedChanged({ if ($rbV3.Checked) { Update-MpvAvailableForSelection } })
 
-# ============================================================
-#  INIT
-# ============================================================
 [void](Sync-OfflineInstalledVersions)
-
-# Cargar idioma guardado
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang
-
 Set-ApiStatus '' $script:MUTED
-
 [System.Windows.Forms.Application]::Run($form)
