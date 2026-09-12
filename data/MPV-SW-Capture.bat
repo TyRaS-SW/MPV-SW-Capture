@@ -68,7 +68,7 @@ goto :start_mpv
 :: an MPV external audio stream, so it is still emitted by MPV (and therefore
 :: capturable by Discord/OBS) without coupling DirectShow audio timing to video.
 set "capture_source=av://dshow:video="%video_device%""
-set "native_audio_args=--audio-file="av://dshow:audio=%audio_device%" --audio-client-name=MPV-SW-Capture --cache=no --demuxer-readahead-secs=0 --demuxer-lavf-o-add=audio_buffer_size=4 --audio-buffer=0.03 --volume-max=1000 --volume-gain-max=12.1 --video-sync=display-desync --no-interpolation --audio-stream-silence=no --audio-file-auto=no --audio-pitch-correction=no"
+set "native_audio_args=--audio-file="av://dshow:audio=%audio_device%" --audio-client-name=MPV-SW-Capture --audio-delay=-3.0 --cache=no --demuxer-readahead-secs=0 --demuxer-lavf-o-add=audio_buffer_size=4 --audio-buffer=0.03 --volume-max=1000 --volume-gain-max=12.1 --video-sync=display-desync --no-interpolation --audio-stream-silence=no --audio-file-auto=no --audio-pitch-correction=no"
 set "timing_args=--untimed"
 :start_mpv
 start "" /b "%prog1_path%" --no-border %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%
