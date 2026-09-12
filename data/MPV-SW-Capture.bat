@@ -61,8 +61,11 @@ set "native_audio_args="
 goto :start_mpv
 
 :native_mpv_audio
-set "capture_source=av://dshow:video="%video_device%":audio="%audio_device%""
-set "native_audio_args=--audio-client-name=MPV-SW-Capture --volume-max=1000 --volume-gain-max=12.1"
+:: Keep video on its proven single-source path. The audio device is loaded as
+:: an MPV external audio stream, so it is still emitted by MPV (and therefore
+:: capturable by Discord/OBS) without coupling DirectShow audio timing to video.
+set "capture_source=av://dshow:video="%video_device%""
+set "native_audio_args=--audio-file="av://dshow:audio=%audio_device%" --audio-client-name=MPV-SW-Capture --volume-max=1000 --volume-gain-max=12.1 --video-sync=display-desync --no-interpolation --audio-stream-silence=no --audio-file-auto=no --audio-pitch-correction=no"
 
 :start_mpv
 start "" /b "%prog1_path%" --no-border %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%
