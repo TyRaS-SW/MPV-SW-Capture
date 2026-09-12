@@ -10,6 +10,7 @@ _screenshots/
 scripts/.installed-versions.json
 data/boost.txt
 data/boost_restart.flag
+data/audio_mode.txt
 *.log
 *.bak
 Thumbs.db
