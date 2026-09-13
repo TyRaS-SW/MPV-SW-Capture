@@ -7,9 +7,9 @@ file:close()
 
 local function check(name, processes, expected_launch, options)
     options = options or {}
-    local launched, queries, quits = false, 0, 0
+    local launched, queries, quits, cleaned = false, 0, 0, false
     local mock_mp = {
-        msg = { info = function() end, warn = function() end, error = error },
+        msg = { info = function() end, warn = function() end, error = function() end },
         get_opt = function() return options.skip end,
         get_property = function() return tostring(options.playlist or 0) end,
         commandv = function(command) assert(command == "quit"); quits = quits + 1 end,
@@ -21,6 +21,14 @@ local function check(name, processes, expected_launch, options)
             return {}
         end
         local ps = command.args[#command.args]
+        if ps == "-CleanupOnly" then
+            assert(command.args[#command.args - 1] == "C:\\Capture Test's\\data\\ffplay_watchdog.ps1")
+            cleaned = true
+            if not options.cleanup_fails then
+                processes = processes:gsub("[^\n]*Name='ffplay'[^\n]*\n", "")
+            end
+            return { status = options.cleanup_fails and 1 or 0 }
+        end
         if ps:find("Get-Process", 1, true) then
             queries = queries + 1
             -- Execute the production PowerShell filter against fixture process
@@ -49,7 +57,8 @@ function Get-Process {
     } }, { __index = _G }))
     run()
     assert(launched == expected_launch, name .. ": unexpected launch decision")
-    assert(queries == ((options.skip or options.playlist) and 0 or 2), name .. ": query count")
+    assert(queries == ((options.skip or options.playlist) and 0 or (cleaned and 3 or 2)), name .. ": query count")
+    assert(cleaned == (options.cleanup or false), name .. ": cleanup decision")
     real_mp.msg.info("PASS: " .. name)
 end
 
@@ -61,8 +70,10 @@ real_mp.add_timeout(0, function()
             .. "[pscustomobject]@{ Name='mpv'; Path=$null }\n"
         check("unrelated players do not block startup", own .. unrelated, true)
         check("existing capture MPV blocks duplicate startup", own .. own .. unrelated, false)
-        check("existing capture FFplay blocks duplicate startup", own
-            .. "[pscustomobject]@{ Name='ffplay'; Path='c:\\capture test''s\\FFPLAY.EXE' }\n", false)
+        local orphan = "[pscustomobject]@{ Name='ffplay'; Path='c:\\capture test''s\\FFPLAY.EXE' }\n"
+        check("orphaned capture FFplay is cleaned before startup", own .. orphan, true, { cleanup = true })
+        check("failed orphan cleanup blocks startup", own .. orphan, false, { cleanup = true, cleanup_fails = true })
+        check("active capture audio is never cleaned", own .. own .. orphan, false)
         check("busy mutex still blocks startup", own, false, { busy = true })
         check("capture playback skips launcher", "", false, { playlist = 1 })
         check("setup skip flag skips launcher", "", false, { skip = "1" })
