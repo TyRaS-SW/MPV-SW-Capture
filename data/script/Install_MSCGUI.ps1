@@ -495,14 +495,15 @@ function Get-InstalledVersions {
     if (Test-Path $script:VersionFile) {
         try { return Get-Content $script:VersionFile -Raw -Encoding UTF8 | ConvertFrom-Json } catch {}
     }
-    return [PSCustomObject]@{ ffmpeg=""; mpv=""; mpvVariant=""; mpvsw="" }
+    return [PSCustomObject]@{ ffmpeg=""; mpv=""; mpvVariant=""; mpvsw=""; tools="" }
 }
 function Save-InstalledVersions {
     param(
         [string]$ffmpeg,
         [string]$mpv,
         [string]$mpvVariant,
-        [string]$mpvsw
+        [string]$mpvsw,
+        [string]$tools
     )
     $e = Get-InstalledVersions
     if ($PSBoundParameters.ContainsKey('ffmpeg')) {
@@ -516,6 +517,9 @@ function Save-InstalledVersions {
     }
     if ($PSBoundParameters.ContainsKey('mpvsw')) {
         $e | Add-Member -Force -NotePropertyName mpvsw -NotePropertyValue $mpvsw
+    }
+    if ($PSBoundParameters.ContainsKey('tools')) {
+        $e | Add-Member -Force -NotePropertyName tools -NotePropertyValue $tools
     }
     $sd = Join-Path $script:SD "scripts"
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
@@ -639,6 +643,7 @@ function Rewrite-MpvJsonToOnlineTag([string]$onlineTag) {
         mpv = $onlineTag
         mpvVariant = $(if ($json.mpvVariant) { $json.mpvVariant } else { 'x86_64' })
         mpvsw = $json.mpvsw
+        tools = $(if ($json.tools) { $json.tools } else { '' })
     }
     $sd = Join-Path $script:SD 'scripts'
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
@@ -671,6 +676,7 @@ function Rewrite-FFmpegJsonToOnlineTag([string]$onlineTag) {
         mpv        = $json.mpv
         mpvVariant = $(if ($json.mpvVariant) { $json.mpvVariant } else { '' })
         mpvsw      = $json.mpvsw
+        tools      = $(if ($json.tools) { $json.tools } else { '' })
     }
     $sd = Join-Path $script:SD 'scripts'
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
@@ -1143,21 +1149,40 @@ function Do-InstallMySW([bool]$force) {
 }
 
 # ============================================================
-#  EXTRA TOOLS INSTALLATION (SIMPLE, NO MANIFEST)
+#  EXTRA TOOLS INSTALLATION (WITH VERSION CHECK)
 # ============================================================
 function Do-InstallExtraTools([bool]$force) {
     Log-Info (T 'ExtraToolsLogInstall')
+
     $r = Get-MyLatestRelease
     if (-not $r) {
         if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
         Log-Error ([string]::Format((T 'LogApiError'), 'MPV-SW-Capture', 'latest release unavailable'))
         return $false
     }
+
     $asset = $r.assets | Where-Object { $_.name -like $script:ExtraToolsZipPattern } | Select-Object -First 1
     if (-not $asset) {
         Log-Error (T 'ExtraToolsNotFound')
         return $false
     }
+
+    # Extract version from asset name (e.g. TOOLS-MSC-v5.0.0.zip -> v5.0.0).
+    # Fallback to release tag_name if the pattern is not recognized.
+    $remoteVer = $r.tag_name
+    if ($asset.name -match '(v\d+\.\d+\.\d+)') {
+        $remoteVer = $Matches[1]
+    }
+
+    # Skip if the same version is already recorded in .installed-versions.json
+    # (unless the caller explicitly forces a reinstall).
+    $json = Get-InstalledVersions
+    $installedVer = $json.tools
+    if (-not $force -and $installedVer -and $installedVer -eq $remoteVer) {
+        Log-OK (T 'ExtraToolsAlreadyInstalled')
+        return $true
+    }
+
     Ensure-TempDir
     $zipPath = Join-Path $script:TempDir $asset.name
     $extPath = Join-Path $script:TempDir 'extratools_extracted'
@@ -1196,6 +1221,7 @@ function Do-InstallExtraTools([bool]$force) {
         }
 
         if ($copied -gt 0) {
+            Save-InstalledVersions -tools $remoteVer
             Log-OK (T 'ExtraToolsInstalled')
             return $true
         } else {
@@ -1567,7 +1593,7 @@ $chkExtraWithAll.Location = [System.Drawing.Point]::new(14, 163)
 $chkExtraWithAll.Size = [System.Drawing.Size]::new(520, 22)
 $chkExtraWithAll.ForeColor = $script:TEXT
 $chkExtraWithAll.BackColor = [System.Drawing.Color]::Transparent
-$chkExtraWithAll.Checked = $false
+$chkExtraWithAll.Checked = $true
 $card3.Controls.Add($chkExtraWithAll)
 $script:chkExtraWithAll = $chkExtraWithAll
 
