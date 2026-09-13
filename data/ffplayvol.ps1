@@ -35,7 +35,7 @@ Add-Type -Path $dllPath
 # Flexible argument parsing:
 # Numeric arguments are used as a volume value, step size, or timeout.
 # Text arguments are used as the target audio-session name.
-$target = "ffplay"
+$sessionTarget = "ffplay"
 $numericVal = 5
 $hasNumeric = $false
 
@@ -48,7 +48,7 @@ foreach ($a in @($Target, $Step)) {
             $hasNumeric = $true
         }
         else {
-            $target = $a
+            $sessionTarget = $a
         }
     }
 }
@@ -94,12 +94,12 @@ try {
                 $timeout = $numericVal
             }
 
-            Write-Host "Waiting for an ffplay audio session for ${timeout}ms (tag: $target)..."
+            Write-Host "Waiting for an audio session for ${timeout}ms (tag: $sessionTarget)..."
 
-            $ok = [FfplayVol.FfplayVolWrapper]::WatchTag($target, $timeout)
+            $ok = [FfplayVol.FfplayVolWrapper]::WatchTag($sessionTarget, $timeout)
 
             if ($ok) {
-                Write-Host "watch-tagged:$target"
+                Write-Host "watch-tagged:$sessionTarget"
                 exit 0
             }
             else {
@@ -109,7 +109,7 @@ try {
         }
 
         "get" {
-            $vol = [FfplayVol.FfplayVolWrapper]::GetVolume($target)
+            $vol = [FfplayVol.FfplayVolWrapper]::GetVolume($sessionTarget)
             Write-Output $vol
             exit 0
         }
@@ -120,7 +120,7 @@ try {
                 exit 1
             }
 
-            [FfplayVol.FfplayVolWrapper]::SetVolume($target, $numericVal)
+            [FfplayVol.FfplayVolWrapper]::SetVolume($sessionTarget, $numericVal)
 
             Write-Output $numericVal
             exit 0
@@ -133,9 +133,9 @@ try {
                 $stepVal = $numericVal
             }
 
-            [FfplayVol.FfplayVolWrapper]::VolumeUp($target, $stepVal)
+            [FfplayVol.FfplayVolWrapper]::VolumeUp($sessionTarget, $stepVal)
 
-            $newVol = [FfplayVol.FfplayVolWrapper]::GetVolume($target)
+            $newVol = [FfplayVol.FfplayVolWrapper]::GetVolume($sessionTarget)
 
             Write-Output $newVol
             exit 0
@@ -148,30 +148,30 @@ try {
                 $stepVal = $numericVal
             }
 
-            [FfplayVol.FfplayVolWrapper]::VolumeDown($target, $stepVal)
+            [FfplayVol.FfplayVolWrapper]::VolumeDown($sessionTarget, $stepVal)
 
-            $newVol = [FfplayVol.FfplayVolWrapper]::GetVolume($target)
+            $newVol = [FfplayVol.FfplayVolWrapper]::GetVolume($sessionTarget)
 
             Write-Output $newVol
             exit 0
         }
 
         "mute" {
-            [FfplayVol.FfplayVolWrapper]::Mute($target)
+            [FfplayVol.FfplayVolWrapper]::Mute($sessionTarget)
 
             Write-Output "muted"
             exit 0
         }
 
         "unmute" {
-            [FfplayVol.FfplayVolWrapper]::Unmute($target)
+            [FfplayVol.FfplayVolWrapper]::Unmute($sessionTarget)
 
             Write-Output "unmuted"
             exit 0
         }
 
         "togglemute" {
-            $isMuted = [FfplayVol.FfplayVolWrapper]::ToggleMute($target)
+            $isMuted = [FfplayVol.FfplayVolWrapper]::ToggleMute($sessionTarget)
 
             if ($isMuted) {
                 Write-Output "muted"
