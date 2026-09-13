@@ -15,3 +15,5 @@ data/audio_mode.txt
 *.bak
 Thumbs.db
 Desktop.ini
+scripts/msc_audio.dll
+native-audio/*.exe

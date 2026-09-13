@@ -21,7 +21,7 @@ end
 
 local function normalize_mode(value)
     value = tostring(value or ""):lower():gsub("%s+", "")
-    return value == "mpv" and "mpv" or "ffplay"
+    return (value == "mpv" or value == "plugin") and value or "ffplay"
 end
 
 local function read_file(path)
@@ -46,6 +46,10 @@ end
 local function get_mode()
     return normalize_mode(read_file(mode_path()))
 end
+
+-- Selecting a mode changes the next launch. Keep controls attached to the
+-- backend that this process actually started until it is restarted.
+local active_mode = get_mode()
 
 local function publish_mode(mode)
     mp.set_property("user-data/audio-mode", mode)
@@ -86,7 +90,7 @@ local function ps(rel, args)
 end
 
 local function native()
-    return get_mode() == "mpv"
+    return active_mode ~= "ffplay"
 end
 
 local function set_volume(value)
@@ -130,9 +134,19 @@ end
 
 mp.register_script_message("set-audio-mode", function(value)
     local mode = normalize_mode(value)
+    if mode == "plugin" then
+        local dll = io.open(root() .. "/scripts/msc_audio.dll", "rb")
+        if not dll then
+            mp.osd_message("Audio plugin is not built. Run native-audio/build.ps1 first.", 5)
+            return
+        end
+        dll:close()
+    end
     if write_file(mode_path(), mode) then
         publish_mode(mode)
-        mp.osd_message(mode == "mpv"
+        mp.osd_message(mode == "plugin"
+            and "In-process audio plugin selected (experimental). Restart MPV-SW-Capture to apply."
+            or mode == "mpv"
             and "MPV native capture audio selected. Restart MPV-SW-Capture to apply."
             or "FFplay low-latency audio selected. Restart MPV-SW-Capture to apply.", 4)
     end
@@ -147,10 +161,30 @@ mp.register_script_message("audio-boost-up", function(value) change_boost(tonumb
 mp.register_script_message("audio-boost-down", function(value) change_boost(-(tonumber(value) or 25)) end)
 mp.register_script_message("audio-boost-reset", function() set_boost(MIN_BOOST) end)
 
-local mode = get_mode()
+local function start_plugin()
+    if active_mode ~= "plugin" then return end
+    local loader = loadfile(root() .. "/scripts/usb3.lua")
+    local ok, device = false, nil
+    if loader then ok, device = pcall(loader) end
+    if not ok or type(device) ~= "table" or not device.audio_device or device.audio_device == "" then
+        mp.osd_message("Audio plugin: no capture device configured. Run Setup first.", 6)
+        return
+    end
+    mp.commandv("script-message", "msc-audio-start", device.audio_device)
+end
+mp.register_event("file-loaded", start_plugin)
+mp.register_script_message("audio-plugin-restart", start_plugin)
+mp.register_script_message("audio-plugin-status", function()
+    mp.osd_message("Audio plugin: " .. tostring(mp.get_property_native("user-data/audio-plugin-status") or "not loaded")
+        .. "\n" .. tostring(mp.get_property_native("user-data/audio-plugin-details") or "")
+        .. "\n" .. tostring(mp.get_property_native("user-data/audio-plugin-stats") or ""), 8)
+end)
+
+local mode = active_mode
 publish_mode(mode)
+mp.set_property("user-data/audio-active-mode", mode)
 mp.set_property("user-data/audio-boost", tostring(get_boost()))
-if mode == "mpv" then
+if mode ~= "ffplay" then
     mp.add_timeout(0.2, function()
         apply_native_boost(get_boost())
     end)

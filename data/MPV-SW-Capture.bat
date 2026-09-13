@@ -27,6 +27,7 @@ set "audio_mode=ffplay"
 :: capture for Discord/OBS and similar tools.
 if exist "%audio_mode_file%" set /p "audio_mode=" < "%audio_mode_file%"
 if /I "%audio_mode%"=="mpv" goto :audio_mode_valid
+if /I "%audio_mode%"=="plugin" goto :audio_mode_valid
 set "audio_mode=ffplay"
 :audio_mode_valid
 
@@ -58,8 +59,19 @@ if not exist "%watchdog_ps1%" (
 
 :: --- START MPV-SW-Capture ---
 if /I "%audio_mode%"=="mpv" goto :native_mpv_audio
+if /I "%audio_mode%"=="plugin" goto :plugin_audio
 set "capture_source=av://dshow:video="%video_device%""
 set "native_audio_args="
+set "timing_args=--untimed"
+goto :start_mpv
+
+:plugin_audio
+if not exist "%ROOT_DIR%\scripts\msc_audio.dll" (
+ echo ERROR: Audio plugin missing. Run native-audio\build.ps1 or select another audio mode.
+ exit /b 1
+)
+set "capture_source=av://dshow:video="%video_device%""
+set "native_audio_args=--aid=no --audio-file-auto=no"
 set "timing_args=--untimed"
 goto :start_mpv
 

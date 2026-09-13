@@ -262,7 +262,8 @@ local function ps(rel, args, cb)
 end
 
 local function using_native_audio()
-    return mp.get_property_native("user-data/audio-mode") == "mpv"
+    local mode = mp.get_property_native("user-data/audio-active-mode") or mp.get_property_native("user-data/audio-mode")
+    return mode == "mpv" or mode == "plugin"
 end
 
 -- `attempt` is internal: when the first call comes back empty (ffplay not
@@ -2203,6 +2204,10 @@ mp.observe_property("user-data/audio-boost", "native", function(_, value)
     end
 end)
 mp.observe_property("user-data/audio-mode", "native", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
+end)
+mp.observe_property("user-data/audio-active-mode", "native", function()
     audio_refreshed = false
     if visible or edge_visible then audio_refresh() end
 end)
