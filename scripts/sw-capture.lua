@@ -27,8 +27,14 @@ local function ps_capture(ps)
     })
 end
 
-local function count_processes(image_name)
-    local ps = "$p = Get-Process -Name '" .. image_name:gsub('%.exe$', '') .. "' -ErrorAction SilentlyContinue; if ($p) { ($p | Measure-Object).Count } else { 0 }"
+local function count_processes(image_name, root)
+    -- Other applications also bundle mpv/ffplay. Only this installation's
+    -- executables indicate an active capture session. Quote paths for PS.
+    local executable = (root .. '\\' .. image_name):gsub("'", "''")
+    local ps = "$exe = [System.IO.Path]::GetFullPath('" .. executable .. "'); "
+        .. "$p = Get-Process -Name '" .. image_name:gsub('%.exe$', '')
+        .. "' -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe }; "
+        .. "if ($p) { ($p | Measure-Object).Count } else { 0 }"
     local res = ps_capture(ps)
     if not res or res.status ~= 0 or not res.stdout then return 0 end
     return tonumber((res.stdout:gsub('%s+', ''))) or 0
@@ -43,8 +49,8 @@ local root = get_root_dir()
 local bat = root .. '\\data\\MPV-SW-Capture.bat'
 local mutex_name = 'Global\\SW_CAPTURE_MPV_SINGLE_INSTANCE'
 
-local mpv_count = count_processes('mpv.exe')
-local ffplay_count = count_processes('ffplay.exe')
+local mpv_count = count_processes('mpv.exe', root)
+local ffplay_count = count_processes('ffplay.exe', root)
 mp.msg.info(string.format('[sw-capture] precheck → mpv=%d ffplay=%d', mpv_count, ffplay_count))
 
 if mpv_count >= 2 or ffplay_count >= 1 then
