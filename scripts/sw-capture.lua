@@ -53,10 +53,27 @@ local mpv_count = count_processes('mpv.exe', root)
 local ffplay_count = count_processes('ffplay.exe', root)
 mp.msg.info(string.format('[sw-capture] precheck → mpv=%d ffplay=%d', mpv_count, ffplay_count))
 
-if mpv_count >= 2 or ffplay_count >= 1 then
+if mpv_count >= 2 then
     mp.msg.warn('[sw-capture] active session detected, blocking launch')
     mp.commandv('quit')
     return
+end
+
+if ffplay_count >= 1 then
+    -- No capture MPV is running (the one counted above is this launcher).
+    -- Recover audio left behind by a crash or an older watchdog.
+    mp.msg.info('[sw-capture] cleaning up orphaned capture audio')
+    mp.command_native({
+        name = 'subprocess', playback_only = false,
+        capture_stdout = true, capture_stderr = true,
+        args = {'powershell.exe', '-NoProfile', '-ExecutionPolicy', 'Bypass',
+            '-File', root .. '\\data\\ffplay_watchdog.ps1', '-CleanupOnly'}
+    })
+    if count_processes('ffplay.exe', root) >= 1 then
+        mp.msg.error('[sw-capture] could not stop orphaned capture audio')
+        mp.commandv('quit')
+        return
+    end
 end
 
 local acquire_ps = table.concat({
