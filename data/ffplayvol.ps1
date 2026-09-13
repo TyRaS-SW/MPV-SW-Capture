@@ -30,7 +30,7 @@ if (-not (Test-Path $dllPath)) {
     exit 10
 }
 
-Add-Type -Path $dllPath
+[System.Reflection.Assembly]::UnsafeLoadFrom($dllPath)
 
 # Flexible argument parsing:
 # Numeric arguments are used as a volume value, step size, or timeout.
