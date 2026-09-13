@@ -262,12 +262,15 @@ local function ps(rel, args, cb)
 end
 
 local function using_native_audio()
-    return mp.get_property("user-data/audio-mode") == "mpv"
+    return mp.get_property_native("user-data/audio-mode") == "mpv"
 end
 
 -- `attempt` is internal: when the first call comes back empty (ffplay not
 -- running yet), retry every 500ms up to 8 times (4 seconds total).
 local function audio_refresh(attempt)
+    -- Native refresh renders synchronously. Mark it before rendering so the
+    -- Audio/Quick page cannot re-enter this function through render().
+    audio_refreshed = true
     attempt = attempt or 1
     audio.version = audio.version + 1
     local current_version = audio.version
@@ -275,7 +278,7 @@ local function audio_refresh(attempt)
     if using_native_audio() then
         audio.volume = math.floor((mp.get_property_number("volume") or 100) + 0.5)
         audio.muted = mp.get_property_bool("mute", false)
-        audio.boost = tonumber(mp.get_property("user-data/audio-boost")) or 100
+        audio.boost = tonumber((mp.get_property_native("user-data/audio-boost"))) or 100
         audio.pending = false
         if visible then render() end
         if edge_visible then edge_render() end
@@ -306,13 +309,15 @@ end
 -- Prevents parallel ffplay restart storms when the user drags fast.
 local function schedule_volume_send(value)
     if volume_debounce then volume_debounce:kill(); volume_debounce = nil end
+    if using_native_audio() then
+        -- Native volume is cheap to update in-process, including during a drag.
+        mp.set_property_number("volume", value)
+        mp.set_property("user-data/audio-volume", tostring(value))
+        return
+    end
     volume_debounce = mp.add_timeout(0.4, function()
         volume_debounce = nil
-        if using_native_audio() then
-            mp.commandv("script-message-to", "audio_mode", "audio-volume-set", tostring(value))
-        else
-            ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
-        end
+        ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
     end)
 end
 
@@ -1756,6 +1761,7 @@ edge_set_from_y = function(y, bar)
         audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
     else
         audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
     end
     edge_render()
 end
@@ -1796,8 +1802,8 @@ pos = function()
     return m and m.x, m and m.y
 end
 
--- Slider drag: update only the visual state while dragging,
--- send the final value to PowerShell once on release.
+-- Slider drag: apply native volume immediately; send FFplay's final value
+-- to PowerShell once on release.
 -- Guards against NaN, division by zero, and stale hitboxes.
 local function fromx(h, x)
     if not h or not h.bar_x1 or not h.bar_x2 then return end
@@ -1806,8 +1812,8 @@ local function fromx(h, x)
     if f ~= f then return end   -- NaN check
     f = math.max(0, math.min(1, f))
     if h.meter == "volume" then
-        -- Visual-only update; the real value is sent on release.
         audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
         render()
     else
         audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
@@ -2189,14 +2195,14 @@ mp.observe_property("mute", "bool", function(_, value)
         if edge_visible then edge_render() end
     end
 end)
-mp.observe_property("user-data/audio-boost", "string", function(_, value)
+mp.observe_property("user-data/audio-boost", "native", function(_, value)
     if using_native_audio() and value then
         audio.boost = tonumber(value) or 100
         if visible then render() end
         if edge_visible then edge_render() end
     end
 end)
-mp.observe_property("user-data/audio-mode", "string", function()
+mp.observe_property("user-data/audio-mode", "native", function()
     audio_refreshed = false
     if visible or edge_visible then audio_refresh() end
 end)
