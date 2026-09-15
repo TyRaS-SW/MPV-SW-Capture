@@ -60,6 +60,15 @@ local function getroot()
     return root
 end
 
+local settings = dofile(getroot() .. "/scripts/modules/msc_settings.lua")
+local function load_edge_enabled()
+    local value = settings.read("hover_volume.txt")
+    if value == nil then return true end
+    return value:match("^%s*(.-)%s*$") ~= "no"
+end
+local edge_enabled = load_edge_enabled()
+mp.set_property_bool("user-data/hover-volume", edge_enabled)
+
 local function osd(s)
     if (mp.get_property_number("osd-duration") or 1000) > 0 then
         mp.osd_message(s, 1.2)
@@ -1719,7 +1728,22 @@ local function edge_hide()
     edge_render()
 end
 
+local function toggle_edge_enabled()
+    local enabled = not edge_enabled
+    local ok, err = settings.write("hover_volume.txt", enabled and "yes\n" or "no\n")
+    if not ok then
+        msg.error("Cannot save hover volume setting: " .. tostring(err))
+        osd("Could not save hover volume setting")
+        return
+    end
+    edge_enabled = enabled
+    mp.set_property_bool("user-data/hover-volume", edge_enabled)
+    if not edge_enabled then edge_hide() end
+    if visible then render() end
+end
+
 local function edge_show()
+    if not edge_enabled then return end
     if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
     if edge_visible then return end
     edge_visible = true
@@ -1767,19 +1791,39 @@ edge_set_from_y = function(y, bar)
     edge_render()
 end
 
+local edge_mouse_initialized = false
+local edge_mouse_x, edge_mouse_y
 local function edge_mousemove()
-    if visible then return end
-    local x, y = pos()
-    if not x then return end
+    local mouse = mp.get_property_native("mouse-pos")
+    if not mouse then return end
+    local x, y = mouse.x, mouse.y
+    local moved = x ~= edge_mouse_x or y ~= edge_mouse_y
+    edge_mouse_x, edge_mouse_y = x, y
+    -- Observers receive an initial snapshot, often (0, 0), before any mouse
+    -- movement. Establish a baseline without treating it as an edge hover.
+    if not edge_mouse_initialized then
+        edge_mouse_initialized = true
+        return
+    end
+    if visible or not edge_enabled then return end
+    if not x or not y then return end
 
     if edge_drag then
         edge_set_from_y(y, edge_drag)
         return
     end
 
+    if not mouse.hover then
+        if edge_visible and not edge_hide_timer then
+            edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+        end
+        return
+    end
+    if not moved and not edge_visible then return end
+
     -- The first 10 pixels are the reveal zone; once shown, the whole rail
-    -- remains interactive and fades one second after the pointer leaves it.
-    if x <= 10 or (edge_hit and inside(edge_hit.panel, x, y)) then
+    -- remains interactive and hides one second after the pointer leaves it.
+    if (x >= 0 and x <= 10) or (edge_hit and inside(edge_hit.panel, x, y)) then
         edge_show()
         return
     end
@@ -2161,6 +2205,7 @@ end
 mp.add_key_binding(nil, "toggle-overlay", toggle)
 mp.register_script_message("toggle-overlay", toggle)
 mp.register_script_message("close-overlay", hide)
+mp.register_script_message("toggle-hover-volume", toggle_edge_enabled)
 
 mp.register_script_message("reload-lang", function()
     rebuild_dicts()

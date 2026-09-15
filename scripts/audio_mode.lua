@@ -1,5 +1,5 @@
 -- audio_mode.lua - Selects and controls the capture-audio architecture.
--- ffplay mode remains the default for the lowest latency. mpv mode attaches
+-- WASAPI plugin mode is the default for new installations. mpv mode attaches
 -- the DirectShow audio source to mpv so application-audio capture (Discord,
 -- OBS, etc.) can see MPV-SW-Capture as the producing process.
 
@@ -11,40 +11,22 @@ local function root()
     return (mp.get_property("config-path") or "."):gsub("\\", "/")
 end
 
-local function mode_path()
-    return root() .. "/data/audio_mode.txt"
-end
-
-local function boost_path()
-    return root() .. "/data/boost.txt"
-end
+local settings = dofile(root() .. "/scripts/modules/msc_settings.lua")
 
 local function normalize_mode(value)
     value = tostring(value or ""):lower():gsub("%s+", "")
+    if value == "" then return "plugin" end
     return (value == "mpv" or value == "plugin") and value or "ffplay"
 end
 
-local function read_file(path)
-    local f = io.open(path, "r")
-    if not f then return nil end
-    local value = f:read("*a")
-    f:close()
-    return value
-end
-
-local function write_file(path, value)
-    local f, err = io.open(path, "w")
-    if not f then
-        mp.msg.error("[audio_mode] Cannot write " .. path .. ": " .. tostring(err))
-        return false
-    end
-    f:write(value .. "\n")
-    f:close()
-    return true
+local function write_file(name, value)
+    local ok, err = settings.write(name, value .. "\n")
+    if not ok then mp.msg.error("[audio_mode] Cannot write " .. name .. ": " .. tostring(err)) end
+    return ok
 end
 
 local function get_mode()
-    return normalize_mode(read_file(mode_path()))
+    return normalize_mode(settings.read("audio_mode.txt"))
 end
 
 -- Selecting a mode changes the next launch. Keep controls attached to the
@@ -61,11 +43,11 @@ local function clamp(value, min, max)
 end
 
 local function get_boost()
-    return math.floor(clamp(read_file(boost_path()), MIN_BOOST, MAX_BOOST) + 0.5)
+    return math.floor(clamp(settings.read("boost.txt"), MIN_BOOST, MAX_BOOST) + 0.5)
 end
 
 local function save_boost(value)
-    return write_file(boost_path(), tostring(math.floor(value + 0.5)))
+    return write_file("boost.txt", tostring(math.floor(value + 0.5)))
 end
 
 local function boost_to_db(boost)
@@ -142,10 +124,10 @@ mp.register_script_message("set-audio-mode", function(value)
         end
         dll:close()
     end
-    if write_file(mode_path(), mode) then
+    if write_file("audio_mode.txt", mode) then
         publish_mode(mode)
         mp.osd_message(mode == "plugin"
-            and "In-process audio plugin selected (experimental). Restart MPV-SW-Capture to apply."
+            and "WASAPI Audio Plugin selected. Restart MPV-SW-Capture to apply."
             or mode == "mpv"
             and "MPV native capture audio selected. Restart MPV-SW-Capture to apply."
             or "FFplay low-latency audio selected. Restart MPV-SW-Capture to apply.", 4)

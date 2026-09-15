@@ -50,7 +50,7 @@ shows status, device rates, engine periods, queue occupancy, underruns and gain.
 
 To roll back, select **FFplay Low Latency** or **MPV Native**, then restart.
 Selections apply on the next launch; controls keep operating the current backend
-until then. If the UI cannot open, set `data/audio_mode.txt` to `ffplay` while
+until then. If the UI cannot open, set `data/menu/audio_mode.txt` to `ffplay` while
 the app is closed. A missing DLL prevents selecting the plugin mode.
 
 ## Validation and limits

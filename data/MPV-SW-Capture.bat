@@ -19,10 +19,13 @@ SET "audio_device=Digital Audio Interface (USB3.0 Capture)"
 
 set "ffplay_volume=100"
 set "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
-set "audio_mode_file=%ROOT_DIR%\data\audio_mode.txt"
-set "audio_mode=ffplay"
+:: Migrate before choosing the backend; never overwrite existing preferences.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ROOT_DIR%\data\menu_settings.ps1"
+if errorlevel 1 exit /b 1
+set "audio_mode_file=%ROOT_DIR%\data\menu\audio_mode.txt"
+set "audio_mode=plugin"
 
-:: Audio architecture: ffplay is the latency-first default. In mpv mode the
+:: Audio architecture: WASAPI plugin is the default for new installs. In mpv mode the
 :: DirectShow audio source is opened by MPV itself, enabling application-audio
 :: capture for Discord/OBS and similar tools.
 if exist "%audio_mode_file%" set /p "audio_mode=" < "%audio_mode_file%"

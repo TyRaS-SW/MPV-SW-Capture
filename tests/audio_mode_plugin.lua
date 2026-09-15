@@ -3,8 +3,11 @@
 local real_mp = require "mp"
 local file = assert(io.open("scripts/audio_mode.lua", "r"))
 local source = file:read("*a"); file:close()
-local function scenario(initial, selected)
+local module_file = assert(io.open("scripts/modules/msc_settings.lua", "r"))
+local module_source = module_file:read("*a"); module_file:close()
+local function scenario(initial, selected, saved)
     local files = { ["./data/audio_mode.txt"] = initial, ["./data/boost.txt"] = "100", ["./scripts/msc_audio.dll"] = "present" }
+    if saved == false then files["./data/audio_mode.txt"] = nil end
     local props, messages, events, calls = {}, {}, {}, {}
     local mock = {
         msg = { error = error, info = function() end },
@@ -21,15 +24,21 @@ local function scenario(initial, selected)
     }
     local fake_io = { open = function(path, mode)
         if mode ~= "w" and not files[path] then return nil end
-        return { read = function() return files[path] end, write = function(_, value) files[path] = value end, close = function() end }
+        return { read = function() return files[path] end, write = function(_, value) files[path] = value; return true end, close = function() return true end }
     end }
     local run = assert(loadstring(source))
-    setfenv(run, setmetatable({ io = fake_io, require = function() return mock end,
-        loadfile = function() return function() return {audio_device = "Test Capture"} end end }, {__index = _G}))
+    local env = setmetatable({ io = fake_io, require = function() return mock end,
+        loadfile = function() return function() return {audio_device = "Test Capture"} end end }, {__index = _G})
+    env.dofile = function(path)
+        assert(path == "./scripts/modules/msc_settings.lua")
+        local load = assert(loadstring(module_source)); setfenv(load, env); return load()
+    end
+    setfenv(run, env)
     run()
     assert(props["user-data/audio-active-mode"] == initial)
     messages["set-audio-mode"](selected)
     assert(props["user-data/audio-mode"] == selected)
+    assert(files["./data/menu/audio_mode.txt"] == selected .. "\n", "selection must use the new settings folder")
     assert(props["user-data/audio-active-mode"] == initial, "selection must not change the running backend")
     messages["audio-volume-set"]("25")
     if initial == "ffplay" then
@@ -50,6 +59,7 @@ real_mp.add_timeout(0, function()
         scenario("ffplay", "plugin")
         scenario("plugin", "ffplay")
         scenario("mpv", "plugin")
+        scenario("plugin", "ffplay", false)
     end)
     if ok then real_mp.msg.info("PASS: plugin routing, boost, startup and mode changes deferred until restart")
     else real_mp.msg.error(tostring(err)) end

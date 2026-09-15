@@ -11,6 +11,8 @@ scripts/.installed-versions.json
 data/boost.txt
 data/boost_restart.flag
 data/audio_mode.txt
+data/hover_volume.txt
+data/menu/*.txt
 *.log
 *.bak
 Thumbs.db
