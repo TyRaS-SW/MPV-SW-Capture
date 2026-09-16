@@ -33,8 +33,13 @@ local hover_screenshot, hover_record, hover_lang = false, false, false
 local audio = { volume = nil, boost = 100, muted = false, pending = false, version = 0 }
 local hit = {}
 local ov = mp.create_osd_overlay("ass-events")
+local edge_ov = mp.create_osd_overlay("ass-events")
 local sx, sy = 1, 1
 local hide_timer = nil
+local edge_visible, edge_drag, edge_bound = false, false, false
+local edge_hide_timer, edge_hit = nil, nil
+local edge_window_dragging = nil
+local edge_render, edge_set_from_y, inside, pos
 local audio_refreshed = false
 local boost_debounce = nil      -- timer for debounced boost send
 local volume_debounce = nil     -- timer for debounced volume send
@@ -54,6 +59,15 @@ local function getroot()
     root = (mp.get_property("config-path") or "."):gsub("\\", "/")
     return root
 end
+
+local settings = dofile(getroot() .. "/scripts/modules/msc_settings.lua")
+local function load_edge_enabled()
+    local value = settings.read("hover_volume.txt")
+    if value == nil then return true end
+    return value:match("^%s*(.-)%s*$") ~= "no"
+end
+local edge_enabled = load_edge_enabled()
+mp.set_property_bool("user-data/hover-volume", edge_enabled)
 
 local function osd(s)
     if (mp.get_property_number("osd-duration") or 1000) > 0 then
@@ -256,19 +270,36 @@ local function ps(rel, args, cb)
     end)
 end
 
+local function using_native_audio()
+    local mode = mp.get_property_native("user-data/audio-active-mode") or mp.get_property_native("user-data/audio-mode")
+    return mode == "mpv" or mode == "plugin"
+end
+
 -- `attempt` is internal: when the first call comes back empty (ffplay not
 -- running yet), retry every 500ms up to 8 times (4 seconds total).
 local function audio_refresh(attempt)
+    -- Native refresh renders synchronously. Mark it before rendering so the
+    -- Audio/Quick page cannot re-enter this function through render().
+    audio_refreshed = true
     attempt = attempt or 1
     audio.version = audio.version + 1
     local current_version = audio.version
     audio.pending = true
+    if using_native_audio() then
+        audio.volume = math.floor((mp.get_property_number("volume") or 100) + 0.5)
+        audio.muted = mp.get_property_bool("mute", false)
+        audio.boost = tonumber((mp.get_property_native("user-data/audio-boost"))) or 100
+        audio.pending = false
+        if visible then render() end
+        if edge_visible then edge_render() end
+        return
+    end
     ps("data/ffplayvol.ps1", { "get", "ffplay" }, function(ok, r)
         if current_version ~= audio.version then return end
         local n = ok and r and num(r.stdout)
-        if not n and attempt < 8 and visible then
+        if not n and attempt < 8 and (visible or edge_visible) then
             mp.add_timeout(0.5, function()
-                if visible then audio_refresh(attempt + 1) end
+                if visible or edge_visible then audio_refresh(attempt + 1) end
             end)
             return
         end
@@ -279,6 +310,7 @@ local function audio_refresh(attempt)
             if b then audio.boost = b end
             audio.pending = false
             if visible then render() end
+            if edge_visible then edge_render() end
         end)
     end)
 end
@@ -287,6 +319,12 @@ end
 -- Prevents parallel ffplay restart storms when the user drags fast.
 local function schedule_volume_send(value)
     if volume_debounce then volume_debounce:kill(); volume_debounce = nil end
+    if using_native_audio() then
+        -- Native volume is cheap to update in-process, including during a drag.
+        mp.set_property_number("volume", value)
+        mp.set_property("user-data/audio-volume", tostring(value))
+        return
+    end
     volume_debounce = mp.add_timeout(0.4, function()
         volume_debounce = nil
         ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
@@ -297,7 +335,11 @@ local function schedule_boost_send(value)
     if boost_debounce then boost_debounce:kill(); boost_debounce = nil end
     boost_debounce = mp.add_timeout(0.5, function()
         boost_debounce = nil
-        ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        if using_native_audio() then
+            mp.commandv("script-message-to", "audio_mode", "audio-boost-set", tostring(value))
+        else
+            ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        end
     end)
 end
 
@@ -319,6 +361,10 @@ local function boostset(v)
 end
 
 local function mute()
+    if using_native_audio() then
+        mp.commandv("script-message-to", "audio_mode", "audio-mute")
+        return
+    end
     ps("data/ffplayvol.ps1", { "togglemute", "ffplay" }, function(ok, r)
         if ok and r then
             audio.muted = not (r.stdout or ""):match("unmuted")
@@ -1612,21 +1658,197 @@ function render()
 end
 
 -- ------------------------------------------------------------
+-- Edge audio sliders
+-- Appears only when the pointer reaches the far-left edge of the video.
+-- ------------------------------------------------------------
+edge_render = function()
+    if not edge_visible then
+        edge_ov.data = ""
+        edge_ov:update()
+        return
+    end
+
+    local ow = mp.get_property_number("osd-width") or RW
+    local oh = mp.get_property_number("osd-height") or RH
+    local rail_h = math.min(260, math.max(160, oh - 120))
+    local rail_y = math.floor((oh - rail_h) / 2)
+    local rail_x, rail_w = 0, 104
+    local track_x, boost_x, track_w = 28, 72, 10
+    local track_y, track_h = rail_y + 34, rail_h - 68
+    local volume = math.max(0, math.min(100, tonumber(audio.volume) or 100))
+    local boost = math.max(100, math.min(BOOST, tonumber(audio.boost) or 100))
+    local volume_h = math.floor(track_h * volume / 100 + 0.5)
+    local boost_h = math.floor(track_h * (boost - 100) / (BOOST - 100) + 0.5)
+    local volume_y = track_y + track_h - volume_h
+    local boost_y = track_y + track_h - boost_h
+
+    edge_hit = {
+        panel = { rail_x, rail_y, rail_x + rail_w, rail_y + rail_h },
+        bars = {
+            { x1 = 10, x2 = 50, y1 = track_y, y2 = track_y + track_h, meter = "volume" },
+            { x1 = 54, x2 = 96, y1 = track_y, y2 = track_y + track_h, meter = "boost" },
+        },
+    }
+
+    local a = assdraw.ass_new()
+    rect(a, rail_x, rail_y, rail_w, rail_h, C.panel, 0x12)
+    rect(a, rail_w - 1, rail_y, 1, rail_h, C.edge, 0x00)
+    rect(a, track_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, track_x, volume_y, track_w, volume_h, C.accent, 0x00)
+    rect(a, 23, volume_y - 2, 20, 4, C.hi, 0x00)
+    rect(a, boost_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, boost_x, boost_y, track_w, boost_h, C.amber, 0x00)
+    rect(a, 67, boost_y - 2, 20, 4, C.hi, 0x00)
+    text(a, 29, rail_y + 17, "VOL", C.dim, 11, true, 5)
+    text(a, 77, rail_y + 17, "BST", C.dim, 11, true, 5)
+    text(a, 29, rail_y + rail_h - 15, string.format("%d", volume), C.hi, 12, true, 5)
+    text(a, 77, rail_y + rail_h - 15, string.format("%d", boost), C.hi, 12, true, 5)
+
+    edge_ov.res_x, edge_ov.res_y = ow, oh
+    edge_ov.data = a.text
+    edge_ov:update()
+end
+
+local function edge_unbind()
+    if not edge_bound then return end
+    mp.remove_key_binding("msc_edge_lmb")
+    edge_bound = false
+end
+
+local function edge_hide()
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    edge_drag = false
+    edge_visible = false
+    edge_hit = nil
+    edge_unbind()
+    if edge_window_dragging ~= nil then
+        mp.set_property("window-dragging", edge_window_dragging and "yes" or "no")
+        edge_window_dragging = nil
+    end
+    edge_render()
+end
+
+local function toggle_edge_enabled()
+    local enabled = not edge_enabled
+    local ok, err = settings.write("hover_volume.txt", enabled and "yes\n" or "no\n")
+    if not ok then
+        msg.error("Cannot save hover volume setting: " .. tostring(err))
+        osd("Could not save hover volume setting")
+        return
+    end
+    edge_enabled = enabled
+    mp.set_property_bool("user-data/hover-volume", edge_enabled)
+    if not edge_enabled then edge_hide() end
+    if visible then render() end
+end
+
+local function edge_show()
+    if not edge_enabled then return end
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    if edge_visible then return end
+    edge_visible = true
+    -- mpv enables click-and-drag window movement by default. Disable it only
+    -- while this rail is available, otherwise Windows can treat a slider drag
+    -- as a request to move the capture window.
+    edge_window_dragging = mp.get_property_bool("window-dragging", true)
+    mp.set_property("window-dragging", "no")
+    audio_refresh()
+    edge_render()
+    mp.add_forced_key_binding("MBTN_LEFT", "msc_edge_lmb", function(e)
+        local x, y = pos()
+        if e.event == "down" and edge_hit and x and y then
+            for _, bar in ipairs(edge_hit.bars or {}) do
+                if inside(bar, x, y) then
+                    edge_drag = bar
+                    edge_set_from_y(y, bar)
+                    break
+                end
+            end
+        elseif e.event == "up" and edge_drag then
+            local meter = edge_drag.meter
+            edge_drag = false
+            if meter == "boost" then
+                schedule_boost_send(audio.boost or 100)
+            else
+                schedule_volume_send(audio.volume or 100)
+            end
+        end
+    end, { complex = true })
+    edge_bound = true
+end
+
+edge_set_from_y = function(y, bar)
+    local b = bar or edge_drag
+    if not b or not y then return end
+    local f = (b.y2 - y) / (b.y2 - b.y1)
+    f = math.max(0, math.min(1, f))
+    if b.meter == "boost" then
+        audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
+    else
+        audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
+    end
+    edge_render()
+end
+
+local edge_mouse_initialized = false
+local edge_mouse_x, edge_mouse_y
+local function edge_mousemove()
+    local mouse = mp.get_property_native("mouse-pos")
+    if not mouse then return end
+    local x, y = mouse.x, mouse.y
+    local moved = x ~= edge_mouse_x or y ~= edge_mouse_y
+    edge_mouse_x, edge_mouse_y = x, y
+    -- Observers receive an initial snapshot, often (0, 0), before any mouse
+    -- movement. Establish a baseline without treating it as an edge hover.
+    if not edge_mouse_initialized then
+        edge_mouse_initialized = true
+        return
+    end
+    if visible or not edge_enabled then return end
+    if not x or not y then return end
+
+    if edge_drag then
+        edge_set_from_y(y, edge_drag)
+        return
+    end
+
+    if not mouse.hover then
+        if edge_visible and not edge_hide_timer then
+            edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+        end
+        return
+    end
+    if not moved and not edge_visible then return end
+
+    -- The first 10 pixels are the reveal zone; once shown, the whole rail
+    -- remains interactive and hides one second after the pointer leaves it.
+    if (x >= 0 and x <= 10) or (edge_hit and inside(edge_hit.panel, x, y)) then
+        edge_show()
+        return
+    end
+
+    if edge_visible and not edge_hide_timer then
+        edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+    end
+end
+
+-- ------------------------------------------------------------
 -- Input handling
 -- ------------------------------------------------------------
-local function inside(box, x, y)
+inside = function(box, x, y)
     if not box then return false end
     local x1, y1, x2, y2 = box[1] or box.x1, box[2] or box.y1, box[3] or box.x2, box[4] or box.y2
     return x >= x1 and x <= x2 and y >= y1 and y <= y2
 end
 
-local function pos()
+pos = function()
     local m = mp.get_property_native("mouse-pos")
     return m and m.x, m and m.y
 end
 
--- Slider drag: update only the visual state while dragging,
--- send the final value to PowerShell once on release.
+-- Slider drag: apply native volume immediately; send FFplay's final value
+-- to PowerShell once on release.
 -- Guards against NaN, division by zero, and stale hitboxes.
 local function fromx(h, x)
     if not h or not h.bar_x1 or not h.bar_x2 then return end
@@ -1635,8 +1857,8 @@ local function fromx(h, x)
     if f ~= f then return end   -- NaN check
     f = math.max(0, math.min(1, f))
     if h.meter == "volume" then
-        -- Visual-only update; the real value is sent on release.
         audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
         render()
     else
         audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
@@ -1962,6 +2184,7 @@ end
 -- ------------------------------------------------------------
 function show()
     if visible then return end
+    edge_hide()
     visible = true
     cancel_hide_timer()
     if section > #SECTIONS then section = 1 end
@@ -1982,6 +2205,7 @@ end
 mp.add_key_binding(nil, "toggle-overlay", toggle)
 mp.register_script_message("toggle-overlay", toggle)
 mp.register_script_message("close-overlay", hide)
+mp.register_script_message("toggle-hover-volume", toggle_edge_enabled)
 
 mp.register_script_message("reload-lang", function()
     rebuild_dicts()
@@ -1998,9 +2222,46 @@ end)
 
 mp.observe_property("osd-width", "number", function()
     if visible then render() end
+    if edge_visible then edge_render() end
 end)
 
-mp.register_event("shutdown", hide)
+-- Native MPV audio changes happen in-process, so reflect them immediately in
+-- both the full Audio page and the edge sliders.
+mp.observe_property("volume", "number", function(_, value)
+    if using_native_audio() and value then
+        audio.volume = math.floor(value + 0.5)
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("mute", "bool", function(_, value)
+    if using_native_audio() then
+        audio.muted = value and true or false
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-boost", "native", function(_, value)
+    if using_native_audio() and value then
+        audio.boost = tonumber(value) or 100
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-mode", "native", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
+end)
+mp.observe_property("user-data/audio-active-mode", "native", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
+end)
+
+mp.observe_property("mouse-pos", "native", edge_mousemove)
+mp.register_event("shutdown", function()
+    hide()
+    edge_hide()
+end)
 
 msg.info("MSC overlay loaded. Use script-message toggle-overlay.")
 

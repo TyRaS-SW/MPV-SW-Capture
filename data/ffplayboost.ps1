@@ -10,7 +10,7 @@
 # This script amplifies inside ffplay instead, using the ffmpeg "volume" audio
 # filter (-af volume=<gain>). ffplay cannot change its filter graph at runtime,
 # so applying a new boost relaunches ffplay with the same low-latency flags the
-# launcher uses. The chosen level is persisted in data\boost.txt so it is
+# launcher uses. The chosen level is persisted in data\menu\boost.txt so it is
 # reapplied on the next start.
 #
 # Usage:
@@ -31,7 +31,8 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir   = Split-Path -Parent $scriptDir
-$statePath = Join-Path $scriptDir "boost.txt"
+. (Join-Path $scriptDir 'menu_settings.ps1')
+$statePath = Join-Path $scriptDir "menu/boost.txt"
 $ffplayExe = Join-Path $rootDir "ffplay.exe"
 $batPath   = Join-Path $scriptDir "MPV-SW-Capture.bat"
 $flagPath  = Join-Path $scriptDir "boost_restart.flag"
