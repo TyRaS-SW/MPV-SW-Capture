@@ -373,6 +373,7 @@ $script:CheckedMpvAvailable = $null
 $script:CheckedMyAvailable = $null
 $script:GitHubRateLimited = $false
 $script:ExtraToolsZipPattern = "*TOOLS*.zip"
+$script:Cached7zrExe = $null
 
 function Get-GitHubToken {
     if ($env:GITHUB_TOKEN) { return $env:GITHUB_TOKEN.Trim() }
@@ -941,22 +942,101 @@ function Get-SelectedMpvVariant {
 # ============================================================
 #  EXTRACTION FUNCTIONS (using tar.exe)
 # ============================================================
+# Locates (or downloads and caches) 7zr.exe, the official standalone
+# extractor from 7-Zip. Only used when tar.exe fails, since 7zr fully
+# supports the LZMA2 variants that some builds (like recent mpv-winbuild
+# releases) use but bsdtar does not.
+function Get-7zrExe {
+    if ($script:Cached7zrExe -and (Test-Path -LiteralPath $script:Cached7zrExe)) {
+        return $script:Cached7zrExe
+    }
+
+    # Download 7zr.exe once and cache it in %LOCALAPPDATA%. We deliberately
+    # do NOT scan for an already-installed 7-Zip: enumerating Program Files
+    # and executing third-party binaries found there can trip antivirus
+    # heuristics. Relying on a single known upstream source keeps behaviour
+    # predictable and the detection profile clean.
+    $cacheDir = Join-Path $env:LOCALAPPDATA 'MPV-SW-Capture'
+    if (-not (Test-Path -LiteralPath $cacheDir)) {
+        New-Item -ItemType Directory -Path $cacheDir -Force | Out-Null
+    }
+    $sevenZr = Join-Path $cacheDir '7zr.exe'
+    if (Test-Path -LiteralPath $sevenZr) {
+        $script:Cached7zrExe = $sevenZr
+        return $sevenZr
+    }
+
+    Log-Info "[7z] Downloading 7zr.exe (one-time)..."
+    try {
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri 'https://www.7-zip.org/a/7zr.exe' -OutFile $sevenZr -UseBasicParsing
+        $ProgressPreference = 'Continue'
+    } catch {
+        Log-Error ([string]::Format((T 'Log7zError'), $_.Exception.Message))
+        return $null
+    }
+    if (-not (Test-Path -LiteralPath $sevenZr)) {
+        Log-Error ([string]::Format((T 'Log7zError'), 'download produced no file'))
+        return $null
+    }
+    $script:Cached7zrExe = $sevenZr
+    return $sevenZr
+}
+
 function Expand-Archive7z {
     param([string]$archive, [string]$dest)
+
+    if (-not (Test-Path $dest)) {
+        New-Item -ItemType Directory -Path $dest -Force | Out-Null
+    }
+
+    # --- Attempt 1: tar.exe (fast, always present on Windows 10/11) ---
     try {
-        if (-not (Test-Path $dest)) {
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
-        }
         $tarExe = if (Test-Path "$env:SystemRoot\System32\tar.exe") { "$env:SystemRoot\System32\tar.exe" } else { "tar.exe" }
-        $p = Start-Process -FilePath $tarExe -ArgumentList @("-xf", "`"$archive`"", "-C", "`"$dest`"") -Wait -PassThru -WindowStyle Minimized
+        $p = Start-Process -FilePath $tarExe `
+            -ArgumentList @("-xf", "`"$archive`"", "-C", "`"$dest`"") `
+            -Wait -PassThru -WindowStyle Minimized
+
         if ($p.ExitCode -eq 0) {
             return $true
-        } else {
-            Log-Error ("[tar] Extraction failed with code " + $p.ExitCode)
-            return $false
         }
+        Log-Warn ("[tar] Extraction failed with code " + $p.ExitCode + ". Falling back to 7zr.")
     } catch {
-        Log-Error ("[tar] Extraction error: " + $_.Exception.Message)
+        Log-Warn ("[tar] Extraction error: " + $_.Exception.Message + ". Falling back to 7zr.")
+    }
+
+    # --- Attempt 2: 7zr fallback ---
+    # tar may have extracted some files before failing. Clear the destination
+    # so 7zr starts from a clean state and we don't end up with a mix of
+    # partial extracts.
+    try {
+        if (Test-Path -LiteralPath $dest) {
+            Get-ChildItem -LiteralPath $dest -Force | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
+
+    $sevenZr = Get-7zrExe
+    if (-not $sevenZr) {
+        Log-Error "[7z] No 7z extractor available for fallback."
+        return $false
+    }
+
+    try {
+        # 7zr syntax: 7zr.exe x <archive> -o<dest> -y
+        # -o<dest> has no space between the flag and the path.
+        $outFlag = "-o" + $dest.TrimEnd('\')
+        $p = Start-Process -FilePath $sevenZr `
+            -ArgumentList @('x', "`"$archive`"", $outFlag, '-y') `
+            -Wait -PassThru -WindowStyle Minimized
+
+        if ($p.ExitCode -eq 0) {
+            Log-OK "[7z] Extraction succeeded with 7zr fallback."
+            return $true
+        }
+        Log-Error ("[7z] Fallback extraction failed with code " + $p.ExitCode)
+        return $false
+    } catch {
+        Log-Error ("[7z] Fallback extraction error: " + $_.Exception.Message)
         return $false
     }
 }
