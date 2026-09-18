@@ -147,6 +147,11 @@ Other Video Options=Otras Opciones de Video
 #  AUDIO
 # ============================================================
 Mute/Unmute=Silenciar/Activar sonido
+Audio plugin is not built. Run native-audio/build.ps1 first.=El plugin de audio no está compilado. Ejecuta native-audio/build.ps1 primero.
+WASAPI Audio Plugin selected. Restart MPV-SW-Capture to apply.=Plugin WASAPI seleccionado. Reinicia MPV-SW-Capture para aplicar.
+FFplay low-latency audio selected. Restart MPV-SW-Capture to apply.=Audio FFplay de baja latencia seleccionado. Reinicia MPV-SW-Capture para aplicar.
+Audio plugin: no capture device configured. Run Setup first.=Plugin de audio: no hay dispositivo de captura configurado. Ejecuta Setup primero.
+Audio plugin:=Plugin de audio:
 
 # ============================================================
 #  OTHERS - TOOLS

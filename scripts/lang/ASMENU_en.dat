@@ -1,7 +1,17 @@
 # ASMENU_en.dat - By TyRaS-SW - English strings for msc_overlay.lua
 # Exact match (case-insensitive fallback)
+#
+# Structure:
+#   1. General UI
+#   2. Volume / Audio (base labels)
+#   3. Headers
+#   4. Section descriptions (DESC_*)
+#   5. Per-tab descriptions (DESC_<SECTION>_<TAB>)
+#   6. Keyboard / Mouse hints
 
+# --- 1. General UI ---------------------------------------------------------
 Quick=Quick Options
+Hover Volume Sidebar=Hover Volume Sidebar
 CAPTURE=CAPTURE
 HELP=HELP
 Take Screenshot=Take Screenshot
@@ -15,17 +25,73 @@ Info Stream=Info Stream
 Help=Help
 SETTINGS=SETTINGS
 Switch Language=Switch Language
+CLEAN ALL=CLEAN ALL
+Close MPV-SW-Capture=Close MPV-SW-Capture
 
+# --- Toggle state labels + ICC ---
+ON=ON
+OFF=OFF
+Change to Auto ICC Profile=Change to Auto ICC Profile
+
+# --- 2. Volume / Audio (base labels) --------------------------------------
 Volume=Volume
 Audio Boost=Audio Boost
 MUTED=MUTED
 no signal=no signal
+Hover Volume Sidebar=Hover Volume Sidebar
 
-CLEAN ALL=CLEAN ALL
-Close MPV-SW-Capture=Close MPV-SW-Capture
+# --- Audio section: tab names ---------------------------------------------
+All=All
+AUDIO BOOST=AUDIO BOOST
+AUDIO OUTPUT MODE=AUDIO OUTPUT MODE
 
-KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.
-MOUSE: Click any section to choose an option.=MOUSE: Click any section to choose an option.
+# --- Audio section: volume actions ----------------------------------------
+Vol +10%=Vol +10%
+Vol -10%=Vol -10%
+Mute/Unmute=Mute/Unmute
+Vol 100%=Vol 100%
+Vol 50%=Vol 50%
 
+# --- Audio section: boost actions -----------------------------------------
+Boost +25%=Boost +25%
+Boost -25%=Boost -25%
+Boost 150%=Boost 150%
+Boost 200%=Boost 200%
+Boost 300%=Boost 300%
+No Boost (100%)=No Boost (100%)
+
+# --- Audio section: output mode actions -----------------------------------
+FFplay Low Latency=FFplay Low Latency
+WASAPI Audio Plugin=WASAPI Audio Plugin
+WASAPI Audio Plugin Diagnostics=WASAPI Audio Plugin Diagnostics
+Restart WASAPI Audio Plugin=Restart WASAPI Audio Plugin
+
+# --- 3. Headers ------------------------------------------------------------
 SCREENSHOT_HEADER=TAKE SCREENSHOT
 RECORD_HEADER=RECORD VIDEO
+
+# --- 4. Section descriptions ----------------------------------------------
+DESC_SHADERS=SHADERS|Improve the image with upscaling, sharpening, retro CRT effects and more.
+DESC_SHAPES=SHAPES|Change the screen geometry with curvature, keystone or rounded corners.
+DESC_CROPS=CROPS|Crop the image to match the exact resolution of your choice, like to NSO and others.
+DESC_BEZELS=BEZELS|Overlay decorative borders for a more authentic look.
+DESC_WINDOW=WINDOW|Resize, reposition, rotate, or keep the window always on top.
+DESC_CAPTURE=CAPTURE|Take screenshots or record video clips of your gameplay.
+DESC_VIDEO_OPTIONS=VIDEO OPTIONS|Adjust color, aspect ratio, deinterlacing and motion settings.
+DESC_AUDIO=AUDIO|Control the volume, mute, and Audio Boost up to 400%.
+DESC_HELP=HELP|Check for updates, open the website or join the Discord community.
+DESC_TOOLS=TOOLS|Launch MPV-SW-Capture TOOLS, INSTALLER or SETUP directly from here.
+
+# --- 5. Per-tab descriptions ----------------------------------------------
+DESC_WINDOW_SIZE=SIZE|Choose the window scale from 0.5x to 2.0x, or go fullscreen.
+DESC_WINDOW_POSITION=POSITION|Move the window to one of nine predefined screen positions.
+DESC_WINDOW_ROTATION=ROTATION|Rotate the image 90 degrees or enable Mirror Mode.
+DESC_WINDOW_OTHER_OPTIONS=OTHER OPTIONS|Toggle the window border, the title bar, or remove both at once.
+DESC_WINDOW_WINDOW_EXTRAS=WINDOW EXTRAS|Keep the window always on top or stretch the aspect ratio.
+DESC_AUDIO_ALL=ALL|Quick volume actions: +10%, -10%, mute, or set to 100% / 50%.
+DESC_AUDIO_AUDIO_BOOST=AUDIO BOOST|Amplify capture audio above 100% (up to 400%) for low-volume content.
+DESC_AUDIO_AUDIO_OUTPUT_MODE=OUTPUT MODE|Choose which audio backend handles the capture stream.
+
+# --- 6. Keyboard / Mouse hints --------------------------------------------
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.
+MOUSE: Click any section to choose an option.=MOUSE: Click any section to choose an option.

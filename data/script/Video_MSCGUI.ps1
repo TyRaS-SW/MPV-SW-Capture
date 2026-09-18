@@ -1,5 +1,5 @@
 # Video_MSCGUI.ps1 - By TyRaS-SW
-# GUI Tool for Sdvanced Video Configurations
+# GUI Tool for Advanced Video Configurations
 # EN/ES GUI - PowerShell 5+ (Windows 10/11)
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -67,7 +67,7 @@ function Load-GUILanguage {
             }
         } catch {}
     }
-    # Si no existe o es inválido, devolver "EN" y crear el archivo
+    # If missing or invalid, return "EN" and create the file
     Save-GUILanguage "EN"
     return "EN"
 }
@@ -83,7 +83,13 @@ function Save-GUILanguage([string]$lang) {
 
 $script:CurrentLang = 'EN'
 $script:LogEntries = New-Object System.Collections.Generic.List[object]
-$script:DefaultLine = 'start "" /b "%prog1_path%" av://dshow:video="%video_device%" --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 --untimed --no-border --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no'
+
+# Default start line. Must match the pattern of the actual line in
+# MPV-SW-Capture.bat, including the variable placeholders (%capture_source%,
+# %timing_args%, %native_audio_args%, %ROOT_DIR%) that are resolved by the
+# BAT at runtime. If the BAT's structure changes in the future, update both
+# this string AND Get-MpvLineIndex's pattern.
+$script:DefaultLine = 'start "" /b "%prog1_path%" --no-border --config-dir="%ROOT_DIR%" %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%'
 
 # ============================================================
 #  FORM ICON (prioritizes data\icon\videomsc.ico)
@@ -228,7 +234,21 @@ function Set-Or-ReplaceOption([string]$Line,[string]$Name,[string]$Value){ $patt
 function Remove-Option([string]$Line,[string]$Name){ return ([regex]::Replace($Line,'(?i)\s--' + [regex]::Escape($Name) + '=[^\s]+','')) }
 function Normalize-Spaces([string]$Line){ return (($Line -replace '\s{2,}',' ').TrimEnd()) }
 function Load-BatLines { if(-not (Test-Path -LiteralPath $script:BatPath)){ throw (T 'MsgBatMissing') }; return [IO.File]::ReadAllLines($script:BatPath,[Text.UTF8Encoding]::new($false)) }
-function Get-MpvLineIndex([string[]]$Lines){ for($i=0; $i -lt $Lines.Count; $i++){ if($Lines[$i] -match 'start "" /b "%prog1_path%"' -and $Lines[$i] -match 'av://dshow:video='){ return $i } }; return -1 }
+
+# Locates the mpv start line inside the BAT. Uses two markers:
+#   * 'start "" /b "%prog1_path%"' — the invocation of the mpv executable.
+#   * '--profile=low-latency'      — a launch flag that is part of the mpv
+#                                    invocation itself, not a variable.
+# Avoid matching on things like 'av://dshow:video=' because that string now
+# lives inside a BAT variable (%capture_source%) and no longer appears
+# literally in the start line.
+function Get-MpvLineIndex([string[]]$Lines){
+    for($i=0; $i -lt $Lines.Count; $i++){
+        if($Lines[$i] -like '*start "" /b "%prog1_path%"*' -and $Lines[$i] -like '*--profile=low-latency*'){ return $i }
+    }
+    return -1
+}
+
 function Parse-LineToValues([string]$line){
     $rtbuf = Get-OptionValue $line 'demuxer-lavf-o-set=rtbufsize'; if([string]::IsNullOrWhiteSpace($rtbuf)){ $rtbuf = '64M' }
     $videoSize = Get-OptionValue $line 'demuxer-lavf-o-set=video_size'; if([string]::IsNullOrWhiteSpace($videoSize)){ $videoSize = '1920x1080' }
@@ -462,7 +482,7 @@ function Apply-Lang([string]$lang){
 }
 
 # ============================================================
-#  EVENTOS (modificados para guardar el idioma)
+#  EVENTS (language saved on switch)
 # ============================================================
 $btnEN.Add_Click({
     Apply-Lang 'EN'
@@ -481,7 +501,7 @@ $btnSaveCustom.Add_Click({ try { Save-CustomJson } catch { Set-Status $_.Excepti
 $btnImportCustom.Add_Click({ try { $ans=[Windows.Forms.MessageBox]::Show((T 'MsgImportConfirm'),(T 'MsgConfirmTitle'),[Windows.Forms.MessageBoxButtons]::YesNo,[Windows.Forms.MessageBoxIcon]::Question); if($ans -ne [Windows.Forms.DialogResult]::Yes){ return }; Import-CustomJson } catch { Set-Status $_.Exception.Message } })
 
 # ============================================================
-#  INIT (cargar idioma guardado)
+#  INIT (load saved language)
 # ============================================================
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang

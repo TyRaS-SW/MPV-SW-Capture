@@ -20,15 +20,14 @@ function Get-RootDir {
 $script:RootDir = Get-RootDir
 $script:ToolsDir = Join-Path $script:RootDir "tools"
 $script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
+$script:AudioModePath = Join-Path $script:RootDir "data\menu\audio_mode.txt"
 
 function Load-GUILanguage {
     if (Test-Path $script:LangFilePath) {
         try {
             $content = Get-Content $script:LangFilePath -Encoding UTF8 -Raw
             $content = $content.Trim().ToUpper()
-            if ($content -eq "EN" -or $content -eq "ES") {
-                return $content
-            }
+            if ($content -eq "EN" -or $content -eq "ES") { return $content }
         } catch {}
     }
     Save-GUILanguage "EN"
@@ -37,9 +36,7 @@ function Load-GUILanguage {
 
 function Save-GUILanguage([string]$lang) {
     $dir = Split-Path -Parent $script:LangFilePath
-    if (-not (Test-Path $dir)) {
-        New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    }
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     $content = if ($lang -eq "EN") { "en" } else { "es" }
     [System.IO.File]::WriteAllText($script:LangFilePath, $content, [System.Text.Encoding]::UTF8)
 }
@@ -117,6 +114,12 @@ $script:Lang["EN"] = @{
     S2OSDLogActivated = "[OSD] Streamer Mode activated."
     S2OSDLogDeactivated = "[OSD] Streamer Mode deactivated."
     S2OSDLogError   = "[OSD] Error: {0}"
+    S2AudioNoticeFfplay = "FFPLAY: this tool ONLY makes ffplay.exe compatible with OBS. WASAPI does NOT need it."
+    S2AudioNoticeWasapi = "WASAPI: this tool is NOT needed. OBS captures audio natively."
+    S2AudioSwitchBtn = "Switch to FFPLAY mode"
+    S2AudioSwitchConfirm = "Change the audio mode to FFPLAY?`n`nYou must restart MPV-SW-Capture for the change to take effect."
+    S2AudioSwitchDone = "Audio mode switched to FFPLAY. Restart MPV-SW-Capture to apply."
+    S2AudioSwitchErr = "Could not switch audio mode: {0}"
     S3Title         = "[OBS] SCENE CONFIGURATION"
     S3Desc          = "OPTIONAL: Install scene collection or add sources to existing scene automatically."
     S3Note          = "NOTE: If you already configured it. It's recommended to make a backup before doing anything."
@@ -161,6 +164,8 @@ $script:Lang["EN"] = @{
     LogRestoreOK    = "[Restore] Restore completed successfully."
     LogRestoreErr   = "[Restore] Error: {0}"
     LogSceneNoCollections = "[Scene] No scene collections found."
+    LogAudioModeFfplay = "[Audio] Current audio mode: FFPLAY (compatible)."
+    LogAudioModeWasapi = "[Audio] Current audio mode: WASAPI (NOT compatible with this tool)."
     ConfirmCloseOBS = "OBS Studio is currently running.`n`nPlease close OBS before continuing, as the configuration files need to be updated."
     ConfirmTitle    = "MPV-SW-Capture Stream Manager"
     ConfirmUninstallPlugin = "Are you sure you want to uninstall the win-capture-audio plugin?`n`nThis will remove all plugin files from OBS."
@@ -209,6 +214,12 @@ $script:Lang["ES"] = @{
     S2OSDLogActivated = "[OSD] Modo Streamer activado."
     S2OSDLogDeactivated = "[OSD] Modo Streamer desactivado."
     S2OSDLogError   = "[OSD] Error: {0}"
+    S2AudioNoticeFfplay = "FFPLAY: esta herramienta SOLO hace compatible ffplay.exe con OBS. WASAPI NO la necesita."
+    S2AudioNoticeWasapi = "WASAPI: NO necesitas esta herramienta. OBS captura audio nativamente."
+    S2AudioSwitchBtn = "Cambiar a modo FFPLAY"
+    S2AudioSwitchConfirm = "Cambiar el modo de audio a FFPLAY?`n`nDebes reiniciar MPV-SW-Capture para aplicar el cambio."
+    S2AudioSwitchDone = "Modo de audio cambiado a FFPLAY. Reinicia MPV-SW-Capture para aplicar."
+    S2AudioSwitchErr = "No se pudo cambiar el modo de audio: {0}"
     S3Title         = "[OBS] CONFIGURACION DE ESCENA"
     S3Desc          = "OPCIONAL: Instala automaticamente escenas o agregar fuentes a escena existente."
     S3Note          = "NOTA: Si ya lo configuraste, se recomienda hacer un backup antes de hacer cualquier cambio."
@@ -253,6 +264,8 @@ $script:Lang["ES"] = @{
     LogRestoreOK    = "[Restore] Restauracion completada correctamente."
     LogRestoreErr   = "[Restore] Error: {0}"
     LogSceneNoCollections = "[Escena] No se encontraron colecciones de escenas."
+    LogAudioModeFfplay = "[Audio] Modo de audio actual: FFPLAY (compatible)."
+    LogAudioModeWasapi = "[Audio] Modo de audio actual: WASAPI (NO compatible con esta herramienta)."
     ConfirmCloseOBS = "OBS Studio se esta ejecutando.`n`nPor favor, cierra OBS antes de continuar, ya que los archivos de configuracion deben actualizarse."
     ConfirmTitle    = "MPV-SW-Capture Stream Manager"
     ConfirmUninstallPlugin = "Esta seguro de desinstalar el plugin win-capture-audio?`n`nSe eliminaran todos los archivos del plugin de OBS."
@@ -361,13 +374,50 @@ function Test-AdminRights {
 }
 
 # ============================================================
-# PERSISTENT CONFIG (dos modos separados)
+# AUDIO MODE DETECTION
+# ============================================================
+function Get-AudioMode {
+    if (-not (Test-Path $script:AudioModePath)) { return "plugin" }
+    try {
+        $content = (Get-Content $script:AudioModePath -Encoding UTF8 -Raw).Trim().ToLower()
+        if ($content -eq "ffplay") { return "ffplay" }
+        return "plugin"
+    } catch { return "plugin" }
+}
+
+function Set-AudioModeFFplay {
+    try {
+        $dir = Split-Path -Parent $script:AudioModePath
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        [IO.File]::WriteAllText($script:AudioModePath, "ffplay", [Text.UTF8Encoding]::new($false))
+        return $true
+    } catch { return $false }
+}
+
+function Update-AudioModeNotice {
+    if ($null -eq $script:lAudioNotice -or $null -eq $script:pnlNotice -or $null -eq $script:btnSwitchFfplay) { return }
+    $mode = Get-AudioMode
+    if ($mode -eq "ffplay") {
+        $script:lAudioNotice.Text = T "S2AudioNoticeFfplay"
+        $script:lAudioNotice.ForeColor = $script:SUCCESS
+        $script:pnlNotice.BackColor = [System.Drawing.Color]::FromArgb(30, 60, 40)
+        $script:btnSwitchFfplay.Visible = $false
+    } else {
+        $script:lAudioNotice.Text = T "S2AudioNoticeWasapi"
+        $script:lAudioNotice.ForeColor = $script:ACCENT3
+        $script:pnlNotice.BackColor = [System.Drawing.Color]::FromArgb(80, 50, 20)
+        $script:btnSwitchFfplay.Visible = $true
+    }
+}
+
+# ============================================================
+# PERSISTENT CONFIG
 # ============================================================
 $script:ConfigFile = Join-Path $script:ToolsDir "user-stream.json"
-$script:CurrentOBSMode = "Installed"  # "Installed" o "Portable"
+$script:CurrentOBSMode = "Installed"
 $script:OBSRootInstalled = $null
 $script:OBSRootPortable = $null
-$script:OBSRoot = $null  # Ruta activa según modo
+$script:OBSRoot = $null
 
 function Load-OBSConfig {
     if (Test-Path $script:ConfigFile) {
@@ -376,76 +426,39 @@ function Load-OBSConfig {
             $inst = $json.OBSRootInstalled
             $port = $json.OBSRootPortable
             $mode = $json.OBSMode
-
-            if ($inst -and (Test-Path (Join-Path $inst "bin\64bit\obs64.exe"))) {
-                $script:OBSRootInstalled = $inst
-            } else {
-                $script:OBSRootInstalled = $null
-            }
-            if ($port -and (Test-Path (Join-Path $port "bin\64bit\obs64.exe"))) {
-                $script:OBSRootPortable = $port
-            } else {
-                $script:OBSRootPortable = $null
-            }
-
-            if ($mode -eq "Installed" -or $mode -eq "Portable") {
-                $script:CurrentOBSMode = $mode
-            } else {
-                $script:CurrentOBSMode = "Installed"
-            }
-
-            # Compatibilidad con versiones antiguas (si solo tiene OBSRoot)
+            if ($inst -and (Test-Path (Join-Path $inst "bin\64bit\obs64.exe"))) { $script:OBSRootInstalled = $inst } else { $script:OBSRootInstalled = $null }
+            if ($port -and (Test-Path (Join-Path $port "bin\64bit\obs64.exe"))) { $script:OBSRootPortable = $port } else { $script:OBSRootPortable = $null }
+            if ($mode -eq "Installed" -or $mode -eq "Portable") { $script:CurrentOBSMode = $mode } else { $script:CurrentOBSMode = "Installed" }
             if ($json.OBSRoot -and -not $inst -and -not $port) {
                 $root = $json.OBSRoot
                 if (Test-Path (Join-Path $root "bin\64bit\obs64.exe")) {
-                    if ($json.OBSMode -eq "Portable") {
-                        $script:OBSRootPortable = $root
-                    } else {
-                        $script:OBSRootInstalled = $root
-                    }
+                    if ($json.OBSMode -eq "Portable") { $script:OBSRootPortable = $root } else { $script:OBSRootInstalled = $root }
                 }
             }
-
-            if ($script:CurrentOBSMode -eq "Installed") {
-                $script:OBSRoot = $script:OBSRootInstalled
-            } else {
-                $script:OBSRoot = $script:OBSRootPortable
-            }
+            if ($script:CurrentOBSMode -eq "Installed") { $script:OBSRoot = $script:OBSRootInstalled } else { $script:OBSRoot = $script:OBSRootPortable }
             return $script:OBSRoot
         } catch {}
     }
-    # Si no hay JSON, no se detecta automáticamente (el usuario debe usar Browse)
     $script:OBSRoot = $null
     return $null
 }
 
 function Save-OBSConfig([string]$root) {
     if ($root) {
-        if ($script:CurrentOBSMode -eq "Installed") {
-            $script:OBSRootInstalled = $root
-        } else {
-            $script:OBSRootPortable = $root
-        }
+        if ($script:CurrentOBSMode -eq "Installed") { $script:OBSRootInstalled = $root } else { $script:OBSRootPortable = $root }
         $script:OBSRoot = $root
     }
-    $obj = @{
-        OBSRootInstalled = $script:OBSRootInstalled
-        OBSRootPortable  = $script:OBSRootPortable
-        OBSMode          = $script:CurrentOBSMode
-    }
+    $obj = @{ OBSRootInstalled = $script:OBSRootInstalled; OBSRootPortable = $script:OBSRootPortable; OBSMode = $script:CurrentOBSMode }
     $obj | ConvertTo-Json | Set-Content $script:ConfigFile -Encoding UTF8
 }
 
 # ============================================================
-# OBS DETECTION AND CONFIGURATION (solo manual)
+# OBS DETECTION
 # ============================================================
 function Get-OBSUserConfig {
     param([bool]$Silent = $false)
     if ($script:OBSRoot) {
-        $portableCandidates = @(
-            (Join-Path $script:OBSRoot "config\obs-studio"),
-            (Join-Path $script:OBSRoot "config")
-        )
+        $portableCandidates = @((Join-Path $script:OBSRoot "config\obs-studio"), (Join-Path $script:OBSRoot "config"))
         foreach ($candidate in $portableCandidates) {
             if (Test-Path $candidate) {
                 if (-not $Silent) { Log-Info "[Config] Using config path: $candidate" }
@@ -454,10 +467,7 @@ function Get-OBSUserConfig {
         }
     }
     $config = "$env:APPDATA\obs-studio"
-    if (Test-Path $config) { 
-        if (-not $Silent) { Log-Info "[Config] Using APPDATA: $config" }
-        return $config 
-    }
+    if (Test-Path $config) { if (-not $Silent) { Log-Info "[Config] Using APPDATA: $config" }; return $config }
     if (-not $Silent) { Log-Warn "[Config] No OBS config folder found." }
     return $null
 }
@@ -465,27 +475,13 @@ function Get-OBSUserConfig {
 function Find-OBSRoot {
     param([string]$Mode = $script:CurrentOBSMode)
     Log-Info (T "LogDetecting")
-    
     $savedRoot = if ($Mode -eq "Installed") { $script:OBSRootInstalled } else { $script:OBSRootPortable }
-    
     if ($savedRoot -and (Test-Path (Join-Path $savedRoot "bin\64bit\obs64.exe"))) {
         Log-OK ([string]::Format((T "LogFound"), $savedRoot))
         return $savedRoot
     }
-    
     Log-Warn (T "LogNotFound")
     return $null
-}
-
-function Is-OBSPortable {
-    param([string]$obsRoot)
-    if ($obsRoot -match "Program Files" -or $obsRoot -match "ProgramFiles") {
-        return $false
-    }
-    if (Test-Path (Join-Path $obsRoot "config")) {
-        return $true
-    }
-    return $true
 }
 
 function Get-AllSceneCollections {
@@ -494,10 +490,7 @@ function Get-AllSceneCollections {
     $scenesDir = Join-Path $configPath "basic\scenes"
     if (-not (Test-Path $scenesDir)) { return @() }
     $collections = @()
-    Get-ChildItem -Path $scenesDir -Filter "*.json" | ForEach-Object {
-        $name = $_.BaseName
-        $collections += $name
-    }
+    Get-ChildItem -Path $scenesDir -Filter "*.json" | ForEach-Object { $collections += $_.BaseName }
     return $collections
 }
 
@@ -509,9 +502,7 @@ function Get-ActiveSceneCollection {
         try {
             $content = Get-Content $globalIni -Encoding UTF8
             foreach ($line in $content) {
-                if ($line -match '^SceneCollection\s*=\s*(.+)$') {
-                    return $Matches[1].Trim()
-                }
+                if ($line -match '^SceneCollection\s*=\s*(.+)$') { return $Matches[1].Trim() }
             }
         } catch {}
     }
@@ -523,8 +514,7 @@ function Get-ActiveSceneCollection {
 function Get-ScenesJsonPathForCollection {
     param([string]$collectionName)
     $configPath = Get-OBSUserConfig -Silent $true
-    if (-not $configPath) { return $null }
-    if (-not $collectionName) { return $null }
+    if (-not $configPath -or -not $collectionName) { return $null }
     $scenesPath = Join-Path $configPath "basic\scenes\$collectionName.json"
     if (Test-Path $scenesPath) { return $scenesPath }
     return $null
@@ -534,24 +524,17 @@ function Ensure-GlobalIni {
     param([string]$configPath, [string]$collectionName)
     $globalIni = Join-Path $configPath "global.ini"
     $needUpdate = $true
-    
     if (Test-Path $globalIni) {
         $content = Get-Content $globalIni -Encoding UTF8
         foreach ($line in $content) {
             if ($line -match '^SceneCollection\s*=\s*(.+)$') {
-                if ($Matches[1].Trim() -eq $collectionName) {
-                    $needUpdate = $false
-                }
+                if ($Matches[1].Trim() -eq $collectionName) { $needUpdate = $false }
                 break
             }
         }
     }
-    
     if ($needUpdate) {
-        $iniContent = @"
-[General]
-SceneCollection=$collectionName
-"@
+        $iniContent = "[General]`r`nSceneCollection=$collectionName`r`n"
         Set-Content -Path $globalIni -Value $iniContent -Encoding UTF8
         Log-OK "[Config] Created/updated global.ini with SceneCollection=$collectionName"
         return $true
@@ -561,7 +544,7 @@ SceneCollection=$collectionName
 }
 
 # ============================================================
-# JSON TEMPLATE (with placeholder for collection name)
+# JSON TEMPLATE
 # ============================================================
 $script:SceneTemplate = @'
 {
@@ -573,31 +556,12 @@ $script:SceneTemplate = @'
             "uuid": "bed744e1-4c60-4eb0-bb28-34df2a1f9c1c",
             "id": "window_capture",
             "versioned_id": "window_capture",
-            "settings": {
-                "window": "MPV-SW-Capture:mpv:mpv.exe",
-                "method": 2
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
+            "settings": { "window": "MPV-SW-Capture:mpv:mpv.exe", "method": 2 },
+            "mixers": 255, "sync": 0, "flags": 0, "volume": 1.0, "balance": 0.5,
+            "enabled": true, "muted": false, "push-to-mute": false, "push-to-mute-delay": 0,
+            "push-to-talk": false, "push-to-talk-delay": 0,
+            "hotkeys": { "libobs.mute": [], "libobs.unmute": [], "libobs.push-to-mute": [], "libobs.push-to-talk": [] },
+            "deinterlace_mode": 0, "deinterlace_field_order": 0, "monitoring_type": 0, "private_settings": {}
         },
         {
             "prev_ver": 537001985,
@@ -605,40 +569,12 @@ $script:SceneTemplate = @'
             "uuid": "f61e952f-2148-41a4-b02c-f4b9b1347ddf",
             "id": "audio_capture",
             "versioned_id": "audio_capture",
-            "settings": {
-                "executable_list": [
-                    {
-                        "hidden": false,
-                        "selected": false,
-                        "value": "ffplay.exe",
-                        "uuid": "23777547-c201-4606-9ad3-cf22b24f0a04"
-                    }
-                ],
-                "active_session_list": ""
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": [],
-                "hotkey_start": [],
-                "hotkey_stop": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
+            "settings": { "executable_list": [ { "hidden": false, "selected": false, "value": "ffplay.exe", "uuid": "23777547-c201-4606-9ad3-cf22b24f0a04" } ], "active_session_list": "" },
+            "mixers": 255, "sync": 0, "flags": 0, "volume": 1.0, "balance": 0.5,
+            "enabled": true, "muted": false, "push-to-mute": false, "push-to-mute-delay": 0,
+            "push-to-talk": false, "push-to-talk-delay": 0,
+            "hotkeys": { "libobs.mute": [], "libobs.unmute": [], "libobs.push-to-mute": [], "libobs.push-to-talk": [], "hotkey_start": [], "hotkey_stop": [] },
+            "deinterlace_mode": 0, "deinterlace_field_order": 0, "monitoring_type": 0, "private_settings": {}
         },
         {
             "prev_ver": 537001985,
@@ -647,120 +583,21 @@ $script:SceneTemplate = @'
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 3,
-                "custom_size": false,
+                "id_counter": 3, "custom_size": false,
                 "items": [
-                    {
-                        "name": "MPV-SW-Window",
-                        "source_uuid": "bed744e1-4c60-4eb0-bb28-34df2a1f9c1c",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 2,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 300
-                        },
-                        "hide_transition": {
-                            "duration": 300
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "MPV-SW-Audio",
-                        "source_uuid": "f61e952f-2148-41a4-b02c-f4b9b1347ddf",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 3,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 300
-                        },
-                        "hide_transition": {
-                            "duration": 300
-                        },
-                        "private_settings": {}
-                    }
+                    { "name": "MPV-SW-Window", "source_uuid": "bed744e1-4c60-4eb0-bb28-34df2a1f9c1c", "visible": true, "locked": false, "rot": 0.0, "align": 5, "bounds_type": 0, "bounds_align": 0, "bounds_crop": false, "crop_left": 0, "crop_top": 0, "crop_right": 0, "crop_bottom": 0, "id": 2, "group_item_backup": false, "pos": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "bounds": { "x": 0.0, "y": 0.0 }, "scale_filter": "disable", "blend_method": "default", "blend_type": "normal", "show_transition": { "duration": 300 }, "hide_transition": { "duration": 300 }, "private_settings": {} },
+                    { "name": "MPV-SW-Audio", "source_uuid": "f61e952f-2148-41a4-b02c-f4b9b1347ddf", "visible": true, "locked": false, "rot": 0.0, "align": 5, "bounds_type": 0, "bounds_align": 0, "bounds_crop": false, "crop_left": 0, "crop_top": 0, "crop_right": 0, "crop_bottom": 0, "id": 3, "group_item_backup": false, "pos": { "x": 0.0, "y": 0.0 }, "scale": { "x": 1.0, "y": 1.0 }, "bounds": { "x": 0.0, "y": 0.0 }, "scale_filter": "disable", "blend_method": "default", "blend_type": "normal", "show_transition": { "duration": 300 }, "hide_transition": { "duration": 300 }, "private_settings": {} }
                 ]
             },
-            "mixers": 0,
-            "sync": 0,
-            "flags": 0,
-            "volume": 1.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.2": [],
-                "libobs.hide_scene_item.2": [],
-                "libobs.show_scene_item.3": [],
-                "libobs.hide_scene_item.3": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
-            "private_settings": {}
+            "mixers": 0, "sync": 0, "flags": 0, "volume": 1.0, "balance": 0.5,
+            "enabled": true, "muted": false, "push-to-mute": false, "push-to-mute-delay": 0,
+            "push-to-talk": false, "push-to-talk-delay": 0,
+            "hotkeys": { "OBSBasic.SelectScene": [], "libobs.show_scene_item.2": [], "libobs.hide_scene_item.2": [], "libobs.show_scene_item.3": [], "libobs.hide_scene_item.3": [] },
+            "deinterlace_mode": 0, "deinterlace_field_order": 0, "monitoring_type": 0, "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e", "private_settings": {}
         }
     ],
     "groups": [],
-    "scene_order": [
-        {
-            "name": "Escena"
-        }
-    ],
+    "scene_order": [ { "name": "Escena" } ],
     "current_scene": "Escena",
     "current_program_scene": "Escena",
     "canvases": [],
@@ -775,30 +612,9 @@ $script:SceneTemplate = @'
     "scaling_off_x": 0.0,
     "scaling_off_y": 0.0,
     "modules": {
-        "captions": {
-            "source": "",
-            "enabled": false,
-            "lang_id": 2058,
-            "provider": "mssapi"
-        },
-        "output-timer": {
-            "streamTimerHours": 0,
-            "streamTimerMinutes": 0,
-            "streamTimerSeconds": 0,
-            "recordTimerHours": 0,
-            "recordTimerMinutes": 0,
-            "recordTimerSeconds": 0,
-            "autoStartStreamTimer": false,
-            "autoStartRecordTimer": false,
-            "pauseRecordTimer": false
-        },
-        "auto-scene-switcher": {
-            "interval": 300,
-            "non_matching_scene": "",
-            "switch_if_not_matching": false,
-            "active": false,
-            "switches": []
-        },
+        "captions": { "source": "", "enabled": false, "lang_id": 2058, "provider": "mssapi" },
+        "output-timer": { "streamTimerHours": 0, "streamTimerMinutes": 0, "streamTimerSeconds": 0, "recordTimerHours": 0, "recordTimerMinutes": 0, "recordTimerSeconds": 0, "autoStartStreamTimer": false, "autoStartRecordTimer": false, "pauseRecordTimer": false },
+        "auto-scene-switcher": { "interval": 300, "non_matching_scene": "", "switch_if_not_matching": false, "active": false, "switches": [] },
         "scripts-tool": []
     },
     "version": 1
@@ -806,13 +622,11 @@ $script:SceneTemplate = @'
 '@
 
 # ============================================================
-# OSD STREAMER MODE FUNCTIONS
+# OSD STREAMER MODE
 # ============================================================
 function Get-OSDStatus {
     $confPath = Join-Path $script:RootDir "mpv.conf"
-    if (-not (Test-Path $confPath)) {
-        return @{ enabled = $false; value = 1000 }
-    }
+    if (-not (Test-Path $confPath)) { return @{ enabled = $false; value = 1000 } }
     try {
         $lines = Get-Content $confPath -Encoding UTF8
         foreach ($line in $lines) {
@@ -829,27 +643,20 @@ function Set-OSDStatus {
     param([int]$newValue)
     $confPath = Join-Path $script:RootDir "mpv.conf"
     $utf8 = New-Object System.Text.UTF8Encoding $false
-
     if (-not (Test-Path $confPath)) {
-        $content = "osd-duration=$newValue"
-        [System.IO.File]::WriteAllText($confPath, $content, $utf8)
+        [System.IO.File]::WriteAllText($confPath, "osd-duration=$newValue", $utf8)
         return
     }
-
     try {
         $content = [System.IO.File]::ReadAllText($confPath, [System.Text.Encoding]::UTF8)
         if ($content -match '(?m)^\s*osd-duration\s*=\s*\d+') {
             $content = $content -replace '(?m)^\s*osd-duration\s*=\s*\d+', "osd-duration=$newValue"
         } else {
-            if ($content -and -not $content.EndsWith("`r`n") -and -not $content.EndsWith("`n")) {
-                $content += "`r`n"
-            }
+            if ($content -and -not $content.EndsWith("`r`n") -and -not $content.EndsWith("`n")) { $content += "`r`n" }
             $content += "osd-duration=$newValue"
         }
         [System.IO.File]::WriteAllText($confPath, $content, $utf8)
-    } catch {
-        throw $_.Exception.Message
-    }
+    } catch { throw $_.Exception.Message }
 }
 
 function Update-OSDDisplay {
@@ -864,30 +671,16 @@ function Update-OSDDisplay {
 }
 
 # ============================================================
-# MODE 1: Install New Scene Collection
+# SCENE INSTALLATION
 # ============================================================
 function Install-NewSceneCollection {
     param([string]$collectionName)
-    
-    if (-not $script:OBSRoot) {
-        Log-Error "[New] OBS not found. Please select OBS folder first."
-        return $false
-    }
-    
+    if (-not $script:OBSRoot) { Log-Error "[New] OBS not found. Please select OBS folder first."; return $false }
     $configPath = Get-OBSUserConfig
-    if (-not $configPath) {
-        Log-Error "[New] Could not find OBS config folder."
-        return $false
-    }
-    
+    if (-not $configPath) { Log-Error "[New] Could not find OBS config folder."; return $false }
     if (-not $collectionName) { $collectionName = "MPVSWCapture" }
-    
     $scenesDir = Join-Path $configPath "basic\scenes"
-    if (-not (Test-Path $scenesDir)) {
-        New-Item -ItemType Directory -Path $scenesDir -Force | Out-Null
-        Log-Info "[New] Created scenes directory"
-    }
-    
+    if (-not (Test-Path $scenesDir)) { New-Item -ItemType Directory -Path $scenesDir -Force | Out-Null; Log-Info "[New] Created scenes directory" }
     $jsonPath = Join-Path $scenesDir "$collectionName.json"
     if (Test-Path $jsonPath) {
         $counter = 1
@@ -899,237 +692,113 @@ function Install-NewSceneCollection {
         Log-Info "[New] File exists, using $newName"
         $collectionName = $newName
     }
-    
     Log-Info "[New] Creating new collection: $collectionName"
-    
     try {
         $templateContent = $script:SceneTemplate -replace '{collection_name}', $collectionName
-        
         $utf8 = New-Object System.Text.UTF8Encoding $false
         $stream = New-Object System.IO.StreamWriter($jsonPath, $false, $utf8)
         $stream.Write($templateContent)
         $stream.Close()
         Log-OK "[JSON] Template saved: $jsonPath"
-        
         $content = Get-Content $jsonPath -Encoding UTF8 -Raw
-        if ($content) {
-            Log-OK "[JSON] File size: $($content.Length) bytes"
-        } else {
-            Log-Error "[JSON] File appears empty after saving."
-            return $false
-        }
-        
+        if ($content) { Log-OK "[JSON] File size: $($content.Length) bytes" } else { Log-Error "[JSON] File appears empty after saving."; return $false }
         Ensure-GlobalIni -configPath $configPath -collectionName $collectionName
         Log-OK "[Scene] Scene collection installed successfully."
-        
-        [System.Windows.Forms.MessageBox]::Show(
-            "Scene collection '$collectionName' installed successfully!`n`nIMPORTANT: To see this new collection in OBS, you must close and reopen OBS.`n`nThe Stream Manager will show it in the list immediately.",
-            "MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
-        
+        [System.Windows.Forms.MessageBox]::Show("Scene collection '$collectionName' installed successfully!`n`nIMPORTANT: To see this new collection in OBS, you must close and reopen OBS.`n`nThe Stream Manager will show it in the list immediately.", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         return $true
     } catch {
         Log-Error ([string]::Format((T "LogSceneErr"), $_.Exception.Message))
         return $false
     }
 }
-# ============================================================
-# MODE 2: Add Sources to a Specific Collection
-# ============================================================
+
 function Add-SourcesToCollection {
     param([string]$collectionName, [string]$sceneName)
-    
-    if (-not $script:OBSRoot) {
-        Log-Error "[Add] OBS not found. Please select OBS folder first."
-        return $false
-    }
-    
+    if (-not $script:OBSRoot) { Log-Error "[Add] OBS not found. Please select OBS folder first."; return $false }
     $jsonPath = Get-ScenesJsonPathForCollection -collectionName $collectionName
-    if (-not $jsonPath -or -not (Test-Path $jsonPath)) {
-        Log-Error "[Add] Scene collection '$collectionName' not found."
-        return $false
-    }
-    
+    if (-not $jsonPath -or -not (Test-Path $jsonPath)) { Log-Error "[Add] Scene collection '$collectionName' not found."; return $false }
     Log-Info "[Add] Modifying: $jsonPath"
-    
     $backup = $jsonPath + ".backup"
     Copy-Item $jsonPath $backup -Force
     Log-OK "[Add] Backup created: $backup"
-    
     try {
         $jsonContent = Get-Content $jsonPath -Encoding UTF8 -Raw
-        if ([string]::IsNullOrWhiteSpace($jsonContent)) {
-            Log-Error "[Add] JSON file is empty."
-            return $false
-        }
-        
+        if ([string]::IsNullOrWhiteSpace($jsonContent)) { Log-Error "[Add] JSON file is empty."; return $false }
         $json = $jsonContent | ConvertFrom-Json
-        
         $isOldFormat = ($json.PSObject.Properties.Name -contains "name" -and $json.PSObject.Properties.Name -contains "sources")
         $hasScenes = ($json.PSObject.Properties.Name -contains "scenes")
-        
         $template = $script:SceneTemplate | ConvertFrom-Json
         $templateSources = $template.sources
-        
         $sourceNames = @("MPV-SW-Window", "MPV-SW-Audio")
         $sourcesToAdd = @()
-        foreach ($src in $templateSources) {
-            if ($sourceNames -contains $src.name) {
-                $sourcesToAdd += $src
-            }
-        }
-        
-        if ($sourcesToAdd.Count -eq 0) {
-            Log-Error "[Add] No sources found in template."
-            return $false
-        }
-        
+        foreach ($src in $templateSources) { if ($sourceNames -contains $src.name) { $sourcesToAdd += $src } }
+        if ($sourcesToAdd.Count -eq 0) { Log-Error "[Add] No sources found in template."; return $false }
         if ($isOldFormat) {
             $currentSources = $json.sources
             $existingNames = @()
-            foreach ($src in $currentSources) {
-                $existingNames += $src.name
-            }
-            
+            foreach ($src in $currentSources) { $existingNames += $src.name }
             $sceneSource = $null
-            foreach ($src in $currentSources) {
-                if ($src.id -eq "scene") {
-                    $sceneSource = $src
-                    break
-                }
-            }
-            
-            if (-not $sceneSource) {
-                Log-Error "[Add] No scene source found in this collection."
-                return $false
-            }
-            
-            if (-not $sceneSource.settings) {
-                $sceneSource | Add-Member -MemberType NoteProperty -Name "settings" -Value @{} -Force
-            }
-            if (-not $sceneSource.settings.items) {
-                $sceneSource.settings | Add-Member -MemberType NoteProperty -Name "items" -Value @() -Force
-            }
-            
+            foreach ($src in $currentSources) { if ($src.id -eq "scene") { $sceneSource = $src; break } }
+            if (-not $sceneSource) { Log-Error "[Add] No scene source found in this collection."; return $false }
+            if (-not $sceneSource.settings) { $sceneSource | Add-Member -MemberType NoteProperty -Name "settings" -Value @{} -Force }
+            if (-not $sceneSource.settings.items) { $sceneSource.settings | Add-Member -MemberType NoteProperty -Name "items" -Value @() -Force }
             $nextId = $sceneSource.settings.items.Count
-            if ($sceneSource.settings.id_counter) {
-                $nextId = $sceneSource.settings.id_counter
-            }
-            
+            if ($sceneSource.settings.id_counter) { $nextId = $sceneSource.settings.id_counter }
             $addedCount = 0
             foreach ($newSrc in $sourcesToAdd) {
                 if ($existingNames -notcontains $newSrc.name) {
                     $newUuid = [guid]::NewGuid().ToString()
                     $newSrc.uuid = $newUuid
-                    
                     $currentSources += $newSrc
                     $existingNames += $newSrc.name
-                    
                     $newItem = [PSCustomObject]@{
-                        name = $newSrc.name
-                        source_uuid = $newUuid
-                        visible = $true
-                        locked = $false
-                        rot = 0.0
-                        align = 5
-                        bounds_type = 0
-                        bounds_align = 0
-                        bounds_crop = $false
-                        crop_left = 0
-                        crop_top = 0
-                        crop_right = 0
-                        crop_bottom = 0
-                        id = $nextId
-                        group_item_backup = $false
-                        pos = @{ x = 0.0; y = 0.0 }
-                        scale = @{ x = 1.0; y = 1.0 }
-                        bounds = @{ x = 0.0; y = 0.0 }
-                        scale_filter = "disable"
-                        blend_method = "default"
-                        blend_type = "normal"
-                        show_transition = @{ duration = 300 }
-                        hide_transition = @{ duration = 300 }
+                        name = $newSrc.name; source_uuid = $newUuid; visible = $true; locked = $false;
+                        rot = 0.0; align = 5; bounds_type = 0; bounds_align = 0; bounds_crop = $false;
+                        crop_left = 0; crop_top = 0; crop_right = 0; crop_bottom = 0; id = $nextId;
+                        group_item_backup = $false; pos = @{ x = 0.0; y = 0.0 }; scale = @{ x = 1.0; y = 1.0 };
+                        bounds = @{ x = 0.0; y = 0.0 }; scale_filter = "disable"; blend_method = "default";
+                        blend_type = "normal"; show_transition = @{ duration = 300 }; hide_transition = @{ duration = 300 };
                         private_settings = @{}
                     }
                     $sceneSource.settings.items += $newItem
                     $nextId++
-                    
                     $addedCount++
                     Log-Info "[Add] Added source: $($newSrc.name) with UUID $newUuid"
-                } else {
-                    Log-Info "[Add] Source already exists: $($newSrc.name)"
-                }
+                } else { Log-Info "[Add] Source already exists: $($newSrc.name)" }
             }
-            
             $sceneSource.settings.id_counter = $nextId
             $json.sources = $currentSources
-            
-            if (-not $json.current_scene) {
-                $json.current_scene = $sceneSource.name
-                $json.current_program_scene = $sceneSource.name
-            }
-            
+            if (-not $json.current_scene) { $json.current_scene = $sceneSource.name; $json.current_program_scene = $sceneSource.name }
         } elseif ($hasScenes) {
-            if (-not $json.scenes -or $json.scenes.Count -eq 0) {
-                Log-Error "[Add] No scenes found in JSON."
-                return $false
-            }
-            
+            if (-not $json.scenes -or $json.scenes.Count -eq 0) { Log-Error "[Add] No scenes found in JSON."; return $false }
             $targetScene = $null
-            if ($sceneName) {
-                $targetScene = $json.scenes | Where-Object { $_.name -eq $sceneName } | Select-Object -First 1
-            }
-            if (-not $targetScene) {
-                $targetScene = $json.scenes | Where-Object { $_.name -eq $json.current_scene } | Select-Object -First 1
-            }
-            if (-not $targetScene) {
-                $targetScene = $json.scenes[0]
-            }
-            
-            if (-not $targetScene.sources) {
-                $targetScene | Add-Member -MemberType NoteProperty -Name "sources" -Value @() -Force
-            }
-            
+            if ($sceneName) { $targetScene = $json.scenes | Where-Object { $_.name -eq $sceneName } | Select-Object -First 1 }
+            if (-not $targetScene) { $targetScene = $json.scenes | Where-Object { $_.name -eq $json.current_scene } | Select-Object -First 1 }
+            if (-not $targetScene) { $targetScene = $json.scenes[0] }
+            if (-not $targetScene.sources) { $targetScene | Add-Member -MemberType NoteProperty -Name "sources" -Value @() -Force }
             $existingNames = @()
-            foreach ($src in $targetScene.sources) {
-                $existingNames += $src.name
-            }
-            
+            foreach ($src in $targetScene.sources) { $existingNames += $src.name }
             $addedCount = 0
             foreach ($newSrc in $sourcesToAdd) {
                 if ($existingNames -notcontains $newSrc.name) {
                     $newUuid = [guid]::NewGuid().ToString()
                     $newSrc.uuid = $newUuid
-                    
                     $targetScene.sources += $newSrc
                     $existingNames += $newSrc.name
                     $addedCount++
                     Log-Info "[Add] Added source: $($newSrc.name) with UUID $newUuid"
-                } else {
-                    Log-Info "[Add] Source already exists: $($newSrc.name)"
-                }
+                } else { Log-Info "[Add] Source already exists: $($newSrc.name)" }
             }
-            
             $json.current_scene = $targetScene.name
             $json.current_program_scene = $targetScene.name
-        } else {
-            Log-Error "[Add] Unknown JSON format."
-            return $false
-        }
-        
-        if ($addedCount -eq 0) {
-            Log-Info "[Add] No new sources to add."
-        }
-        
+        } else { Log-Error "[Add] Unknown JSON format."; return $false }
+        if ($addedCount -eq 0) { Log-Info "[Add] No new sources to add." }
         $utf8 = New-Object System.Text.UTF8Encoding $false
         $stream = New-Object System.IO.StreamWriter($jsonPath, $false, $utf8)
         $jsonString = $json | ConvertTo-Json -Depth 10
         $stream.Write($jsonString)
         $stream.Close()
         Log-OK "[Add] JSON saved successfully."
-        
         Log-OK ([string]::Format((T "LogSceneAdd"), $collectionName))
         return $true
     } catch {
@@ -1139,70 +808,34 @@ function Add-SourcesToCollection {
 }
 
 # ============================================================
-# BACKUP AND RESTORE OBS CONFIGURATION
+# BACKUP AND RESTORE
 # ============================================================
 function Backup-OBSConfiguration {
     param([string]$obsRoot)
     $configPath = Get-OBSUserConfig
-    if (-not $configPath) {
-        Log-Error "[Backup] Could not find OBS config folder."
-        return $false
-    }
-    
+    if (-not $configPath) { Log-Error "[Backup] Could not find OBS config folder."; return $false }
     $backupDir = Join-Path $script:ToolsDir "BKP_OBS"
-    if (-not (Test-Path $backupDir)) {
-        New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
-        Log-Info "[Backup] Created backup directory: $backupDir"
-    }
-    
+    if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null; Log-Info "[Backup] Created backup directory: $backupDir" }
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $backupFile = Join-Path $backupDir "obs_backup_$timestamp.zip"
-    
     Log-Info (T "LogBackupStart")
     Log-Info "[Backup] Config path: $configPath"
-    
     $filesToBackup = @()
     $globalIni = Join-Path $configPath "global.ini"
     $userIni = Join-Path $configPath "user.ini"
-    if (Test-Path $globalIni) { 
-        $filesToBackup += $globalIni
-        Log-Info "[Backup] Adding: $globalIni"
-    } else {
-        Log-Warn "[Backup] global.ini not found, will not be backed up."
-    }
-    if (Test-Path $userIni) { 
-        $filesToBackup += $userIni
-        Log-Info "[Backup] Adding: $userIni"
-    } else {
-        Log-Warn "[Backup] user.ini not found, will not be backed up."
-    }
-    
+    if (Test-Path $globalIni) { $filesToBackup += $globalIni; Log-Info "[Backup] Adding: $globalIni" } else { Log-Warn "[Backup] global.ini not found." }
+    if (Test-Path $userIni) { $filesToBackup += $userIni; Log-Info "[Backup] Adding: $userIni" } else { Log-Warn "[Backup] user.ini not found." }
     $scenesDir = Join-Path $configPath "basic\scenes"
     if (Test-Path $scenesDir) {
         $sceneFiles = Get-ChildItem -Path $scenesDir -Filter "*.json"
-        if ($sceneFiles.Count -eq 0) {
-            Log-Warn "[Backup] No .json files found in $scenesDir"
-        } else {
-            foreach ($file in $sceneFiles) {
-                $filesToBackup += $file.FullName
-                Log-Info "[Backup] Adding scene file: $($file.Name)"
-            }
-        }
-    } else {
-        Log-Warn "[Backup] Scenes directory not found: $scenesDir"
-    }
-    
-    if ($filesToBackup.Count -eq 0) {
-        Log-Error "[Backup] No files found to backup. Aborting."
-        return $false
-    }
-    
+        if ($sceneFiles.Count -eq 0) { Log-Warn "[Backup] No .json files found in $scenesDir" }
+        else { foreach ($file in $sceneFiles) { $filesToBackup += $file.FullName; Log-Info "[Backup] Adding scene file: $($file.Name)" } }
+    } else { Log-Warn "[Backup] Scenes directory not found: $scenesDir" }
+    if ($filesToBackup.Count -eq 0) { Log-Error "[Backup] No files found to backup. Aborting."; return $false }
     Log-Info "[Backup] Total files to backup: $($filesToBackup.Count)"
-    
     try {
         $tempDir = Join-Path $env:TEMP "obs_backup_temp_$([guid]::NewGuid().ToString().Substring(0,8))"
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
-        
         foreach ($file in $filesToBackup) {
             $relativePath = $file.Substring($configPath.Length + 1)
             $destFile = Join-Path $tempDir $relativePath
@@ -1210,19 +843,13 @@ function Backup-OBSConfiguration {
             if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
             Copy-Item -Path $file -Destination $destFile -Force
         }
-        
         Compress-Archive -Path "$tempDir\*" -DestinationPath $backupFile -CompressionLevel Optimal -Force
-        
         if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
-        
         if (Test-Path $backupFile) {
             $zipSize = (Get-Item $backupFile).Length
             Log-OK "[Backup] ZIP created: $backupFile (Size: $([math]::Round($zipSize/1KB, 2)) KB)"
             return $backupFile
-        } else {
-            Log-Error "[Backup] ZIP file not created."
-            return $false
-        }
+        } else { Log-Error "[Backup] ZIP file not created."; return $false }
     } catch {
         Log-Error ([string]::Format((T "LogBackupErr"), $_.Exception.Message))
         return $false
@@ -1232,36 +859,22 @@ function Backup-OBSConfiguration {
 function Restore-OBSConfiguration {
     param([string]$zipPath)
     $configPath = Get-OBSUserConfig
-    if (-not $configPath) {
-        Log-Error "[Restore] Could not find OBS config folder."
-        return $false
-    }
-    
-    if (-not (Test-Path $zipPath)) {
-        Log-Error "[Restore] ZIP file not found: $zipPath"
-        return $false
-    }
-    
+    if (-not $configPath) { Log-Error "[Restore] Could not find OBS config folder."; return $false }
+    if (-not (Test-Path $zipPath)) { Log-Error "[Restore] ZIP file not found: $zipPath"; return $false }
     Log-Info ([string]::Format((T "LogRestoreStart"), $zipPath))
     Log-Info "[Restore] Config path: $configPath"
     Log-Info "[Restore] ZIP file size: $([math]::Round((Get-Item $zipPath).Length/1KB, 2)) KB"
-    
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $backupDir = Join-Path $script:ToolsDir "BKP_OBS"
     if (-not (Test-Path $backupDir)) { New-Item -ItemType Directory -Path $backupDir -Force | Out-Null }
     $securityBackup = Join-Path $backupDir "pre_restore_backup_$timestamp.zip"
-    
     $filesToBackup = @()
     $globalIni = Join-Path $configPath "global.ini"
     $userIni = Join-Path $configPath "user.ini"
     if (Test-Path $globalIni) { $filesToBackup += $globalIni }
     if (Test-Path $userIni) { $filesToBackup += $userIni }
     $scenesDir = Join-Path $configPath "basic\scenes"
-    if (Test-Path $scenesDir) {
-        Get-ChildItem -Path $scenesDir -Filter "*.json" | ForEach-Object {
-            $filesToBackup += $_.FullName
-        }
-    }
+    if (Test-Path $scenesDir) { Get-ChildItem -Path $scenesDir -Filter "*.json" | ForEach-Object { $filesToBackup += $_.FullName } }
     if ($filesToBackup.Count -gt 0) {
         try {
             $tempDir = Join-Path $env:TEMP "pre_restore_backup_temp_$([guid]::NewGuid().ToString().Substring(0,8))"
@@ -1276,22 +889,14 @@ function Restore-OBSConfiguration {
             Compress-Archive -Path "$tempDir\*" -DestinationPath $securityBackup -CompressionLevel Optimal -Force
             if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
             Log-Info "[Restore] Security backup created: $securityBackup"
-        } catch {
-            Log-Warn "[Restore] Could not create security backup: $($_.Exception.Message)"
-        }
+        } catch { Log-Warn "[Restore] Could not create security backup: $($_.Exception.Message)" }
     }
-    
     $backupExistingDir = Join-Path $env:TEMP "obs_existing_backup_$([guid]::NewGuid().ToString().Substring(0,8))"
     New-Item -ItemType Directory -Path $backupExistingDir -Force | Out-Null
-    
     $filesToMove = @()
     if (Test-Path $globalIni) { $filesToMove += $globalIni }
     if (Test-Path $userIni) { $filesToMove += $userIni }
-    if (Test-Path $scenesDir) {
-        Get-ChildItem -Path $scenesDir -Recurse -File | ForEach-Object {
-            $filesToMove += $_.FullName
-        }
-    }
+    if (Test-Path $scenesDir) { Get-ChildItem -Path $scenesDir -Recurse -File | ForEach-Object { $filesToMove += $_.FullName } }
     foreach ($file in $filesToMove) {
         $rel = $file.Substring($configPath.Length + 1)
         $dest = Join-Path $backupExistingDir $rel
@@ -1300,7 +905,6 @@ function Restore-OBSConfiguration {
         Move-Item -Path $file -Destination $dest -Force -ErrorAction SilentlyContinue
         Log-Info "[Restore] Moved existing: $rel -> $dest"
     }
-    
     try {
         Log-Info "[Restore] Extracting ZIP directly to $configPath..."
         Expand-Archive -Path $zipPath -DestinationPath $configPath -Force -ErrorAction Stop
@@ -1308,44 +912,26 @@ function Restore-OBSConfiguration {
     } catch {
         Log-Error "[Restore] Failed to extract ZIP: $($_.Exception.Message)"
         Log-Warn "[Restore] Attempting to restore from security backup: $securityBackup"
-        if (Test-Path $securityBackup) {
-            Expand-Archive -Path $securityBackup -DestinationPath $configPath -Force -ErrorAction SilentlyContinue
-            Log-Info "[Restore] Restored from security backup."
-        }
+        if (Test-Path $securityBackup) { Expand-Archive -Path $securityBackup -DestinationPath $configPath -Force -ErrorAction SilentlyContinue; Log-Info "[Restore] Restored from security backup." }
         return $false
     }
-    
     $verifyGlobal = Join-Path $configPath "global.ini"
     $verifyUser = Join-Path $configPath "user.ini"
     $verifyScenes = Join-Path $configPath "basic\scenes"
     $allOk = $true
-    if (Test-Path $verifyGlobal) { Log-OK "[Restore] Verified: global.ini exists" } else { Log-Error "[Restore] global.ini missing after restore!"; $allOk = $false }
-    if (Test-Path $verifyUser) { Log-OK "[Restore] Verified: user.ini exists" } else { Log-Error "[Restore] user.ini missing after restore!"; $allOk = $false }
+    if (Test-Path $verifyGlobal) { Log-OK "[Restore] Verified: global.ini exists" } else { Log-Error "[Restore] global.ini missing!"; $allOk = $false }
+    if (Test-Path $verifyUser) { Log-OK "[Restore] Verified: user.ini exists" } else { Log-Error "[Restore] user.ini missing!"; $allOk = $false }
     if (Test-Path $verifyScenes) {
         $sceneCount = (Get-ChildItem -Path $verifyScenes -Filter "*.json").Count
-        Log-OK "[Restore] Verified: $sceneCount scene file(s) in basic\scenes"
-        if ($sceneCount -eq 0) { Log-Warn "[Restore] No scene files found in basic\scenes" }
-    } else {
-        Log-Error "[Restore] basic\scenes folder missing after restore!"
-        $allOk = $false
-    }
-    
+        Log-OK "[Restore] Verified: $sceneCount scene file(s)"
+    } else { Log-Error "[Restore] basic\scenes missing!"; $allOk = $false }
     if (Test-Path $backupExistingDir) { Remove-Item -Recurse -Force $backupExistingDir -ErrorAction SilentlyContinue }
-    
-    if ($allOk) {
-        Log-OK (T "LogRestoreOK")
-        return $true
-    } else {
-        Log-Warn "[Restore] Some files may not have been restored correctly. Check the logs."
-        return $false
-    }
+    if ($allOk) { Log-OK (T "LogRestoreOK"); return $true } else { Log-Warn "[Restore] Some files may not have been restored."; return $false }
 }
 
 # ============================================================
-# PLUGIN FUNCTIONS (Revised - secure download)
+# PLUGIN FUNCTIONS
 # ============================================================
-
-# Configurar TLS 1.2 para todas las descargas
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 function Download-FileSecure {
@@ -1356,10 +942,7 @@ function Download-FileSecure {
         $client.Headers.Add("User-Agent", "MPV-SW-Capture-StreamManager/1.0")
         $client.DownloadFile($url, $out)
         return $true
-    } catch {
-        Log-Error $_.Exception.Message
-        return $false
-    }
+    } catch { Log-Error $_.Exception.Message; return $false }
 }
 
 function Install-WinCaptureAudio {
@@ -1371,107 +954,51 @@ function Install-WinCaptureAudio {
         $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginFound")
         return $true
     }
-    
     Log-Info (T "LogPluginDL")
-    
     $repoOwner = "bozbez"
     $repoName = "win-capture-audio"
     $apiUrl = "https://api.github.com/repos/$repoOwner/$repoName/releases"
     $releasesPage = "https://github.com/$repoOwner/$repoName/releases"
-    
     try {
-        $headers = @{
-            'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'
-            'Accept' = 'application/vnd.github+json'
-        }
-        
+        $headers = @{ 'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'; 'Accept' = 'application/vnd.github+json' }
         Log-Info "[Plugin] Fetching releases from GitHub API..."
         $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get -TimeoutSec 10
-        
-        if (-not $response -or $response.Count -eq 0) {
-            Log-Error "[Plugin] No releases found."
-            return $false
-        }
-        
+        if (-not $response -or $response.Count -eq 0) { Log-Error "[Plugin] No releases found."; return $false }
         $latestRelease = $response[0]
-        Log-Info "[Plugin] Latest release: $($latestRelease.name) (Pre-release: $($latestRelease.prerelease))"
-        
-        if (-not $latestRelease.assets) {
-            Log-Error "[Plugin] No assets found."
-            return $false
-        }
-        
+        Log-Info "[Plugin] Latest release: $($latestRelease.name)"
+        if (-not $latestRelease.assets) { Log-Error "[Plugin] No assets found."; return $false }
         $asset = $latestRelease.assets | Where-Object { $_.name -match '\.zip$' -and $_.name -match 'win-capture-audio' } | Select-Object -First 1
-        if (-not $asset) {
-            Log-Error "[Plugin] No .zip asset found."
-            Log-Info "[Plugin] Available assets: $($latestRelease.assets.name -join ', ')"
-            return $false
-        }
-        
+        if (-not $asset) { Log-Error "[Plugin] No .zip asset found."; return $false }
         $downloadUrl = $asset.browser_download_url
         Log-Info "[Plugin] Download URL: $downloadUrl"
-        
         $tempDir = Join-Path $env:TEMP "win-capture-audio-install"
         if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
         $zipPath = Join-Path $tempDir $asset.name
-        
         Log-Info "[Plugin] Downloading: $($asset.name) ($([math]::Round($asset.size/1MB, 2)) MB)"
-        
-        if (-not (Download-FileSecure $downloadUrl $zipPath "[Plugin]")) {
-            Log-Error "[Plugin] Download failed."
-            return $false
-        }
-        
-        if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) {
-            Log-Error "[Plugin] Downloaded file is empty."
-            return $false
-        }
+        if (-not (Download-FileSecure $downloadUrl $zipPath "[Plugin]")) { Log-Error "[Plugin] Download failed."; return $false }
+        if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) { Log-Error "[Plugin] Downloaded file is empty."; return $false }
         Log-Info "[Plugin] Downloaded $((Get-Item $zipPath).Length) bytes"
-        
         Log-Info (T "LogPluginExtract")
         $extractPath = Join-Path $tempDir "extracted"
         New-Item -ItemType Directory -Path $extractPath -Force | Out-Null
-        
-        try {
-            Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force -ErrorAction Stop
-        } catch {
-            Log-Error "[Plugin] Failed to extract ZIP: $($_.Exception.Message)"
-            return $false
-        }
-        
-        # Búsqueda de DLL y copia de archivos a obsRoot
+        try { Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force -ErrorAction Stop }
+        catch { Log-Error "[Plugin] Failed to extract ZIP: $($_.Exception.Message)"; return $false }
         $foundDll = Get-ChildItem -Path $extractPath -Recurse -Filter "win-capture-audio.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
-        if (-not $foundDll) {
-            Log-Error "[Plugin] win-capture-audio.dll not found in extracted files."
-            return $false
-        }
+        if (-not $foundDll) { Log-Error "[Plugin] win-capture-audio.dll not found in extracted files."; return $false }
         Log-Info "[Plugin] Found DLL at: $($foundDll.FullName)"
-        
-        # Determinar la raíz de extracción (donde está la carpeta obs-plugins)
         $dllDir = $foundDll.Directory
         $rootExtract = $null
         $currentDir = $dllDir
         while ($currentDir -and $currentDir.FullName -ne $extractPath) {
-            if (Test-Path (Join-Path $currentDir.FullName "obs-plugins")) {
-                $rootExtract = $currentDir.FullName
-                Log-Info "[Plugin] Found obs-plugins in parent folder: $rootExtract"
-                break
-            }
+            if (Test-Path (Join-Path $currentDir.FullName "obs-plugins")) { $rootExtract = $currentDir.FullName; break }
             $currentDir = $currentDir.Parent
         }
         if (-not $rootExtract) {
             $parent = $dllDir.Parent.Parent
-            if ($parent -and $parent.Name -eq "obs-plugins") {
-                $rootExtract = $parent.Parent.FullName
-                Log-Info "[Plugin] Using parent of obs-plugins as root: $rootExtract"
-            } else {
-                $rootExtract = $extractPath
-                Log-Info "[Plugin] Using extraction root: $rootExtract"
-            }
+            if ($parent -and $parent.Name -eq "obs-plugins") { $rootExtract = $parent.Parent.FullName }
+            else { $rootExtract = $extractPath }
         }
-        
-        # Copiar todos los archivos a obsRoot
         $files = Get-ChildItem -Path $rootExtract -Recurse -File
         $copiedCount = 0
         foreach ($file in $files) {
@@ -1484,7 +1011,6 @@ function Install-WinCaptureAudio {
             $copiedCount++
         }
         Log-Info "[Plugin] Copied $copiedCount files to OBS root"
-        
         $finalDll = Join-Path $obsRoot "obs-plugins\64bit\win-capture-audio.dll"
         if (Test-Path $finalDll) {
             Log-OK (T "LogPluginOK")
@@ -1493,41 +1019,19 @@ function Install-WinCaptureAudio {
             if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
             return $true
         } else {
-            $foundDllInObs = Get-ChildItem -Path $obsRoot -Recurse -Filter "win-capture-audio.dll" -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($foundDllInObs) {
-                Log-OK "[Plugin] Found DLL at alternative location: $($foundDllInObs.FullName)"
-                Log-OK (T "LogPluginOK")
-                $script:lPluginStatus.ForeColor = $script:SUCCESS
-                $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginOK")
-                if (Test-Path $tempDir) { Remove-Item -Recurse -Force $tempDir -ErrorAction SilentlyContinue }
-                return $true
-            } else {
-                Log-Error "[Plugin] Plugin DLL not found after extraction. Expected: $finalDll"
-                return $false
-            }
+            Log-Error "[Plugin] Plugin DLL not found after extraction. Expected: $finalDll"
+            return $false
         }
-        
     } catch {
-        # Manejo de errores de GitHub API y descarga
         $errorMsg = $_.Exception.Message
         $statusCode = $null
-        if ($_.Exception.Response) {
-            try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {}
-        }
-        
-        if ($errorMsg -match "429" -or $errorMsg -match "rate limit" -or $statusCode -eq 429) {
-            Log-Error "[Plugin] GitHub API rate limit reached. Wait a few minutes."
-        } elseif ($errorMsg -match "403" -or $statusCode -eq 403) {
-            Log-Error "[Plugin] GitHub API access denied (403). A token may be required."
-        } elseif ($errorMsg -match "404" -or $statusCode -eq 404) {
+        if ($_.Exception.Response) { try { $statusCode = [int]$_.Exception.Response.StatusCode } catch {} }
+        if ($errorMsg -match "429" -or $errorMsg -match "rate limit" -or $statusCode -eq 429) { Log-Error "[Plugin] GitHub API rate limit reached. Wait a few minutes." }
+        elseif ($errorMsg -match "403" -or $statusCode -eq 403) { Log-Error "[Plugin] GitHub API access denied (403)." }
+        elseif ($errorMsg -match "404" -or $statusCode -eq 404) {
             Log-Error "[Plugin] Plugin not found. Opening releases page..."
-            try { Start-Process $releasesPage } catch { Log-Warn "[Plugin] Could not open browser. Visit: $releasesPage" }
-            Log-Info "[Plugin] After manual installation, click 'Check Plugin' to verify."
-        } else {
-            Log-Error "[Plugin] Error: $errorMsg"
-            if ($statusCode) { Log-Error "[Plugin] HTTP Status: $statusCode" }
-        }
-        
+            try { Start-Process $releasesPage } catch {}
+        } else { Log-Error "[Plugin] Error: $errorMsg" }
         $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginNotFound")
         $script:lPluginStatus.ForeColor = $script:ERROR_C
         return $false
@@ -1539,50 +1043,21 @@ function Uninstall-WinCaptureAudio {
     $dllPath = Join-Path $obsRoot "obs-plugins\64bit\win-capture-audio.dll"
     $pluginDir = Join-Path $obsRoot "obs-plugins\64bit"
     $dataDir = Join-Path $obsRoot "data\obs-plugins\win-capture-audio"
-    
     $uninstalled = $false
-    if (Test-Path $dllPath) {
-        try {
-            Remove-Item -Path $dllPath -Force -ErrorAction Stop
-            Log-Info "[Uninstall] Removed DLL: $dllPath"
-            $uninstalled = $true
-        } catch {
-            Log-Error "[Uninstall] Could not remove DLL: $($_.Exception.Message)"
-        }
-    }
-    if (Test-Path $dataDir) {
-        try {
-            Remove-Item -Path $dataDir -Recurse -Force -ErrorAction Stop
-            Log-Info "[Uninstall] Removed data folder: $dataDir"
-            $uninstalled = $true
-        } catch {
-            Log-Error "[Uninstall] Could not remove data folder: $($_.Exception.Message)"
-        }
-    }
+    if (Test-Path $dllPath) { try { Remove-Item -Path $dllPath -Force -ErrorAction Stop; Log-Info "[Uninstall] Removed DLL: $dllPath"; $uninstalled = $true } catch { Log-Error "[Uninstall] Could not remove DLL: $($_.Exception.Message)" } }
+    if (Test-Path $dataDir) { try { Remove-Item -Path $dataDir -Recurse -Force -ErrorAction Stop; Log-Info "[Uninstall] Removed data folder: $dataDir"; $uninstalled = $true } catch { Log-Error "[Uninstall] Could not remove data folder: $($_.Exception.Message)" } }
     $pluginFolder = Join-Path $pluginDir "win-capture-audio"
-    if (Test-Path $pluginFolder) {
-        try {
-            Remove-Item -Path $pluginFolder -Recurse -Force -ErrorAction Stop
-            Log-Info "[Uninstall] Removed plugin folder: $pluginFolder"
-            $uninstalled = $true
-        } catch {
-            Log-Error "[Uninstall] Could not remove plugin folder: $($_.Exception.Message)"
-        }
-    }
-    
+    if (Test-Path $pluginFolder) { try { Remove-Item -Path $pluginFolder -Recurse -Force -ErrorAction Stop; Log-Info "[Uninstall] Removed plugin folder: $pluginFolder"; $uninstalled = $true } catch { Log-Error "[Uninstall] Could not remove plugin folder: $($_.Exception.Message)" } }
     if ($uninstalled) {
         Log-OK (T "LogPluginUninstalled")
         $script:lPluginStatus.ForeColor = $script:ERROR_C
         $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginNotFound")
         return $true
-    } else {
-        Log-Warn "[Uninstall] No plugin files found to remove."
-        return $false
-    }
+    } else { Log-Warn "[Uninstall] No plugin files found to remove."; return $false }
 }
 
 # ============================================================
-# FORM CREATION (4 CARDS, adjusted heights)
+# FORM CREATION
 # ============================================================
 $formW = 1020
 $formH = 820
@@ -1599,11 +1074,7 @@ $cMidH = 400
 
 $script:IconPath = Join-Path $script:RootDir "data\icon\streammsc.ico"
 $form=New-Object System.Windows.Forms.Form
-if (Test-Path $script:IconPath) {
-    try {
-        $form.Icon = New-Object System.Drawing.Icon($script:IconPath)
-    } catch {}
-}
+if (Test-Path $script:IconPath) { try { $form.Icon = New-Object System.Drawing.Icon($script:IconPath) } catch {} }
 $form.ShowInTaskbar = $true
 $form.Text = T 'Title'
 $form.ClientSize=[System.Drawing.Size]::new($formW,$formH)
@@ -1634,106 +1105,53 @@ $form.Controls.Add($pMain)
 # --- CARD 1: OBS INSTALLATION ---
 $card1=New-CardXY $pMain $leftX $row1Y $cardW $cTopH "S1Title"
 $script:lCard1Title = $card1.Controls | Where-Object { $_ -is [System.Windows.Forms.Label] -and $_.Font.Bold -and $_.Font.Size -eq $FontSectionTitle.Size } | Select-Object -First 1
-
-# Descripción
 $lOBSDesc=New-Lbl (T "S1Desc") 14 28 ($cardW-28) 16 $FontSmall $script:MUTED
 $card1.Controls.Add($lOBSDesc)
-
-# ---- Choose OBS Mode (dentro de un Panel para agrupar) ----
 $pnlMode = New-Pnl 14 44 360 18 $script:CARD
 $lModeChoice=New-Lbl (T "S1ModeChoice") 0 2 160 18 $FontBold $script:MUTED
 $pnlMode.Controls.Add($lModeChoice)
-
 $rbModeInstalled=New-Object System.Windows.Forms.RadioButton
-$rbModeInstalled.Text=(T "S1ModeInstalled")
-$rbModeInstalled.Location=[System.Drawing.Point]::new(166, 1)
-$rbModeInstalled.Size=[System.Drawing.Size]::new(90, 22)
-$rbModeInstalled.Font=$FontSub
-$rbModeInstalled.ForeColor=$script:TEXT
-$rbModeInstalled.BackColor=[System.Drawing.Color]::Transparent
-$rbModeInstalled.Checked = ($script:CurrentOBSMode -eq "Installed")
+$rbModeInstalled.Text=(T "S1ModeInstalled"); $rbModeInstalled.Location=[System.Drawing.Point]::new(166, 1); $rbModeInstalled.Size=[System.Drawing.Size]::new(90, 22); $rbModeInstalled.Font=$FontSub; $rbModeInstalled.ForeColor=$script:TEXT; $rbModeInstalled.BackColor=[System.Drawing.Color]::Transparent; $rbModeInstalled.Checked = ($script:CurrentOBSMode -eq "Installed")
 $pnlMode.Controls.Add($rbModeInstalled)
-
 $rbModePortable=New-Object System.Windows.Forms.RadioButton
-$rbModePortable.Text=(T "S1ModePortable")
-$rbModePortable.Location=[System.Drawing.Point]::new(266, 1)
-$rbModePortable.Size=[System.Drawing.Size]::new(90, 22)
-$rbModePortable.Font=$FontSub
-$rbModePortable.ForeColor=$script:TEXT
-$rbModePortable.BackColor=[System.Drawing.Color]::Transparent
-$rbModePortable.Checked = ($script:CurrentOBSMode -eq "Portable")
+$rbModePortable.Text=(T "S1ModePortable"); $rbModePortable.Location=[System.Drawing.Point]::new(266, 1); $rbModePortable.Size=[System.Drawing.Size]::new(90, 22); $rbModePortable.Font=$FontSub; $rbModePortable.ForeColor=$script:TEXT; $rbModePortable.BackColor=[System.Drawing.Color]::Transparent; $rbModePortable.Checked = ($script:CurrentOBSMode -eq "Portable")
 $pnlMode.Controls.Add($rbModePortable)
-
 $card1.Controls.Add($pnlMode)
-
 $script:rbModeInstalled = $rbModeInstalled
 $script:rbModePortable = $rbModePortable
 $script:lModeChoice = $lModeChoice
-
-# Status
 $lOBSStatus=New-Lbl "" 14 62 300 18 $FontBold $script:MUTED
 $card1.Controls.Add($lOBSStatus); $script:lOBSStatus=$lOBSStatus
-
-# OBS Path
 $lOBSPathLabel=New-Lbl (T "S1PathLabel") 14 80 70 18 $FontBold $script:MUTED
 $card1.Controls.Add($lOBSPathLabel)
 $lOBSPath=New-Lbl "" 88 80 350 18 $FontSmall $script:TEXT
 $card1.Controls.Add($lOBSPath); $script:lOBSPath=$lOBSPath
-
-# Mode
 $lOBSModeLabel=New-Lbl (T "S1ModeLabel") 14 98 50 18 $FontBold $script:MUTED
 $card1.Controls.Add($lOBSModeLabel)
 $lOBSMode=New-Lbl "" 68 98 100 18 $FontSmall $script:TEXT
 $card1.Controls.Add($lOBSMode); $script:lOBSMode=$lOBSMode
-
-# Botones: Browse, Open, Download
 $btnOBSBrowse=New-Object System.Windows.Forms.Button
 $btnOBSBrowse.Text=T "S1BrowseBtn"; $btnOBSBrowse.Location=[System.Drawing.Point]::new(14, 118); $btnOBSBrowse.Size=[System.Drawing.Size]::new(180,32); Style-Btn $btnOBSBrowse $script:SURFACE $script:ACCENT; $btnOBSBrowse.FlatAppearance.BorderSize=1; $btnOBSBrowse.FlatAppearance.BorderColor=$script:ACCENT
 $card1.Controls.Add($btnOBSBrowse)
-
 $btnOBSOpen=New-Object System.Windows.Forms.Button
 $btnOBSOpen.Text=T "S1OpenBtn"; $btnOBSOpen.Location=[System.Drawing.Point]::new(204, 118); $btnOBSOpen.Size=[System.Drawing.Size]::new(110,32); Style-Btn $btnOBSOpen $script:SURFACE $script:ACCENT; $btnOBSOpen.FlatAppearance.BorderSize=1; $btnOBSOpen.FlatAppearance.BorderColor=$script:ACCENT; $btnOBSOpen.Enabled=$false
 $card1.Controls.Add($btnOBSOpen)
-
-# Download OBS Installer
 $btnOBSDL=New-Object System.Windows.Forms.Button
 $btnOBSDL.Text=T "S1DownloadBtn"; $btnOBSDL.Location=[System.Drawing.Point]::new(14, 158); $btnOBSDL.Size=[System.Drawing.Size]::new(416,32); Style-Btn $btnOBSDL $script:ACCENT3 $script:BG
 $card1.Controls.Add($btnOBSDL)
-
-# Download Portable OBS
 $btnOBSDLPortable=New-Object System.Windows.Forms.Button
 $btnOBSDLPortable.Text=T "S1DownloadPortableBtn"; $btnOBSDLPortable.Location=[System.Drawing.Point]::new(14, 196); $btnOBSDLPortable.Size=[System.Drawing.Size]::new(416,32); Style-Btn $btnOBSDLPortable $script:ACCENT4 $script:TEXT
 $card1.Controls.Add($btnOBSDLPortable)
-
-# Architecture radio buttons (x64, arm64) dentro de un Panel para agrupar
 $pnlArch = New-Pnl 14 238 300 28 $script:CARD
 $lArchLabel=New-Lbl (T "S1ArchLabel") 0 0 140 18 $FontBold $script:MUTED
 $pnlArch.Controls.Add($lArchLabel)
 $rbArchX64=New-Object System.Windows.Forms.RadioButton
-$rbArchX64.Text="x64"
-$rbArchX64.Location=[System.Drawing.Point]::new(146, -2)
-$rbArchX64.Size=[System.Drawing.Size]::new(50, 22)
-$rbArchX64.Font=$FontSub
-$rbArchX64.ForeColor=$script:TEXT
-$rbArchX64.BackColor=[System.Drawing.Color]::Transparent
-$rbArchX64.Checked=$true
+$rbArchX64.Text="x64"; $rbArchX64.Location=[System.Drawing.Point]::new(146, -2); $rbArchX64.Size=[System.Drawing.Size]::new(50, 22); $rbArchX64.Font=$FontSub; $rbArchX64.ForeColor=$script:TEXT; $rbArchX64.BackColor=[System.Drawing.Color]::Transparent; $rbArchX64.Checked=$true
 $pnlArch.Controls.Add($rbArchX64)
-
 $rbArchArm64=New-Object System.Windows.Forms.RadioButton
-$rbArchArm64.Text="arm64"
-$rbArchArm64.Location=[System.Drawing.Point]::new(206, -2)
-$rbArchArm64.Size=[System.Drawing.Size]::new(60, 22)
-$rbArchArm64.Font=$FontSub
-$rbArchArm64.ForeColor=$script:TEXT
-$rbArchArm64.BackColor=[System.Drawing.Color]::Transparent
+$rbArchArm64.Text="arm64"; $rbArchArm64.Location=[System.Drawing.Point]::new(206, -2); $rbArchArm64.Size=[System.Drawing.Size]::new(60, 22); $rbArchArm64.Font=$FontSub; $rbArchArm64.ForeColor=$script:TEXT; $rbArchArm64.BackColor=[System.Drawing.Color]::Transparent
 $pnlArch.Controls.Add($rbArchArm64)
-
 $card1.Controls.Add($pnlArch)
-
-# Guardar referencias para el cambio de idioma y eventos
-$script:lOBSStatus = $lOBSStatus
-$script:lOBSPathLabel = $lOBSPathLabel
-$script:lOBSModeLabel = $lOBSModeLabel
 $script:lArchLabel = $lArchLabel
 $script:rbArchX64 = $rbArchX64
 $script:rbArchArm64 = $rbArchArm64
@@ -1741,48 +1159,37 @@ $script:rbArchArm64 = $rbArchArm64
 # --- CARD 2: PLUGIN ---
 $card2=New-CardXY $pMain $rightX $row1Y $cardW $cTopH "S2Title"
 $script:lCard2Title = $card2.Controls | Where-Object { $_ -is [System.Windows.Forms.Label] -and $_.Font.Bold -and $_.Font.Size -eq $FontSectionTitle.Size } | Select-Object -First 1
-
 $lPluginDesc=New-Lbl (T "S2Desc") 14 28 ($cardW-28) 16 $FontSmall $script:MUTED
 $card2.Controls.Add($lPluginDesc)
 $lPluginStatus=New-Lbl "" 14 44 300 18 $FontBold $script:MUTED
 $card2.Controls.Add($lPluginStatus); $script:lPluginStatus=$lPluginStatus
-
 $btnPluginCheck=New-Object System.Windows.Forms.Button
 $btnPluginCheck.Text=T "S2DetectBtn"; $btnPluginCheck.Location=[System.Drawing.Point]::new(14,65); $btnPluginCheck.Size=[System.Drawing.Size]::new(130,32); Style-Btn $btnPluginCheck $script:SURFACE $script:ACCENT; $btnPluginCheck.FlatAppearance.BorderSize=1; $btnPluginCheck.FlatAppearance.BorderColor=$script:ACCENT
 $card2.Controls.Add($btnPluginCheck)
-
 $btnPluginInstall=New-Object System.Windows.Forms.Button
 $btnPluginInstall.Text=T "S2InstallBtn"; $btnPluginInstall.Location=[System.Drawing.Point]::new(152,65); $btnPluginInstall.Size=[System.Drawing.Size]::new(130,32); Style-Btn $btnPluginInstall $script:ACCENT $script:BG
 $card2.Controls.Add($btnPluginInstall)
-
 $btnPluginUninstall=New-Object System.Windows.Forms.Button
 $btnPluginUninstall.Text=T "S2UninstallBtn"; $btnPluginUninstall.Location=[System.Drawing.Point]::new(290,65); $btnPluginUninstall.Size=[System.Drawing.Size]::new(140,32); Style-Btn $btnPluginUninstall $script:ERROR_C $script:TEXT
 $card2.Controls.Add($btnPluginUninstall)
-
 $btnPluginManual=New-Object System.Windows.Forms.Button
 $btnPluginManual.Text=T "S2ManualBtn"; $btnPluginManual.Location=[System.Drawing.Point]::new(14,105); $btnPluginManual.Size=[System.Drawing.Size]::new(416,32); Style-Btn $btnPluginManual $script:ACCENT2 $script:BG
 $card2.Controls.Add($btnPluginManual)
-
-# --- OSD SECTION ---
 $lOSDTitle=New-Lbl (T "S2OSDTitle") 14 158 ($cardW-28) 18 $FontBold $script:ACCENT
 $card2.Controls.Add($lOSDTitle)
 $lOSDDesc=New-Lbl (T "S2OSDDesc") 14 178 ($cardW-28) 16 $FontSmall $script:MUTED
 $card2.Controls.Add($lOSDDesc)
 $lOSDStatus=New-Lbl "" 14 198 300 18 $FontBold $script:MUTED
 $card2.Controls.Add($lOSDStatus); $script:lOSDStatus=$lOSDStatus
-
 $btnOSDCheck=New-Object System.Windows.Forms.Button
 $btnOSDCheck.Text=T "S2OSDCheckBtn"; $btnOSDCheck.Location=[System.Drawing.Point]::new(14,222); $btnOSDCheck.Size=[System.Drawing.Size]::new(130,32); Style-Btn $btnOSDCheck $script:SURFACE $script:ACCENT; $btnOSDCheck.FlatAppearance.BorderSize=1; $btnOSDCheck.FlatAppearance.BorderColor=$script:ACCENT
 $card2.Controls.Add($btnOSDCheck)
-
 $btnOSDActivate=New-Object System.Windows.Forms.Button
 $btnOSDActivate.Text=T "S2OSDActivateBtn"; $btnOSDActivate.Location=[System.Drawing.Point]::new(152,222); $btnOSDActivate.Size=[System.Drawing.Size]::new(130,32); Style-Btn $btnOSDActivate $script:ACCENT $script:BG
 $card2.Controls.Add($btnOSDActivate)
-
 $btnOSDDeactivate=New-Object System.Windows.Forms.Button
 $btnOSDDeactivate.Text=T "S2OSDDeactivateBtn"; $btnOSDDeactivate.Location=[System.Drawing.Point]::new(290,222); $btnOSDDeactivate.Size=[System.Drawing.Size]::new(140,32); Style-Btn $btnOSDDeactivate $script:ERROR_C $script:TEXT
 $card2.Controls.Add($btnOSDDeactivate)
-
 $script:lOSDTitle = $lOSDTitle
 $script:lOSDDesc = $lOSDDesc
 $script:lOSDStatus = $lOSDStatus
@@ -1797,62 +1204,44 @@ $bar = New-Pnl 0 0 $cardW 3 $script:ACCENT
 $card3.Controls.Add($bar)
 $lS3Title = New-Lbl (T "S3Title") 14 8 ($cardW-20) 22 $FontSectionTitle $script:ACCENT
 $card3.Controls.Add($lS3Title)
-
 $lSceneDesc=New-Lbl (T "S3Desc") 14 30 ($cardW-28) 16 $FontSub $script:TEXT
 $card3.Controls.Add($lSceneDesc)
-
 $lSceneNote=New-Lbl (T "S3Note") 14 50 ($cardW-28) 16 $FontBold $script:NOTE_C
 $card3.Controls.Add($lSceneNote)
-
 $lSceneNote2=New-Lbl (T "S3Note2") 14 68 ($cardW-28) 14 $FontBold $script:NOTE_C
 $card3.Controls.Add($lSceneNote2)
-
 $lSceneStatus=New-Lbl "" 14 92 300 18 $FontBold $script:MUTED
 $card3.Controls.Add($lSceneStatus); $script:lSceneStatus=$lSceneStatus
-
 $lSceneLbl=New-Lbl (T "S3SceneLbl") 14 116 160 18 $FontBold $script:MUTED
 $card3.Controls.Add($lSceneLbl)
 $cbScenes=New-Object System.Windows.Forms.ComboBox
 $cbScenes.Location=[System.Drawing.Point]::new(180,114); $cbScenes.Size=[System.Drawing.Size]::new(270,28); $cbScenes.DropDownStyle='DropDownList'; $cbScenes.Font=$FontSub; $cbScenes.BackColor=$script:CARD; $cbScenes.ForeColor=$script:TEXT; $cbScenes.FlatStyle='Flat'
 $card3.Controls.Add($cbScenes)
-
 $btnSceneNew=New-Object System.Windows.Forms.Button
 $btnSceneNew.Text=T "S3BtnNew"; $btnSceneNew.Location=[System.Drawing.Point]::new(14,150); $btnSceneNew.Size=[System.Drawing.Size]::new(436,32); Style-Btn $btnSceneNew $script:ACCENT $script:BG
 $card3.Controls.Add($btnSceneNew)
-
 $btnSceneAdd=New-Object System.Windows.Forms.Button
 $btnSceneAdd.Text=T "S3BtnAdd"; $btnSceneAdd.Location=[System.Drawing.Point]::new(14,188); $btnSceneAdd.Size=[System.Drawing.Size]::new(436,32); Style-Btn $btnSceneAdd $script:ACCENT2 $script:BG
 $card3.Controls.Add($btnSceneAdd)
-
 $btnBackup=New-Object System.Windows.Forms.Button
 $btnBackup.Text=T "S3BtnBackup"; $btnBackup.Location=[System.Drawing.Point]::new(14,250); $btnBackup.Size=[System.Drawing.Size]::new(436,32); Style-Btn $btnBackup $script:ACCENT4 $script:TEXT
 $card3.Controls.Add($btnBackup)
-
 $btnRestore=New-Object System.Windows.Forms.Button
 $btnRestore.Text=T "S3BtnRestore"; $btnRestore.Location=[System.Drawing.Point]::new(14,288); $btnRestore.Size=[System.Drawing.Size]::new(436,32); Style-Btn $btnRestore $script:SUCCESS $script:BG
 $card3.Controls.Add($btnRestore)
-
 $script:lS3Title = $lS3Title
 $script:lSceneDesc = $lSceneDesc
 $script:lSceneNote = $lSceneNote
 $script:lSceneNote2 = $lSceneNote2
-$script:lArchLabel = $lArchLabel
-$script:rbArchX64 = $rbArchX64
-$script:rbArchArm64 = $rbArchArm64
-$script:lOBSStatus = $lOBSStatus
-$script:lOBSPathLabel = $lOBSPathLabel
-$script:lOBSModeLabel = $lOBSModeLabel
 
 # --- CARD 4: ACTIONS ---
 $card4=New-CardXY $pMain $rightX $row2Y $cardW $cMidH "ActionsTitle"
 $script:lCard4Title = $card4.Controls | Where-Object { $_ -is [System.Windows.Forms.Label] -and $_.Font.Bold -and $_.Font.Size -eq $FontSectionTitle.Size } | Select-Object -First 1
-
 $logBox=New-Object System.Windows.Forms.RichTextBox
 $logBox.Location=[System.Drawing.Point]::new(14,34); $logBox.Size=[System.Drawing.Size]::new($cardW-28,320)
 $logBox.BackColor=[System.Drawing.Color]::FromArgb(22,20,15); $logBox.ForeColor=$script:TEXT; $logBox.Font=$FontMono
 $logBox.BorderStyle='None'; $logBox.ReadOnly=$true; $logBox.ScrollBars='Vertical'
 $card4.Controls.Add($logBox); $script:LogBox=$logBox
-
 $lStatus=New-Object System.Windows.Forms.Label
 $lStatus.Location=[System.Drawing.Point]::new(14,362); $lStatus.Size=[System.Drawing.Size]::new($cardW-28,36)
 $lStatus.Font=$FontSub; $lStatus.ForeColor=$script:MUTED
@@ -1861,54 +1250,84 @@ $lStatus.Text=T "StatusReady"; $lStatus.AutoSize=$false
 $card4.Controls.Add($lStatus); $script:lStatus=$lStatus
 
 # ============================================================
+# AUDIO MODE NOTICE BANNER
+# ============================================================
+$pnlNotice = New-Object System.Windows.Forms.Panel
+$pnlNotice.Location = [System.Drawing.Point]::new(20, 706)
+$pnlNotice.Size = [System.Drawing.Size]::new(980, 40)
+$pnlNotice.BackColor = $script:CARD
+$pnlNotice.BorderStyle = 'FixedSingle'
+$pMain.Controls.Add($pnlNotice)
+
+$lAudioNotice = New-Object System.Windows.Forms.Label
+$lAudioNotice.Location = [System.Drawing.Point]::new(12, 10)
+$lAudioNotice.Size = [System.Drawing.Size]::new(690, 22)
+$lAudioNotice.Font = $FontBold
+$lAudioNotice.Text = ""
+$lAudioNotice.ForeColor = $script:TEXT
+$lAudioNotice.BackColor = [System.Drawing.Color]::Transparent
+$lAudioNotice.AutoSize = $false
+$lAudioNotice.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+$pnlNotice.Controls.Add($lAudioNotice)
+
+$btnSwitchFfplay = New-Object System.Windows.Forms.Button
+$btnSwitchFfplay.Text = "Switch to FFPLAY mode"
+$btnSwitchFfplay.Location = [System.Drawing.Point]::new(720, 4)
+$btnSwitchFfplay.Size = [System.Drawing.Size]::new(248, 32)
+Style-Btn $btnSwitchFfplay $script:ACCENT $script:BG
+$btnSwitchFfplay.Visible = $false
+$pnlNotice.Controls.Add($btnSwitchFfplay)
+
+$script:pnlNotice = $pnlNotice
+$script:lAudioNotice = $lAudioNotice
+$script:btnSwitchFfplay = $btnSwitchFfplay
+
+$btnSwitchFfplay.Add_Click({
+    $result = [System.Windows.Forms.MessageBox]::Show((T "S2AudioSwitchConfirm"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+        if (Set-AudioModeFFplay) {
+            Log-OK (T "S2AudioSwitchDone")
+            [System.Windows.Forms.MessageBox]::Show((T "S2AudioSwitchDone"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information) | Out-Null
+            Update-AudioModeNotice
+        } else {
+            $msg = [string]::Format((T "S2AudioSwitchErr"), "unknown error")
+            Log-Error $msg
+            [System.Windows.Forms.MessageBox]::Show($msg, (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+        }
+    }
+})
+
+# ============================================================
 # EVENT HANDLERS
 # ============================================================
-
 $script:SelectedCollection = $null
 
 function Update-OBSDisplay {
     param([bool]$Silent = $false)
-    
     $root = $script:OBSRoot
     if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
-        $statusText = T "S1StatusFound"
-        $script:lOBSStatus.Text = (T "S1Status") + " " + $statusText
+        $script:lOBSStatus.Text = (T "S1Status") + " " + (T "S1StatusFound")
         $script:lOBSStatus.ForeColor = $script:SUCCESS
         $script:lOBSPath.Text = $root
         $script:lOBSPath.ForeColor = $script:TEXT
         $btnOBSOpen.Enabled = $true
-        
-        if ($script:CurrentOBSMode -eq "Portable") {
-            $script:lOBSMode.Text = "Portable"
-            $script:lOBSMode.ForeColor = $script:ACCENT3
-        } else {
-            $script:lOBSMode.Text = "Installed"
-            $script:lOBSMode.ForeColor = $script:SUCCESS
-        }
-        
+        if ($script:CurrentOBSMode -eq "Portable") { $script:lOBSMode.Text = "Portable"; $script:lOBSMode.ForeColor = $script:ACCENT3 }
+        else { $script:lOBSMode.Text = "Installed"; $script:lOBSMode.ForeColor = $script:SUCCESS }
         $allCollections = Get-AllSceneCollections
         if ($allCollections.Count -gt 0) {
             $cbScenes.Items.Clear()
-            foreach ($coll in $allCollections) {
-                [void]$cbScenes.Items.Add($coll)
-            }
-            
-            if ($script:SelectedCollection -and $allCollections -contains $script:SelectedCollection) {
-                $cbScenes.SelectedItem = $script:SelectedCollection
-            } else {
+            foreach ($coll in $allCollections) { [void]$cbScenes.Items.Add($coll) }
+            if ($script:SelectedCollection -and $allCollections -contains $script:SelectedCollection) { $cbScenes.SelectedItem = $script:SelectedCollection }
+            else {
                 $activeCollection = Get-ActiveSceneCollection
-                if ($activeCollection -and $allCollections -contains $activeCollection) {
-                    $cbScenes.SelectedItem = $activeCollection
-                } else {
-                    $cbScenes.SelectedIndex = 0
-                }
+                if ($activeCollection -and $allCollections -contains $activeCollection) { $cbScenes.SelectedItem = $activeCollection }
+                else { $cbScenes.SelectedIndex = 0 }
             }
             if (-not $Silent) { Log-Info "[Scene] Loaded $($allCollections.Count) scene collection(s)." }
         } else {
             $cbScenes.Items.Clear()
             if (-not $Silent) { Log-Warn (T "LogSceneNoCollections") }
         }
-        
         $dll = Join-Path $root "obs-plugins\64bit\win-capture-audio.dll"
         if (Test-Path $dll) {
             $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginFound")
@@ -1919,18 +1338,12 @@ function Update-OBSDisplay {
         }
         Save-OBSConfig $root
     } else {
-        $statusText = T "S1StatusNotFound"
-        $script:lOBSStatus.Text = (T "S1Status") + " " + $statusText
+        $script:lOBSStatus.Text = (T "S1Status") + " " + (T "S1StatusNotFound")
         $script:lOBSStatus.ForeColor = $script:ERROR_C
         $script:lOBSPath.Text = "Not found"
         $script:lOBSPath.ForeColor = $script:ERROR_C
-        if ($script:CurrentOBSMode -eq "Portable") {
-            $script:lOBSMode.Text = "Portable"
-            $script:lOBSMode.ForeColor = $script:ACCENT3
-        } else {
-            $script:lOBSMode.Text = "Installed"
-            $script:lOBSMode.ForeColor = $script:SUCCESS
-        }
+        if ($script:CurrentOBSMode -eq "Portable") { $script:lOBSMode.Text = "Portable"; $script:lOBSMode.ForeColor = $script:ACCENT3 }
+        else { $script:lOBSMode.Text = "Installed"; $script:lOBSMode.ForeColor = $script:SUCCESS }
         $btnOBSOpen.Enabled = $false
         $cbScenes.Items.Clear()
         $script:lPluginStatus.Text = (T "S2Status") + " " + (T "LogPluginNotFound")
@@ -1939,48 +1352,37 @@ function Update-OBSDisplay {
     Update-OSDDisplay
 }
 
-# --- Browse OBS Folder (manual) ---
 $btnOBSBrowse.Add_Click({
     $dialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $dialog.Description = "Select the OBS Studio folder (e.g., C:\Program Files\obs-studio)"
     $dialog.ShowNewFolderButton = $false
-    
     if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $root = $dialog.SelectedPath
         if (Test-Path (Join-Path $root "bin\64bit\obs64.exe")) {
             $script:OBSRoot = $root
-            if ($script:CurrentOBSMode -eq "Installed") {
-                $script:OBSRootInstalled = $root
-            } else {
-                $script:OBSRootPortable = $root
-            }
+            if ($script:CurrentOBSMode -eq "Installed") { $script:OBSRootInstalled = $root } else { $script:OBSRootPortable = $root }
             Log-OK ("[OBS] Manual selection: " + $root)
             Save-OBSConfig $root
             Update-OBSDisplay
             Set-Status (T "StatusReady") $script:MUTED
         } else {
             Log-Error "[OBS] Invalid folder. 'bin\64bit\obs64.exe' not found."
-            [System.Windows.Forms.MessageBox]::Show(
-                "The selected folder does not contain 'bin\64bit\obs64.exe'.",
-                "Invalid OBS Folder",
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Error
-            )
+            [System.Windows.Forms.MessageBox]::Show("The selected folder does not contain 'bin\64bit\obs64.exe'.", "Invalid OBS Folder", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         }
     }
 })
 
-# --- Download OBS Installer (standard .exe) ---
 $btnOBSDL.Add_Click({
     Set-Status (T "StatusDownload") $script:NOTE_C
     Log-Info (T "LogDL")
     try {
-        $rel = Get-GitHubRelease "https://api.github.com/repos/obsproject/obs-studio/releases/latest"
+        $headers = @{ 'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'; 'Accept' = 'application/vnd.github+json' }
+        $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/obsproject/obs-studio/releases/latest" -Headers $headers
         if (-not $rel) { Log-Error "Could not fetch OBS latest release."; return }
         $asset = $rel.assets | Where-Object { $_.name -match 'OBS-Studio-.*\.exe$' } | Select-Object -First 1
         if (-not $asset) { Log-Error "No installer asset found."; return }
         $savePath = Join-Path $env:USERPROFILE "Downloads\$($asset.name)"
-        if (Download-File $asset.browser_download_url $savePath (T "LogDL")) {
+        if (Download-FileSecure $asset.browser_download_url $savePath (T "LogDL")) {
             Log-OK ([string]::Format((T "LogDLOK"), $savePath))
             $btnOBSOpen.Enabled = $true
             $btnOBSOpen.Tag = $savePath
@@ -1989,205 +1391,83 @@ $btnOBSDL.Add_Click({
     Set-Status (T "StatusReady") $script:MUTED
 })
 
-# --- Download Portable OBS (with architecture selection) ---
 $btnOBSDLPortable.Add_Click({
     $arch = if ($rbArchX64.Checked) { "x64" } else { "arm64" }
-    $archDisplay = if ($arch -eq "x64") { "x86_64" } else { "arm64" }
-    Log-Info "[OBS] Architecture selected: $archDisplay"
-    
+    Log-Info "[OBS] Architecture selected: $arch"
     $folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
     $folderDialog.Description = "Select folder where OBS Portable will be installed (ZIP extraction)"
     $folderDialog.ShowNewFolderButton = $true
-    if ($script:OBSRoot -and (Test-Path $script:OBSRoot)) {
-        $folderDialog.SelectedPath = $script:OBSRoot
-    } else {
-        $folderDialog.SelectedPath = $env:UserProfile
-    }
-    
+    if ($script:OBSRoot -and (Test-Path $script:OBSRoot)) { $folderDialog.SelectedPath = $script:OBSRoot } else { $folderDialog.SelectedPath = $env:UserProfile }
     if ($folderDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
         $destFolder = $folderDialog.SelectedPath
         Log-Info "[OBS] Installing Portable OBS ($arch) to: $destFolder"
         Set-Status (T "StatusDownload") $script:NOTE_C
-        
         try {
-            $rel = Get-GitHubRelease "https://api.github.com/repos/obsproject/obs-studio/releases/latest"
+            $headers = @{ 'User-Agent' = 'MPV-SW-Capture-StreamManager/1.0'; 'Accept' = 'application/vnd.github+json' }
+            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/obsproject/obs-studio/releases/latest" -Headers $headers
             if (-not $rel) { Log-Error "Could not fetch OBS latest release."; return }
-            
-            # Build the pattern based on selected architecture
-            if ($arch -eq "x64") {
-                $asset = $rel.assets | Where-Object { 
-                    $_.name -match '\.zip$' -and 
-                    $_.name -match 'obs-studio' -and 
-                    $_.name -match 'windows' -and 
-                    $_.name -match 'x64' -and 
-                    $_.name -notmatch 'PDB' 
-                } | Select-Object -First 1
-                if (-not $asset) {
-                    $asset = $rel.assets | Where-Object { 
-                        $_.name -match '\.zip$' -and 
-                        $_.name -match 'x64' -and 
-                        $_.name -notmatch 'PDB' 
-                    } | Select-Object -First 1
-                }
-            } else { # arm64
-                $asset = $rel.assets | Where-Object { 
-                    $_.name -match '\.zip$' -and 
-                    $_.name -match 'arm64' -and 
-                    $_.name -notmatch 'PDB' 
-                } | Select-Object -First 1
-                if (-not $asset) {
-                    $asset = $rel.assets | Where-Object { 
-                        $_.name -match '\.zip$' -and 
-                        $_.name -match 'arm64' 
-                    } | Select-Object -First 1
-                }
-            }
-            
-            if (-not $asset) {
-                Log-Error "[OBS] No .zip asset found for architecture $arch. Please download manually from: https://github.com/obsproject/obs-studio/releases"
-                Set-Status (T "LogDLCancel") $script:ERROR_C
-                return
-            }
-            
-            Log-Info "[OBS] Selected asset: $($asset.name)"
-            
+            $asset = $rel.assets | Where-Object { $_.name -match '\.zip$' -and $_.name -match 'windows' -and $_.name -match $arch -and $_.name -notmatch 'PDB' } | Select-Object -First 1
+            if (-not $asset) { Log-Error "[OBS] No .zip asset found for $arch."; Set-Status (T "LogDLCancel") $script:ERROR_C; return }
             $zipPath = Join-Path $env:TEMP "obs_portable.zip"
-            Log-Info "[OBS] Downloading: $($asset.name) ($([math]::Round($asset.size/1MB, 2)) MB)"
-            
+            Log-Info "[OBS] Downloading: $($asset.name)"
             $ProgressPreference = 'SilentlyContinue'
             Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zipPath -TimeoutSec 60
             $ProgressPreference = 'Continue'
-            
-            if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) {
-                Log-Error "[OBS] Downloaded file is empty or missing."
-                Set-Status (T "LogDLCancel") $script:ERROR_C
-                return
-            }
-            Log-OK "[OBS] Downloaded $((Get-Item $zipPath).Length) bytes"
-            
+            if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -eq 0) { Log-Error "[OBS] Downloaded file is empty."; return }
             Log-Info "[OBS] Extracting ZIP to $destFolder"
             Expand-Archive -Path $zipPath -DestinationPath $destFolder -Force -ErrorAction Stop
-            
-            # Find the extracted folder
             $extractedDirs = Get-ChildItem -Path $destFolder -Directory | Where-Object { $_.Name -match 'obs-studio' }
             if ($extractedDirs.Count -gt 0) {
                 $extractedDir = $extractedDirs[0]
-                Log-Info "[OBS] Found extracted folder: $($extractedDir.Name)"
                 Get-ChildItem -Path $extractedDir.FullName -Recurse | Move-Item -Destination $destFolder -Force -ErrorAction SilentlyContinue
                 Remove-Item $extractedDir.FullName -Force -ErrorAction SilentlyContinue
             }
-            
-            # Create portable_mode file
             $portableFile = Join-Path $destFolder "portable_mode"
             New-Item -ItemType File -Path $portableFile -Force | Out-Null
-            Log-Info "[OBS] Created portable_mode file at: $portableFile"
-            
-            # Create config directory
             $configDir = Join-Path $destFolder "config"
-            if (-not (Test-Path $configDir)) {
-                New-Item -ItemType Directory -Path $configDir -Force | Out-Null
-                Log-Info "[OBS] Created config directory: $configDir"
-            }
-            
-            # Check for obs64.exe
+            if (-not (Test-Path $configDir)) { New-Item -ItemType Directory -Path $configDir -Force | Out-Null }
             $obsExe = Join-Path $destFolder "bin\64bit\obs64.exe"
             if (Test-Path $obsExe) {
-                $root = $destFolder
-                $script:OBSRoot = $root
-                $script:OBSRootPortable = $root
+                $script:OBSRoot = $destFolder
+                $script:OBSRootPortable = $destFolder
                 $script:CurrentOBSMode = "Portable"
                 $rbModePortable.Checked = $true
-                Save-OBSConfig $root
-                Log-OK "[OBS] Portable OBS ($arch) installed successfully to: $destFolder"
+                Save-OBSConfig $destFolder
+                Log-OK "[OBS] Portable OBS ($arch) installed successfully."
                 Update-OBSDisplay
                 Set-Status (T "StatusDone") $script:SUCCESS
             } else {
-                Log-Warn "[OBS] Portable OBS installed but obs64.exe not found at expected location: $obsExe"
-                $foundExe = Get-ChildItem -Path $destFolder -Recurse -Filter "obs64.exe" | Select-Object -First 1
-                if ($foundExe) {
-                    $root = Split-Path (Split-Path $foundExe.FullName -Parent) -Parent
-                    $script:OBSRoot = $root
-                    $script:OBSRootPortable = $root
-                    $script:CurrentOBSMode = "Portable"
-                    $rbModePortable.Checked = $true
-                    Save-OBSConfig $root
-                    Log-OK "[OBS] Found obs64.exe at: $foundExe.FullName"
-                    Update-OBSDisplay
-                    Set-Status (T "StatusDone") $script:SUCCESS
-                } else {
-                    Log-Warn "[OBS] Could not locate obs64.exe. You may need to locate it manually."
-                    Set-Status (T "LogDLCancel") $script:ERROR_C
-                }
+                Log-Warn "[OBS] obs64.exe not found. Locate manually."
             }
-            
             if (Test-Path $zipPath) { Remove-Item $zipPath -Force -ErrorAction SilentlyContinue }
         } catch {
             Log-Error "[OBS] Error during portable installation: $($_.Exception.Message)"
             Set-Status (T "LogDLCancel") $script:ERROR_C
         }
-    } else {
-        Log-Info "[OBS] Portable installation cancelled."
-    }
+    } else { Log-Info "[OBS] Portable installation cancelled." }
 })
 
-# --- Open OBS ---
 $btnOBSOpen.Add_Click({
     $path = $btnOBSOpen.Tag
-
-    # Si el botón contiene un instalador de OBS descargado, ábrelo.
-    if ($path -and (Test-Path $path)) {
-        try {
-            Start-Process -FilePath $path
-            return
-        }
-        catch {
-            Log-Error "[OBS] Cannot open installer: $($_.Exception.Message)"
-            return
-        }
-    }
-
-    # Si existe una instalación de OBS seleccionada, abre obs64.exe directamente.
+    if ($path -and (Test-Path $path)) { try { Start-Process -FilePath $path; return } catch { Log-Error "[OBS] Cannot open installer: $($_.Exception.Message)"; return } }
     if ($script:OBSRoot -and (Test-Path (Join-Path $script:OBSRoot "bin\64bit\obs64.exe"))) {
         $obsExe = Join-Path $script:OBSRoot "bin\64bit\obs64.exe"
         $workingDir = Join-Path $script:OBSRoot "bin\64bit"
         $args = if ($script:CurrentOBSMode -eq "Portable") { "--portable" } else { $null }
-
         try {
-            if ([string]::IsNullOrWhiteSpace($args)) {
-                Start-Process -FilePath $obsExe -WorkingDirectory $workingDir
-            }
-            else {
-                Start-Process -FilePath $obsExe `
-                    -WorkingDirectory $workingDir `
-                    -ArgumentList $args
-            }
-
-            Log-Info "[OBS] Opened OBS directly with WorkingDir: $workingDir"
-        }
-        catch {
+            if ([string]::IsNullOrWhiteSpace($args)) { Start-Process -FilePath $obsExe -WorkingDirectory $workingDir }
+            else { Start-Process -FilePath $obsExe -WorkingDirectory $workingDir -ArgumentList $args }
+            Log-Info "[OBS] Opened OBS with WorkingDir: $workingDir"
+        } catch {
             Log-Error "[OBS] Could not open OBS: $($_.Exception.Message)"
-
-            [System.Windows.Forms.MessageBox]::Show(
-                "Could not open OBS automatically.`n`nPlease open OBS manually from:`n$obsExe",
-                "MPV-SW-Capture Stream Manager",
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Warning
-            )
+            [System.Windows.Forms.MessageBox]::Show("Could not open OBS automatically.`n`nPlease open OBS manually from:`n$obsExe", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
         }
-    }
-    else {
+    } else {
         Log-Error "[OBS] OBS executable was not found."
-
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS was not found. Please use 'Browse OBS Folder' to select the OBS installation folder.",
-            "MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
+        [System.Windows.Forms.MessageBox]::Show("OBS was not found. Please use 'Browse OBS Folder' to select the OBS installation folder.", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
     }
 })
 
-# --- Check Plugin ---
 $btnPluginCheck.Add_Click({
     if (-not $script:OBSRoot) { Log-Warn "[Plugin] No OBS root detected. Please select OBS folder first."; return }
     $dll = Join-Path $script:OBSRoot "obs-plugins\64bit\win-capture-audio.dll"
@@ -2202,101 +1482,53 @@ $btnPluginCheck.Add_Click({
     }
 })
 
-# --- Install Plugin ---
 $btnPluginInstall.Add_Click({
-    if (-not $script:OBSRoot) {
-        Log-Error "[Plugin] OBS not found. Please select OBS folder first."
-        return
-    }
-
-    # Verificar permisos solo si OBS está en Program Files
+    if (-not $script:OBSRoot) { Log-Error "[Plugin] OBS not found. Please select OBS folder first."; return }
     if ($script:OBSRoot -match "Program Files" -or $script:OBSRoot -match "ProgramFiles") {
         if (-not (Test-AdminRights)) {
             $msg = [string]::Format((T "MsgAdminRequired"), [Environment]::NewLine)
-            [System.Windows.Forms.MessageBox]::Show(
-                $msg,
-                (T "MsgAdminTitle"),
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Warning
-            )
+            [System.Windows.Forms.MessageBox]::Show($msg, (T "MsgAdminTitle"), [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
             Log-Warn "[Plugin] Installation aborted: Administrator rights required."
             return
         }
     }
-
     Set-Status (T "StatusDownload") $script:NOTE_C
-    if (Install-WinCaptureAudio $script:OBSRoot) {
-        Set-Status (T "StatusDone") $script:SUCCESS
-        Update-OBSDisplay
-    } else {
-        Set-Status (T "LogPluginErr") $script:ERROR_C
-    }
+    if (Install-WinCaptureAudio $script:OBSRoot) { Set-Status (T "StatusDone") $script:SUCCESS; Update-OBSDisplay }
+    else { Set-Status (T "LogPluginErr") $script:ERROR_C }
 })
 
-# --- Uninstall Plugin ---
 $btnPluginUninstall.Add_Click({
-    if (-not $script:OBSRoot) {
-        Log-Error "[Uninstall] OBS not found. Please select OBS folder first."
-        return
-    }
-
-    # Verificar permisos solo si OBS está en Program Files
+    if (-not $script:OBSRoot) { Log-Error "[Uninstall] OBS not found. Please select OBS folder first."; return }
     if ($script:OBSRoot -match "Program Files" -or $script:OBSRoot -match "ProgramFiles") {
         if (-not (Test-AdminRights)) {
             $msg = [string]::Format((T "MsgAdminRequired"), [Environment]::NewLine)
-            [System.Windows.Forms.MessageBox]::Show(
-                $msg,
-                (T "MsgAdminTitle"),
-                [System.Windows.Forms.MessageBoxButtons]::OK,
-                [System.Windows.Forms.MessageBoxIcon]::Warning
-            )
+            [System.Windows.Forms.MessageBox]::Show($msg, (T "MsgAdminTitle"), [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
             Log-Warn "[Plugin] Uninstallation aborted: Administrator rights required."
             return
         }
     }
-
     $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmUninstallPlugin"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
     if ($result -eq [System.Windows.Forms.DialogResult]::No) { return }
-    
     Set-Status (T "StatusChecking") $script:NOTE_C
-    if (Uninstall-WinCaptureAudio $script:OBSRoot) {
-        Set-Status (T "StatusDone") $script:SUCCESS
-        Update-OBSDisplay
-    } else {
-        Set-Status (T "LogPluginErr") $script:ERROR_C
-    }
+    if (Uninstall-WinCaptureAudio $script:OBSRoot) { Set-Status (T "StatusDone") $script:SUCCESS; Update-OBSDisplay }
+    else { Set-Status (T "LogPluginErr") $script:ERROR_C }
 })
 
-# --- Manual Download ---
 $btnPluginManual.Add_Click({
     $url = "https://github.com/bozbez/win-capture-audio/releases"
     Log-Info "[Plugin] Opening manual download page: $url"
-    try {
-        Start-Process $url
-    } catch {
+    try { Start-Process $url }
+    catch {
         Log-Error "[Plugin] Could not open browser: $($_.Exception.Message)"
-        [System.Windows.Forms.MessageBox]::Show(
-            "Could not open browser automatically.`n`nPlease visit: $url",
-            "MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
+        [System.Windows.Forms.MessageBox]::Show("Could not open browser.`n`nPlease visit: $url", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 })
 
-# --- OSD Event Handlers ---
 $btnOSDCheck.Add_Click({
     Log-Info (T "S2OSDLogCheck")
     $status = Get-OSDStatus
-    if ($status.enabled) {
-        Log-OK (T "S2OSDLogEnabled")
-        $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDEnabled")
-        $script:lOSDStatus.ForeColor = $script:SUCCESS
-    } else {
-        Log-OK (T "S2OSDLogDisabled")
-        $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDDisabled")
-        $script:lOSDStatus.ForeColor = $script:ERROR_C
-    }
+    if ($status.enabled) { Log-OK (T "S2OSDLogEnabled") } else { Log-OK (T "S2OSDLogDisabled") }
+    Update-OSDDisplay
 })
 
 $btnOSDActivate.Add_Click({
@@ -2305,9 +1537,7 @@ $btnOSDActivate.Add_Click({
         Log-OK (T "S2OSDLogActivated")
         $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDEnabled")
         $script:lOSDStatus.ForeColor = $script:SUCCESS
-    } catch {
-        Log-Error ([string]::Format((T "S2OSDLogError"), $_.Exception.Message))
-    }
+    } catch { Log-Error ([string]::Format((T "S2OSDLogError"), $_.Exception.Message)) }
 })
 
 $btnOSDDeactivate.Add_Click({
@@ -2316,22 +1546,15 @@ $btnOSDDeactivate.Add_Click({
         Log-OK (T "S2OSDLogDeactivated")
         $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDDisabled")
         $script:lOSDStatus.ForeColor = $script:ERROR_C
-    } catch {
-        Log-Error ([string]::Format((T "S2OSDLogError"), $_.Exception.Message))
-    }
+    } catch { Log-Error ([string]::Format((T "S2OSDLogError"), $_.Exception.Message)) }
 })
 
-# ---- Eventos para los RadioButtons de modo OBS ----
 $rbModeInstalled.Add_CheckedChanged({
     if ($rbModeInstalled.Checked) {
         $script:CurrentOBSMode = "Installed"
         $root = $script:OBSRootInstalled
-        if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
-            $script:OBSRoot = $root
-        } else {
-            $script:OBSRoot = $null
-            Log-Warn "[OBS] No saved Installed path. Please use 'Browse OBS Folder' to select the OBS folder."
-        }
+        if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) { $script:OBSRoot = $root }
+        else { $script:OBSRoot = $null; Log-Warn "[OBS] No saved Installed path." }
         Update-OBSDisplay
         Set-Status (T "StatusReady") $script:MUTED
     }
@@ -2341,29 +1564,15 @@ $rbModePortable.Add_CheckedChanged({
     if ($rbModePortable.Checked) {
         $script:CurrentOBSMode = "Portable"
         $root = $script:OBSRootPortable
-        if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) {
-            $script:OBSRoot = $root
-        } else {
-            $script:OBSRoot = $null
-            Log-Warn "[OBS] No saved Portable path. Please use 'Browse OBS Folder' to select the OBS folder."
-        }
+        if ($root -and (Test-Path (Join-Path $root "bin\64bit\obs64.exe"))) { $script:OBSRoot = $root }
+        else { $script:OBSRoot = $null; Log-Warn "[OBS] No saved Portable path." }
         Update-OBSDisplay
         Set-Status (T "StatusReady") $script:MUTED
     }
 })
 
-# Install New Scene Collection
 $btnSceneNew.Add_Click({
-    if (-not $script:OBSRoot) { 
-        Log-Error "[New] OBS not found. Please select OBS folder first."
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
-            "Error - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-        return 
-    }
+    if (-not $script:OBSRoot) { Log-Error "[New] OBS not found."; [System.Windows.Forms.MessageBox]::Show("OBS not found. Please click 'Browse OBS Folder'.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning); return }
     if (Get-Process -Name "obs64" -ErrorAction SilentlyContinue) {
         $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmCloseOBS"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OKCancel, [System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) { return }
@@ -2372,7 +1581,6 @@ $btnSceneNew.Add_Click({
     Log-Info "[New] Installing new scene collection..."
     $script:lSceneStatus.Text = "[New] Installing..."
     $script:lSceneStatus.ForeColor = $script:NOTE_C
-    
     if (Install-NewSceneCollection) {
         Log-OK "[New] Done!"
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "StatusDone")
@@ -2386,34 +1594,18 @@ $btnSceneNew.Add_Click({
     }
 })
 
-# Add Sources to Selected Collection
 $btnSceneAdd.Add_Click({
-    if (-not $script:OBSRoot) { 
-        Log-Error "[Add] OBS not found. Please select OBS folder first."
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
-            "Error - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-        return 
-    }
+    if (-not $script:OBSRoot) { Log-Error "[Add] OBS not found."; [System.Windows.Forms.MessageBox]::Show("OBS not found. Please click 'Browse OBS Folder'.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning); return }
     if (Get-Process -Name "obs64" -ErrorAction SilentlyContinue) {
         $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmCloseOBS"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OKCancel, [System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) { return }
     }
-    
     $selectedCollection = $cbScenes.SelectedItem
-    if (-not $selectedCollection) {
-        Log-Error "[Add] No scene collection selected."
-        return
-    }
-    
+    if (-not $selectedCollection) { Log-Error "[Add] No scene collection selected."; return }
     Set-Status (T "StatusChecking") $script:NOTE_C
     Log-Info "[Add] Adding sources to collection: $selectedCollection"
     $script:lSceneStatus.Text = "[Add] Adding sources..."
     $script:lSceneStatus.ForeColor = $script:NOTE_C
-    
     if (Add-SourcesToCollection -collectionName $selectedCollection) {
         Log-OK "[Add] Done!"
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "StatusDone")
@@ -2421,12 +1613,7 @@ $btnSceneAdd.Add_Click({
         Set-Status (T "StatusDone") $script:SUCCESS
         $script:SelectedCollection = $selectedCollection
         Update-OBSDisplay
-        [System.Windows.Forms.MessageBox]::Show(
-            "Sources added successfully to collection '$selectedCollection'!`n`n- MPV-SW-Window (Window Capture, DXGI)`n- MPV-SW-Audio (win-capture-audio, ffplay.exe)`n`nYour existing scene configuration was preserved.",
-            "Success - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
+        [System.Windows.Forms.MessageBox]::Show("Sources added successfully to collection '$selectedCollection'!`n`n- MPV-SW-Window (Window Capture, DXGI)`n- MPV-SW-Audio (win-capture-audio, ffplay.exe)`n`nYour existing scene configuration was preserved.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "LogSceneErr")
         $script:lSceneStatus.ForeColor = $script:ERROR_C
@@ -2434,38 +1621,21 @@ $btnSceneAdd.Add_Click({
     }
 })
 
-# BACKUP
 $btnBackup.Add_Click({
-    if (-not $script:OBSRoot) {
-        Log-Error "[Backup] OBS not found. Please select OBS folder first."
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
-            "Error - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-        return
-    }
+    if (-not $script:OBSRoot) { Log-Error "[Backup] OBS not found."; [System.Windows.Forms.MessageBox]::Show("OBS not found. Please click 'Browse OBS Folder'.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning); return }
     if (Get-Process -Name "obs64" -ErrorAction SilentlyContinue) {
         $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmCloseOBS"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OKCancel, [System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) { return }
     }
-    
     Set-Status (T "StatusChecking") $script:NOTE_C
     $script:lSceneStatus.Text = "[Backup] Creating backup..."
     $script:lSceneStatus.ForeColor = $script:NOTE_C
-    
     $backupFile = Backup-OBSConfiguration -obsRoot $script:OBSRoot
     if ($backupFile) {
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "StatusDone")
         $script:lSceneStatus.ForeColor = $script:SUCCESS
         Set-Status (T "StatusDone") $script:SUCCESS
-        [System.Windows.Forms.MessageBox]::Show(
-            "Backup created successfully!`n`nFile: $backupFile`n`nYou can restore it using the 'RESTORE' button.",
-            "Success - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
+        [System.Windows.Forms.MessageBox]::Show("Backup created successfully!`n`nFile: $backupFile`n`nYou can restore it using the 'RESTORE' button.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "LogBackupErr")
         $script:lSceneStatus.ForeColor = $script:ERROR_C
@@ -2473,23 +1643,12 @@ $btnBackup.Add_Click({
     }
 })
 
-# RESTORE
 $btnRestore.Add_Click({
-    if (-not $script:OBSRoot) {
-        Log-Error "[Restore] OBS not found. Please select OBS folder first."
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS not found. Please click 'Browse OBS Folder' to select the OBS folder.",
-            "Error - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-        return
-    }
+    if (-not $script:OBSRoot) { Log-Error "[Restore] OBS not found."; [System.Windows.Forms.MessageBox]::Show("OBS not found. Please click 'Browse OBS Folder'.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning); return }
     if (Get-Process -Name "obs64" -ErrorAction SilentlyContinue) {
         $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmCloseOBS"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::OKCancel, [System.Windows.Forms.MessageBoxIcon]::Warning)
         if ($result -eq [System.Windows.Forms.DialogResult]::Cancel) { return }
     }
-    
     $dialog = New-Object System.Windows.Forms.OpenFileDialog
     $dialog.Title = "Select OBS Backup ZIP file"
     $dialog.Filter = "ZIP files (*.zip)|*.zip|All files (*.*)|*.*"
@@ -2497,35 +1656,21 @@ $btnRestore.Add_Click({
     $dialog.Multiselect = $false
     $dialog.CheckFileExists = $true
     $dialog.CheckPathExists = $true
-    
     $backupDir = Join-Path $script:ToolsDir "BKP_OBS"
-    if (Test-Path $backupDir) {
-        $dialog.InitialDirectory = $backupDir
-    } else {
-        $dialog.InitialDirectory = $script:ToolsDir
-    }
-    
+    if (Test-Path $backupDir) { $dialog.InitialDirectory = $backupDir } else { $dialog.InitialDirectory = $script:ToolsDir }
     if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { return }
     $zipPath = $dialog.FileName
-    
     $result = [System.Windows.Forms.MessageBox]::Show((T "ConfirmRestore"), (T "ConfirmTitle"), [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
     if ($result -eq [System.Windows.Forms.DialogResult]::No) { return }
-    
     Set-Status (T "StatusChecking") $script:NOTE_C
     $script:lSceneStatus.Text = "[Restore] Restoring..."
     $script:lSceneStatus.ForeColor = $script:NOTE_C
-    
     if (Restore-OBSConfiguration -zipPath $zipPath) {
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "StatusDone")
         $script:lSceneStatus.ForeColor = $script:SUCCESS
         Set-Status (T "StatusDone") $script:SUCCESS
         Update-OBSDisplay
-        [System.Windows.Forms.MessageBox]::Show(
-            "OBS configuration restored successfully!`n`nPlease restart OBS to see the changes.",
-            "Success - MPV-SW-Capture Stream Manager",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
+        [System.Windows.Forms.MessageBox]::Show("OBS configuration restored successfully!`n`nPlease restart OBS to see the changes.", "Success", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     } else {
         $script:lSceneStatus.Text = (T "S3Status") + " " + (T "LogRestoreErr")
         $script:lSceneStatus.ForeColor = $script:ERROR_C
@@ -2540,46 +1685,38 @@ function Apply-Lang([string]$lang) {
     $script:CurrentLang = $lang
     Style-LangBtn $btnEN ($lang -eq "EN")
     Style-LangBtn $btnES ($lang -eq "ES")
-
     $form.Text = T 'Title'
     $lAppSub.Text = T "HeaderSub"
     $lHeaderNote.Text = T "HeaderNote"
     $lLangLbl.Text = T "LangLabel"
     $lOBSDesc.Text = T "S1Desc"
     $lPluginDesc.Text = T "S2Desc"
-    
     $script:lCard1Title.Text = T "S1Title"
     $script:lCard2Title.Text = T "S2Title"
     $script:lS3Title.Text = T "S3Title"
     $script:lCard4Title.Text = T "ActionsTitle"
-    
     $script:lSceneDesc.Text = T "S3Desc"
     $script:lSceneNote.Text = T "S3Note"
     $script:lSceneNote2.Text = T "S3Note2"
-    
     $script:lOBSPathLabel.Text = T "S1PathLabel"
     $script:lOBSModeLabel.Text = T "S1ModeLabel"
     $script:lArchLabel.Text = T "S1ArchLabel"
     $script:lModeChoice.Text = T "S1ModeChoice"
     $script:rbModeInstalled.Text = T "S1ModeInstalled"
     $script:rbModePortable.Text = T "S1ModePortable"
-    
     $btnOBSBrowse.Text = T "S1BrowseBtn"
     $btnOBSDL.Text = T "S1DownloadBtn"
     $btnOBSDLPortable.Text = T "S1DownloadPortableBtn"
     $btnOBSOpen.Text = T "S1OpenBtn"
-    
     $btnPluginCheck.Text = T "S2DetectBtn"
     $btnPluginInstall.Text = T "S2InstallBtn"
     $btnPluginUninstall.Text = T "S2UninstallBtn"
     $btnPluginManual.Text = T "S2ManualBtn"
-    
     $script:lOSDTitle.Text = T "S2OSDTitle"
     $script:lOSDDesc.Text = T "S2OSDDesc"
     $script:btnOSDCheck.Text = T "S2OSDCheckBtn"
     $script:btnOSDActivate.Text = T "S2OSDActivateBtn"
     $script:btnOSDDeactivate.Text = T "S2OSDDeactivateBtn"
-    
     $status = Get-OSDStatus
     if ($status.enabled) {
         $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDEnabled")
@@ -2588,40 +1725,32 @@ function Apply-Lang([string]$lang) {
         $script:lOSDStatus.Text = (T "S2OSDStatus") + " " + (T "S2OSDDisabled")
         $script:lOSDStatus.ForeColor = $script:ERROR_C
     }
-    
     $lSceneLbl.Text = T "S3SceneLbl"
     $btnSceneNew.Text = T "S3BtnNew"
     $btnSceneAdd.Text = T "S3BtnAdd"
     $btnBackup.Text = T "S3BtnBackup"
     $btnRestore.Text = T "S3BtnRestore"
-    
     $lStatus.Text = T "StatusReady"
-    
+    $script:btnSwitchFfplay.Text = T "S2AudioSwitchBtn"
+    Update-AudioModeNotice
     Update-OBSDisplay -Silent $true
-    
     $langName = if ($lang -eq 'EN') { 'English' } else { 'Spanish' }
     Log-Info "[Language] Language changed to $langName"
-    
     $form.Refresh()
 }
 
-$btnEN.Add_Click({
-    Apply-Lang "EN"
-    Save-GUILanguage "EN"
-})
-
-$btnES.Add_Click({
-    Apply-Lang "ES"
-    Save-GUILanguage "ES"
-})
+$btnEN.Add_Click({ Apply-Lang "EN"; Save-GUILanguage "EN" })
+$btnES.Add_Click({ Apply-Lang "ES"; Save-GUILanguage "ES" })
 
 # ============================================================
 # INIT
 # ============================================================
-# Cargar idioma guardado
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang
 Log-Info (T "LogReady")
+
+$audioMode = Get-AudioMode
+if ($audioMode -eq "ffplay") { Log-OK (T "LogAudioModeFfplay") } else { Log-Warn (T "LogAudioModeWasapi") }
 
 $savedRoot = Load-OBSConfig
 if ($savedRoot) {
@@ -2631,10 +1760,8 @@ if ($savedRoot) {
     $script:OBSRoot = $null
     Log-Warn "[OBS] No OBS path found. Please use 'Browse OBS Folder' to select your OBS installation."
 }
-if ($script:CurrentOBSMode -eq "Installed") {
-    $rbModeInstalled.Checked = $true
-} else {
-    $rbModePortable.Checked = $true
-}
+if ($script:CurrentOBSMode -eq "Installed") { $rbModeInstalled.Checked = $true } else { $rbModePortable.Checked = $true }
 Update-OBSDisplay
+Update-AudioModeNotice
+
 [System.Windows.Forms.Application]::Run($form)

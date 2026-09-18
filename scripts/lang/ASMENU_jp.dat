@@ -1,32 +1,97 @@
-# ASMENU_jp.dat - By TyRaS-SW
-# Japanese strings for msc_overlay.lua
-# Exact match (case-insensitive fallback)
+# ASMENU_jp.dat - By TyRaS-SW - 日本語 strings for msc_overlay.lua
+# 完全一致（大文字小文字を区別しないフォールバック）
+#
+# 構成:
+#   1. 一般UI
+#   2. 音量 / オーディオ（基本ラベル）
+#   3. ヘッダー
+#   4. セクション説明 (DESC_*)
+#   5. タブ別説明 (DESC_<セクション>_<タブ>)
+#   6. キーボード / マウス ヒント
 
+# --- 1. 一般UI ------------------------------------------------------------
 Quick=クイックオプション
+Hover Volume Sidebar=ホバー音量サイドバー
 CAPTURE=キャプチャ
 HELP=ヘルプ
-Take Screenshot=スクリーンショット
-Record Video=録画
-Clean ALL=すべてクリア
-Check Latest MSC Version=最新のMSCバージョンを確認
-Open MPV-SW-Capture Website=MPV-SW-Capture サイトを開く
+Take Screenshot=スクリーンショットを撮る
+Record Video=動画を録画
+Clean ALL=すべてクリーン
+Check Latest MSC Version=MSCの最新バージョンを確認
+Open MPV-SW-Capture Website=MPV-SW-Captureウェブサイトを開く
 MPV-SW-Capture Discord=MPV-SW-Capture Discord
-Hide OSD Messages=OSDメッセージを隠す
+Hide OSD Messages=OSDメッセージを非表示
 Info Stream=ストリーム情報
 Help=ヘルプ
 SETTINGS=設定
-Switch Language=言語切替
+Switch Language=言語を切り替え
+CLEAN ALL=すべてクリーン
+Close MPV-SW-Capture=MPV-SW-Captureを閉じる
 
+# --- トグル状態ラベル + ICC ---
+ON=オン
+OFF=オフ
+Change to Auto ICC Profile=自動ICCプロファイルに変更
+
+# --- 2. 音量 / オーディオ（基本ラベル） -----------------------------------
 Volume=音量
 Audio Boost=オーディオブースト
 MUTED=ミュート
 no signal=信号なし
+Hover Volume Sidebar=ホバー音量サイドバー
 
-CLEAN ALL=すべてクリア
-Close MPV-SW-Capture=MPV-SW-Capture を終了
+# --- オーディオセクション: タブ名 -----------------------------------------
+All=すべて
+AUDIO BOOST=オーディオブースト
+AUDIO OUTPUT MODE=出力モード
 
-KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=キーボード: [矢印キー] 移動. [ENTER] 適用. [TAB] 次のセクション. [ESC] メニューを閉じる.
-MOUSE: Click any section to choose an option.=マウス: 任意のセクションをクリックして選択.
+# --- オーディオセクション: 音量操作 ---------------------------------------
+Vol +10%=音量 +10%
+Vol -10%=音量 -10%
+Mute/Unmute=ミュート/解除
+Vol 100%=音量 100%
+Vol 50%=音量 50%
 
-SCREENSHOT_HEADER=撮影
-RECORD_HEADER=録画
+# --- オーディオセクション: ブースト操作 -----------------------------------
+Boost +25%=ブースト +25%
+Boost -25%=ブースト -25%
+Boost 150%=ブースト 150%
+Boost 200%=ブースト 200%
+Boost 300%=ブースト 300%
+No Boost (100%)=ブーストなし (100%)
+
+# --- オーディオセクション: 出力モード操作 ---------------------------------
+FFplay Low Latency=FFplay 低遅延
+WASAPI Audio Plugin=WASAPIプラグイン
+WASAPI Audio Plugin Diagnostics=WASAPIプラグイン診断
+Restart WASAPI Audio Plugin=WASAPIプラグイン再起動
+
+# --- 3. ヘッダー ----------------------------------------------------------
+SCREENSHOT_HEADER=スクリーンショットを撮る
+RECORD_HEADER=動画を録画
+
+# --- 4. セクション説明 ----------------------------------------------------
+DESC_SHADERS=シェーダー|アップスケーリング、シャープ化、レトロCRTエフェクトなどで画像を改善します。
+DESC_SHAPES=形状|湾曲、台形補正、角丸などで画面の形状を変更します。
+DESC_CROPS=クロップ|NSOなど、お好みの解像度に合わせて画像をクロップします。
+DESC_BEZELS=ベゼル|装飾的な枠を重ねて、より本格的な見た目にします。
+DESC_WINDOW=ウィンドウ|サイズ変更、位置変更、回転、または常に最前面に表示します。
+DESC_CAPTURE=キャプチャ|ゲームプレイのスクリーンショットや動画クリップを撮ります。
+DESC_VIDEO_OPTIONS=ビデオオプション|色、アスペクト比、デインターレース、モーション設定を調整します。
+DESC_AUDIO=オーディオ|音量、ミュート、最大400%のオーディオブーストを制御します。
+DESC_HELP=ヘルプ|アップデートの確認、ウェブサイトを開く、Discordコミュニティに参加します。
+DESC_TOOLS=ツール|MPV-SW-Capture TOOLS、INSTALLER、SETUPをここから直接起動します。
+
+# --- 5. タブ別説明 --------------------------------------------------------
+DESC_WINDOW_SIZE=サイズ|ウィンドウのサイズを0.5倍から2.0倍、または全画面から選択します。
+DESC_WINDOW_POSITION=位置|ウィンドウを9つの定義済み位置のいずれかに移動します。
+DESC_WINDOW_ROTATION=回転|画像を90度回転させるか、ミラーモードを有効にします。
+DESC_WINDOW_OTHER_OPTIONS=その他のオプション|枠、タイトルバーを切り替えるか、両方を一度に削除します。
+DESC_WINDOW_WINDOW_EXTRAS=ウィンドウ拡張|ウィンドウを常に最前面に表示するか、アスペクト比を引き伸ばします。
+DESC_AUDIO_ALL=すべて|音量のクイック操作: +10%、-10%、ミュート、または100% / 50%に設定します。
+DESC_AUDIO_AUDIO_BOOST=オーディオブースト|低音量のコンテンツ向けに、キャプチャ音声を100%以上（最大400%）に増幅します。
+DESC_AUDIO_AUDIO_OUTPUT_MODE=出力モード|キャプチャストリームを処理するオーディオバックエンドを選択します。
+
+# --- 6. キーボード / マウス ヒント ----------------------------------------
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=キーボード: [矢印キー] 移動。[ENTER] 適用。[TAB] 次のセクションへ。[ESC] メニューを閉じる。
+MOUSE: Click any section to choose an option.=マウス: 任意のセクションをクリックしてオプションを選択します。

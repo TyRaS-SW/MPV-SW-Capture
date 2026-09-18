@@ -1,30 +1,97 @@
-# ASMENU_es.dat -  - By TyRaS-SW - Textos internos de msc_overlay.lua (Español)
+# ASMENU_es.dat - By TyRaS-SW - Español neutro para msc_overlay.lua
+# Coincidencia exacta (fallback sin distinguir mayúsculas)
+#
+# Estructura:
+#   1. UI general
+#   2. Volumen / Audio (etiquetas base)
+#   3. Encabezados
+#   4. Descripciones de sección (DESC_*)
+#   5. Descripciones por pestaña (DESC_<SECCIÓN>_<PESTAÑA>)
+#   6. Ayudas de teclado / mouse
 
+# --- 1. UI general --------------------------------------------------------
 Quick=Opciones Rápidas
+Hover Volume Sidebar=Barra de Volumen al Pasar el Cursor
 CAPTURE=CAPTURA
 HELP=AYUDA
-Take Screenshot=Tomar Captura de Pantalla
+Take Screenshot=Tomar Captura
 Record Video=Grabar Video
 Clean ALL=Limpiar TODO
-Check Latest MSC Version=Revisar Última Versión de MSC
-Open MPV-SW-Capture Website=Abrir Sitio Web de MPV-SW-Capture
+Check Latest MSC Version=Buscar la Última Versión de MSC
+Open MPV-SW-Capture Website=Abrir el Sitio Web de MPV-SW-Capture
 MPV-SW-Capture Discord=Discord de MPV-SW-Capture
 Hide OSD Messages=Ocultar Mensajes OSD
-Info Stream=Información de Stream
+Info Stream=Info del Stream
 Help=Ayuda
-SETTINGS=CONFIGURACIÓN
+SETTINGS=AJUSTES
 Switch Language=Cambiar Idioma
-
-Volume=Volumen
-Audio Boost=Amplificación
-MUTED=SILENCIADO
-no signal=sin señal
-
 CLEAN ALL=LIMPIAR TODO
 Close MPV-SW-Capture=Cerrar MPV-SW-Capture
 
-KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=TECLADO: [FLECHAS] Mover. [ENTER] Aplicar. [TAB] Cambiar de sección. [ESC] Cerrar menú.
-MOUSE: Click any section to choose an option.=RATÓN: Haz clic en cualquier sección para elegir una opción.
+# --- Etiquetas de estado + ICC ---
+ON=SÍ
+OFF=NO
+Change to Auto ICC Profile=Cambiar a Perfil ICC Automático
 
-SCREENSHOT_HEADER=CAPTURA PANTALLA
+# --- 2. Volumen / Audio (etiquetas base) ----------------------------------
+Volume=Volumen
+Audio Boost=Amplificación
+MUTED=SILENCIO
+no signal=sin señal
+Hover Volume Sidebar=Barra de Audio Lateral
+
+# --- Sección Audio: nombres de pestañas -----------------------------------
+All=Todo
+AUDIO BOOST=AMPLIFICACIÓN DE AUDIO
+AUDIO OUTPUT MODE=MODO DE SALIDA
+
+# --- Sección Audio: acciones de volumen -----------------------------------
+Vol +10%=Vol +10%
+Vol -10%=Vol -10%
+Mute/Unmute=Silenciar/Activar sonido
+Vol 100%=Vol 100%
+Vol 50%=Vol 50%
+
+# --- Sección Audio: acciones de amplificación -----------------------------
+Boost +25%=Amplificar +25%
+Boost -25%=Amplificar -25%
+Boost 150%=Amplificar 150%
+Boost 200%=Amplificar 200%
+Boost 300%=Amplificar 300%
+No Boost (100%)=Sin Amplificación (100%)
+
+# --- Sección Audio: modo de salida ----------------------------------------
+FFplay Low Latency=FFplay Baja Latencia
+WASAPI Audio Plugin=Plugin WASAPI
+WASAPI Audio Plugin Diagnostics=Diagnóstico del Plugin WASAPI
+Restart WASAPI Audio Plugin=Reiniciar Plugin WASAPI
+
+# --- 3. Encabezados -------------------------------------------------------
+SCREENSHOT_HEADER=TOMAR CAPTURA
 RECORD_HEADER=GRABAR VIDEO
+
+# --- 4. Descripciones de sección ------------------------------------------
+DESC_SHADERS=SHADERS|Mejora la imagen con escalado, nitidez, efectos CRT retro y más.
+DESC_SHAPES=FORMAS|Cambia la geometría de la pantalla con curvatura, distorsión o esquinas redondeadas.
+DESC_CROPS=RECORTES|Recorta la imagen para que coincida con la resolución exacta que elijas, como la de NSO y otras.
+DESC_BEZELS=MARCOS|Superpón bordes decorativos para un aspecto más auténtico.
+DESC_WINDOW=VENTANA|Redimensiona, reposiciona, rota o mantén la ventana siempre visible.
+DESC_CAPTURE=CAPTURA|Toma capturas o graba clips de video de tu partida.
+DESC_VIDEO_OPTIONS=OPCIONES DE VIDEO|Ajusta color, relación de aspecto, desentrelazado y movimiento.
+DESC_AUDIO=AUDIO|Controla el volumen, silencia y usa Amplificación de Audio hasta 400%.
+DESC_HELP=AYUDA|Busca actualizaciones, abre el sitio web o únete a la comunidad de Discord.
+DESC_TOOLS=HERRAMIENTAS|Inicia MPV-SW-Capture TOOLS, INSTALLER o SETUP directamente desde aquí.
+
+# --- 5. Descripciones por pestaña -----------------------------------------
+DESC_WINDOW_SIZE=TAMAÑO|Elige el tamaño de la ventana entre 0.5x y 2.0x, o pantalla completa.
+DESC_WINDOW_POSITION=POSICIÓN|Mueve la ventana a una de las nueve posiciones predefinidas.
+DESC_WINDOW_ROTATION=ROTACIÓN|Rota la imagen 90 grados o activa el Modo Espejo.
+DESC_WINDOW_OTHER_OPTIONS=OTRAS OPCIONES|Muestra u oculta el borde, la barra de título, o quita ambos a la vez.
+DESC_WINDOW_WINDOW_EXTRAS=EXTRAS DE VENTANA|Mantén la ventana siempre visible o estira la relación de aspecto.
+DESC_AUDIO_ALL=TODO|Acciones rápidas de volumen: +10%, -10%, silenciar, o fijar en 100% / 50%.
+DESC_AUDIO_AUDIO_BOOST=AMPLIFICACIÓN DE AUDIO|Amplifica el audio de captura por encima de 100% (hasta 400%) para contenido de volumen bajo.
+DESC_AUDIO_AUDIO_OUTPUT_MODE=MODO DE SALIDA|Elige qué motor de audio maneja el stream de captura.
+
+# --- 6. Ayudas de teclado / mouse -----------------------------------------
+KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=TECLADO: [FLECHAS] Mover. [ENTER] Aplicar. [TAB] Cambiar a la siguiente sección. [ESC] Cerrar menú.
+MOUSE: Click any section to choose an option.=MOUSE: Haz clic en cualquier sección para elegir una opción.

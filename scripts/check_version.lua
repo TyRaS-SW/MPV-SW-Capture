@@ -7,7 +7,7 @@ local utils = require "mp.utils"
 local msg = require "mp.msg"
 
 -- -------------------------------------------------------------------------
--- Cargar osd_messages de forma segura
+-- Load osd_messages in secure mode
 -- -------------------------------------------------------------------------
 local osd
 local function get_script_path()

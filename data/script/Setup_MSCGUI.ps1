@@ -105,10 +105,15 @@ function Get-RootDir {
 $script:RootDir = Get-RootDir
 
 # ============================================================
+#  PATHS
+# ============================================================
+$script:LangFilePath    = Join-Path $script:RootDir "data\script\GUILang.dat"
+$script:AudioModePath   = Join-Path $script:RootDir "data\menu\audio_mode.txt"
+$script:HoverVolumePath = Join-Path $script:RootDir "data\menu\hover_volume.txt"
+
+# ============================================================
 #  LANGUAGE PERSISTENCE
 # ============================================================
-$script:LangFilePath = Join-Path $script:RootDir "data\script\GUILang.dat"
-
 function Load-GUILanguage {
     if (Test-Path $script:LangFilePath) {
         try {
@@ -130,6 +135,104 @@ function Save-GUILanguage([string]$lang) {
     }
     $content = if ($lang -eq "EN") { "en" } else { "es" }
     [System.IO.File]::WriteAllText($script:LangFilePath, $content, [System.Text.Encoding]::UTF8)
+}
+
+# ============================================================
+#  AUDIO MODE (data\menu\audio_mode.txt)
+#  Values: "plugin" (WASAPI) | "ffplay"
+# ============================================================
+function Get-AudioModeSetting {
+    if (-not (Test-Path $script:AudioModePath)) { return "plugin" }
+    try {
+        $content = (Get-Content $script:AudioModePath -Encoding UTF8 -Raw).Trim().ToLower()
+        if ($content -eq "ffplay") { return "ffplay" }
+        return "plugin"
+    } catch { return "plugin" }
+}
+
+function Set-AudioModeSetting([string]$mode) {
+    $dir = Split-Path -Parent $script:AudioModePath
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    $value = if ($mode -eq "ffplay") { "ffplay" } else { "plugin" }
+    [System.IO.File]::WriteAllText($script:AudioModePath, $value, [System.Text.UTF8Encoding]::new($false))
+}
+
+# ============================================================
+#  HOVER VOLUME (data\menu\hover_volume.txt)
+#  Values: "no" | "yes"
+# ============================================================
+function Get-HoverVolumeSetting {
+    if (-not (Test-Path $script:HoverVolumePath)) { return "no" }
+    try {
+        $content = (Get-Content $script:HoverVolumePath -Encoding UTF8 -Raw).Trim().ToLower()
+        if ($content -eq "yes") { return "yes" }
+        return "no"
+    } catch { return "no" }
+}
+
+function Set-HoverVolumeSetting([string]$value) {
+    $dir = Split-Path -Parent $script:HoverVolumePath
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    $v = if ($value -eq "yes") { "yes" } else { "no" }
+    [System.IO.File]::WriteAllText($script:HoverVolumePath, $v, [System.Text.UTF8Encoding]::new($false))
+}
+
+# ============================================================
+#  MENU LANGUAGE (scripts\lang\OSDLang.dat + language_list.dat)
+#  - OSDLang.dat: the currently active language code (1 word).
+#  - language_list.dat: the list of available language codes.
+#  The overlay reads OSDLang.dat at runtime and translates
+#  menu.conf in memory. menu.conf itself is never modified.
+# ============================================================
+function Get-MenuLanguage {
+    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    if (Test-Path $OSDLangFile) {
+        try {
+            $content = [System.IO.File]::ReadAllText($OSDLangFile, [System.Text.Encoding]::UTF8)
+            $content = $content.Trim().ToLower()
+            if ($content -ne "") { return $content }
+        } catch {}
+    }
+    return "en"
+}
+
+function Set-MenuLanguage([string]$lang) {
+    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    $dir = Split-Path -Parent $OSDLangFile
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    [System.IO.File]::WriteAllText($OSDLangFile, $lang, [System.Text.Encoding]::UTF8)
+}
+
+function Get-AvailableMenuLanguages {
+    $listFile = Join-Path $script:RootDir "scripts\lang\language_list.dat"
+    $fallback = @("en", "es")
+    if (-not (Test-Path $listFile)) { return $fallback }
+    try {
+        $lines  = [System.IO.File]::ReadAllLines($listFile, [System.Text.Encoding]::UTF8)
+        $parsed = @()
+        foreach ($line in $lines) {
+            $clean = $line.Trim().ToLower()
+            if ($clean -ne "" -and -not $clean.StartsWith("#")) {
+                if ($parsed -notcontains $clean) { $parsed += $clean }
+            }
+        }
+        if ($parsed.Count -gt 0) { return $parsed }
+    } catch {}
+    return $fallback
+}
+
+function Select-MenuLanguageCombo([string]$lang) {
+    if (-not $cbMenuLang) { return }
+    $lang = ("" + $lang).ToLower()
+    for ($i = 0; $i -lt $cbMenuLang.Items.Count; $i++) {
+        if ($cbMenuLang.Items[$i].ToString().ToLower() -eq $lang) {
+            $cbMenuLang.SelectedIndex = $i
+            return
+        }
+    }
+    if ($cbMenuLang.Items.Count -gt 0 -and $cbMenuLang.SelectedIndex -lt 0) {
+        $cbMenuLang.SelectedIndex = 0
+    }
 }
 
 # ============================================================
@@ -174,15 +277,16 @@ $script:SUCCESS = [System.Drawing.Color]::FromArgb(72,  199, 116)
 $script:ERROR_C = [System.Drawing.Color]::FromArgb(255, 100, 100)
 $script:NOTE_C  = [System.Drawing.Color]::FromArgb(220, 200, 130)
 
-$FontTitle        = New-Object System.Drawing.Font("Segoe UI", 18, [System.Drawing.FontStyle]::Bold)
-$FontSub          = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Regular)
-$FontBold         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Bold)
-$FontBtn          = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
-$FontSmall        = New-Object System.Drawing.Font("Segoe UI",  8, [System.Drawing.FontStyle]::Regular)
-$FontNote         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Regular)
-$FontSectionTitle = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Bold)
-$FontLangBtn      = New-Object System.Drawing.Font("Segoe UI", 11, [System.Drawing.FontStyle]::Bold)
-$FontSmallBold    = New-Object System.Drawing.Font("Segoe UI", 8, [System.Drawing.FontStyle]::Bold)
+$FontTitle        = New-Object System.Drawing.Font("Segoe UI", 18,   [System.Drawing.FontStyle]::Bold)
+$FontSub          = New-Object System.Drawing.Font("Segoe UI",  9,   [System.Drawing.FontStyle]::Regular)
+$FontBold         = New-Object System.Drawing.Font("Segoe UI",  9,   [System.Drawing.FontStyle]::Bold)
+$FontBtn          = New-Object System.Drawing.Font("Segoe UI", 10,   [System.Drawing.FontStyle]::Bold)
+$FontSmall        = New-Object System.Drawing.Font("Segoe UI",  8,   [System.Drawing.FontStyle]::Regular)
+$FontNote         = New-Object System.Drawing.Font("Segoe UI",  9,   [System.Drawing.FontStyle]::Regular)
+$FontSectionTitle = New-Object System.Drawing.Font("Segoe UI",  9,   [System.Drawing.FontStyle]::Bold)
+$FontLangBtn      = New-Object System.Drawing.Font("Segoe UI", 11,   [System.Drawing.FontStyle]::Bold)
+$FontSmallBold    = New-Object System.Drawing.Font("Segoe UI",  8,   [System.Drawing.FontStyle]::Bold)
+$FontHeaderNote   = New-Object System.Drawing.Font("Segoe UI", 8.5,  [System.Drawing.FontStyle]::Regular)
 
 # ============================================================
 #  LANGUAGE STRINGS (EN / ES)
@@ -226,6 +330,8 @@ $script:Lang["EN"] = @{
     S5OsdTitle  = "AUTOSTART HIDE OSD MESSAGES (Streamer Mode)"
     S5BorderTitle = "AUTOSTART WINDOW BORDER+TITLE BAR"
     S5AutoCheckTitle = "AUTO-CHECK FOR UPDATES ON STARTUP"
+    S5AudioModeTitle = "AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT"
+    S5HoverVolumeTitle = "AUTOSTART WITH HOVER VOLUME SIDEBAR"
     S5No        = "No"
     S5Yes       = "Yes"
     S5BorderOnly = "Only border"
@@ -234,7 +340,7 @@ $script:Lang["EN"] = @{
     StatusReady = "Ready. Scan devices then click Apply Setup."
     ApplyBtn    = "Apply Setup"
     ErrSelect   = "Select video and audio devices first!"
-    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n`nNote: menu.conf and the overlay language are now handled by scripts\lang\OSDLang.dat, and are NOT modified by Setup.`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
+    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n  - data\menu\audio_mode.txt`n  - data\menu\hover_volume.txt`n`nNote: menu.conf and the overlay language are now handled by scripts\lang\OSDLang.dat, and are NOT modified by Setup.`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
     DoneTitle   = "MPV-SW-Capture Setup"
     DoneStatus  = "Setup complete! All files updated."
     ErrStatus   = "Error: {0}"
@@ -283,6 +389,8 @@ $script:Lang["ES"] = @{
     S5OsdTitle  = "OCULTAR MENSAJES OSD AL INICIO (Modo Streamer)"
     S5BorderTitle = "BORDE VENTANA+BARRA DE TITULO AL INICIO"
     S5AutoCheckTitle = "VERIFICAR ACTUALIZACIONES AL INICIO"
+    S5AudioModeTitle = "INICIO AUTOMATICO CON LA SIGUIENTE SALIDA DE AUDIO"
+    S5HoverVolumeTitle = "INICIO AUTOMATICO CON BARRA DE VOLUMEN FLOTANTE"
     S5No        = "No"
     S5Yes       = "Si"
     S5BorderOnly = "Solo borde"
@@ -291,7 +399,7 @@ $script:Lang["ES"] = @{
     StatusReady = "Listo. Busca dispositivos y luego haz clic en Aplicar."
     ApplyBtn    = "Aplicar"
     ErrSelect   = "Selecciona los dispositivos de video y audio primero!"
-    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n`nNota: menu.conf y el idioma del overlay ahora se manejan desde scripts\lang\OSDLang.dat, y NO son modificados por el Setup.`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
+    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n  - data\menu\audio_mode.txt`n  - data\menu\hover_volume.txt`n`nNota: menu.conf y el idioma del overlay ahora se manejan desde scripts\lang\OSDLang.dat, y NO son modificados por el Setup.`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
     DoneTitle   = "Configuracion MPV-SW-Capture"
     DoneStatus  = "Configuracion completa! Todos los archivos actualizados."
     ErrStatus   = "Error: {0}"
@@ -423,67 +531,6 @@ function New-CardXY(
 }
 
 # ============================================================
-#  MENU LANGUAGE HELPERS
-#  - OSDLang.dat: the currently active language code (1 word).
-#  - language_list.dat: the list of available language codes.
-#  The overlay reads OSDLang.dat at runtime and translates
-#  menu.conf in memory. menu.conf itself is never modified.
-# ============================================================
-function Get-MenuLanguage {
-    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
-    if (Test-Path $OSDLangFile) {
-        try {
-            $content = [System.IO.File]::ReadAllText($OSDLangFile, [System.Text.Encoding]::UTF8)
-            $content = $content.Trim().ToLower()
-            if ($content -ne "") { return $content }
-        } catch {}
-    }
-    return "en"
-}
-
-function Set-MenuLanguage([string]$lang) {
-    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
-    $dir = Split-Path -Parent $OSDLangFile
-    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    [System.IO.File]::WriteAllText($OSDLangFile, $lang, [System.Text.Encoding]::UTF8)
-}
-
-# Reads scripts\lang\language_list.dat and returns the list of codes.
-# Falls back to en/es if the file is missing or empty.
-function Get-AvailableMenuLanguages {
-    $listFile = Join-Path $script:RootDir "scripts\lang\language_list.dat"
-    $fallback = @("en", "es")
-    if (-not (Test-Path $listFile)) { return $fallback }
-    try {
-        $lines  = [System.IO.File]::ReadAllLines($listFile, [System.Text.Encoding]::UTF8)
-        $parsed = @()
-        foreach ($line in $lines) {
-            $clean = $line.Trim().ToLower()
-            if ($clean -ne "" -and -not $clean.StartsWith("#")) {
-                if ($parsed -notcontains $clean) { $parsed += $clean }
-            }
-        }
-        if ($parsed.Count -gt 0) { return $parsed }
-    } catch {}
-    return $fallback
-}
-
-# Selects the given language in the ComboBox, if present.
-function Select-MenuLanguageCombo([string]$lang) {
-    if (-not $cbMenuLang) { return }
-    $lang = ("" + $lang).ToLower()
-    for ($i = 0; $i -lt $cbMenuLang.Items.Count; $i++) {
-        if ($cbMenuLang.Items[$i].ToString().ToLower() -eq $lang) {
-            $cbMenuLang.SelectedIndex = $i
-            return
-        }
-    }
-    if ($cbMenuLang.Items.Count -gt 0 -and $cbMenuLang.SelectedIndex -lt 0) {
-        $cbMenuLang.SelectedIndex = 0
-    }
-}
-
-# ============================================================
 #  FORM & CARDS
 # ============================================================
 $formW   = 1140
@@ -532,7 +579,6 @@ $btnES.Location = [System.Drawing.Point]::new(1086,6)
 $btnES.Size     = [System.Drawing.Size]::new(44,26)
 Style-LangBtn $btnES $false
 
-$FontHeaderNote = New-Object System.Drawing.Font("Segoe UI", 8.5, [System.Drawing.FontStyle]::Regular)
 $lHeaderNote = New-Lbl (T "HeaderNote") 710 38 470 18 $FontHeaderNote $script:ACCENT3
 
 $script:EXE_OK  = [System.Drawing.Color]::FromArgb(50, 160, 80)
@@ -658,7 +704,21 @@ $rbAutoCheckYes  = New-RB (T "S5Yes") 420 3 50
 $rbAutoCheckNo.Checked = $true
 $pnlAutoCheck.Controls.AddRange(@($lAutoCheckLabel, $rbAutoCheckNo, $rbAutoCheckYes))
 
-$card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck))
+$pnlAudioMode = New-Pnl 14 148 520 26 $script:CARD
+$lAudioModeLabel = New-Lbl (T "S5AudioModeTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
+$rbAudioModeWasapi = New-RB "WASAPI" 320 3 80
+$rbAudioModeFfplay = New-RB "FFPLAY" 420 3 90
+$rbAudioModeWasapi.Checked = $true
+$pnlAudioMode.Controls.AddRange(@($lAudioModeLabel, $rbAudioModeWasapi, $rbAudioModeFfplay))
+
+$pnlHoverVolume = New-Pnl 14 172 520 26 $script:CARD
+$lHoverVolumeLabel = New-Lbl (T "S5HoverVolumeTitle") 0 5 300 16 $FontSmallBold $script:ACCENT3
+$rbHoverVolumeNo   = New-RB (T "S5No")  320 3 50
+$rbHoverVolumeYes  = New-RB (T "S5Yes") 420 3 50
+$rbHoverVolumeNo.Checked = $true
+$pnlHoverVolume.Controls.AddRange(@($lHoverVolumeLabel, $rbHoverVolumeNo, $rbHoverVolumeYes))
+
+$card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck, $pnlAudioMode, $pnlHoverVolume))
 
 # --- Card 6: Actions ---
 # ComboBox (left) + Button (right) for choosing the overlay language.
@@ -750,6 +810,8 @@ function Apply-Lang([string]$lang) {
     $lOsdLabel.Text     = T "S5OsdTitle"
     $lBorderLabel.Text  = T "S5BorderTitle"
     $lAutoCheckLabel.Text = T "S5AutoCheckTitle"
+    $lAudioModeLabel.Text = T "S5AudioModeTitle"
+    $lHoverVolumeLabel.Text = T "S5HoverVolumeTitle"
     $rbScNo.Text        = T "S5No"
     $rbScYes.Text       = T "S5Yes"
     $rbIccNo.Text       = T "S5No"
@@ -761,6 +823,9 @@ function Apply-Lang([string]$lang) {
     $rbBorderBoth.Text  = T "S5BorderBoth"
     $rbAutoCheckNo.Text = T "S5No"
     $rbAutoCheckYes.Text = T "S5Yes"
+    $rbHoverVolumeNo.Text = T "S5No"
+    $rbHoverVolumeYes.Text = T "S5Yes"
+    # WASAPI / FFPLAY labels are the same in both languages.
 
     switch ($script:LastStatusState) {
         "ready"          { $lStatus.ForeColor = $script:MUTED;   $lStatus.Text = T "StatusReady" }
@@ -953,8 +1018,9 @@ $btnMenuToggle.Add_Click({
 
 # ============================================================
 #  APPLY BUTTON
-#  Writes device names, date format, shader init, record time
-#  and window/border preferences into the respective files.
+#  Writes device names, date format, shader init, record time,
+#  window/border preferences, audio mode and hover volume
+#  into the respective files.
 #  Does NOT touch menu.conf or OSDLang.dat.
 # ============================================================
 $btnApply.Add_Click({
@@ -1115,6 +1181,15 @@ mp.register_script_message("toggle-osd", toggle_osd)
             '(data\.max_record_time\s*=\s*)\d+(?:\.\d+)?' = ('${1}' + $recLua)
         } $utf8
 
+        # --- Audio mode (data\menu\audio_mode.txt) ---
+        # WASAPI = "plugin"  |  FFPLAY = "ffplay"
+        $audioModeValue = if ($rbAudioModeFfplay.Checked) { "ffplay" } else { "plugin" }
+        Set-AudioModeSetting $audioModeValue
+
+        # --- Hover volume sidebar (data\menu\hover_volume.txt) ---
+        $hoverValue = if ($rbHoverVolumeYes.Checked) { "yes" } else { "no" }
+        Set-HoverVolumeSetting $hoverValue
+
         # --- Shortcuts ---
         if ($rbScYes.Checked) {
             $targetExe = Join-Path $root "mpv.exe"
@@ -1182,6 +1257,20 @@ $menuLangs = Get-AvailableMenuLanguages
 $cbMenuLang.Items.Clear()
 foreach ($l in $menuLangs) { [void]$cbMenuLang.Items.Add($l.ToUpper()) }
 Select-MenuLanguageCombo (Get-MenuLanguage)
+
+# Load current audio mode setting (default: WASAPI / "plugin")
+if ((Get-AudioModeSetting) -eq "ffplay") {
+    $rbAudioModeFfplay.Checked = $true
+} else {
+    $rbAudioModeWasapi.Checked = $true
+}
+
+# Load current hover volume setting (default: No)
+if ((Get-HoverVolumeSetting) -eq "yes") {
+    $rbHoverVolumeYes.Checked = $true
+} else {
+    $rbHoverVolumeNo.Checked = $true
+}
 
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang

@@ -9,6 +9,8 @@ local mp = require "mp"
 local msg = require "mp.msg"
 local assdraw = require "mp.assdraw"
 
+-- Palette. All colors are in ASS BGR order (not RGB): a CSS/hex color
+-- like #D9A441 becomes "41A4D9".
 local C = {
     panel     = "221A14", edge = "44362B",
     active    = "33271D", card = "2C221A", cardedge = "4F4033",
@@ -20,21 +22,50 @@ local C = {
     btn_hover  = "008CFF",  -- ASS BGR: dark orange (RGB FF8C00)
     btn_black  = "000000",  -- black text on buttons
 }
+
+-- Design-space dimensions. Everything scales by sx/sy so the layout is
+-- resolution-independent.
 local RW, RH = 1280, 720
 local P = { x = 140, y = 64, w = 1000, h = 592 }
 local SW, HH, RHROW, BOOST = 232, 64, 32, 400
+
+-- Overlay state.
 local visible, section, cursor, scroll = false, 1, 1, 0
 local tabs = {}
+local subtabs = {}   -- second-level tab index per section (used by BEZELS)
 local bound, drag, timer = false, nil, nil
 local root, device = nil, ""
 local app_version = "vUnknown"
+
+-- Hover state per interactive element.
 local hover_close, hover_quit, hover_clean, hover_reload = false, false, false, false
 local hover_screenshot, hover_record, hover_lang = false, false, false
+local hover_mute = false
+local hover_audio_icon = false
+
+-- Audio state cache. Filled from either mpv properties (WASAPI) or from
+-- PowerShell probes (ffplay).
 local audio = { volume = nil, boost = 100, muted = false, pending = false, version = 0 }
+
+-- Hitbox registry. Rebuilt by reset_hit() on every render pass.
 local hit = {}
+
+-- Main overlay + edge slider overlay (independent OSD layers).
 local ov = mp.create_osd_overlay("ass-events")
+local edge_ov = mp.create_osd_overlay("ass-events")
+
 local sx, sy = 1, 1
 local hide_timer = nil
+
+-- Edge slider state (left-side hover rail).
+local edge_visible, edge_drag, edge_bound = false, false, false
+local edge_hide_timer, edge_hit = nil, nil
+local edge_window_dragging = nil
+
+-- Forward declarations for functions defined further down but referenced
+-- earlier (upvalue capture).
+local edge_render, edge_set_from_y, inside, pos
+
 local audio_refreshed = false
 local boost_debounce = nil      -- timer for debounced boost send
 local volume_debounce = nil     -- timer for debounced volume send
@@ -45,7 +76,8 @@ local volume_debounce = nil     -- timer for debounced volume send
 local function reset_hit()
     hit = { panel = nil, side = {}, rows = {}, tabs = {}, cards = {},
             close = nil, quit = nil, clean = nil, reload = nil,
-            screenshot = nil, record = nil, lang = nil }
+            screenshot = nil, record = nil, lang = nil, mute = nil,
+            audio_icon = nil }
 end
 reset_hit()
 
@@ -54,6 +86,44 @@ local function getroot()
     root = (mp.get_property("config-path") or "."):gsub("\\", "/")
     return root
 end
+
+local settings = dofile(getroot() .. "/scripts/modules/msc_settings.lua")
+local function load_edge_enabled()
+    local value = settings.read("hover_volume.txt")
+    if value == nil then return true end
+    return value:match("^%s*(.-)%s*$") ~= "no"
+end
+local edge_enabled = load_edge_enabled()
+mp.set_property_bool("user-data/hover-volume", edge_enabled)
+
+-- ------------------------------------------------------------
+-- Auto ICC Profile persistence
+-- ------------------------------------------------------------
+-- The "Change to Auto ICC Profile" toggle is mirrored to
+-- data/menu/icc_profile.txt so its state survives restarts. Same pattern
+-- used by hover_volume.txt and boost.txt.
+--
+-- Order of operations matters here:
+--   1. Read the saved value and apply it via mp.set_property_bool().
+--   2. Register the observer that persists future changes on a short
+--      delay, so the initial snapshot it fires with reflects the restored
+--      value (not the pre-restore one).
+local function restore_icc_profile()
+    local saved = settings.read("icc_profile.txt")
+    if saved == nil then return end
+    local want = saved:match("^%s*(.-)%s*$") == "yes"
+    mp.set_property_bool("icc-profile-auto", want)
+end
+
+restore_icc_profile()
+
+mp.add_timeout(0.1, function()
+    mp.observe_property("icc-profile-auto", "bool", function(_, value)
+        if value == nil then return end
+        settings.write("icc_profile.txt", value and "yes\n" or "no\n")
+        if visible then render() end
+    end)
+end)
 
 local function osd(s)
     if (mp.get_property_number("osd-duration") or 1000) > 0 then
@@ -68,6 +138,8 @@ end
 -- ------------------------------------------------------------
 -- Localization (T)
 -- ------------------------------------------------------------
+-- keyof() reduces a string to its alphanumeric-and-space lowercase form,
+-- so "Vol +10%" and "VOL +10%" both map to the same dictionary key.
 local function keyof(s)
     local out = {}
     s = s or ""
@@ -150,7 +222,8 @@ local function T(s)
     return r
 end
 
--- Translate the content inside double quotes only (safe for commands)
+-- Translate only the content inside double quotes. This keeps command
+-- syntax intact when we rewrite paths or arguments.
 local function T_command(s)
     if not s or s == "" then return s end
     return (s:gsub('"([^"]*)"', function(inner)
@@ -191,8 +264,8 @@ end
 
 AVAILABLE_LANGS = load_languages()
 
--- Returns the next language in the cycle after `current`.
--- If `current` is not in the list, returns the first one.
+-- Returns the next language in the cycle after `current`. If `current` is
+-- not in the list, returns the first entry.
 local function next_language(current)
     if #AVAILABLE_LANGS == 0 then return "en" end
     for i, l in ipairs(AVAILABLE_LANGS) do
@@ -256,19 +329,51 @@ local function ps(rel, args, cb)
     end)
 end
 
+local function using_native_audio()
+    local mode = mp.get_property_native("user-data/audio-active-mode")
+              or mp.get_property_native("user-data/audio-mode")
+    return mode == "mpv" or mode == "plugin"
+end
+
 -- `attempt` is internal: when the first call comes back empty (ffplay not
 -- running yet), retry every 500ms up to 8 times (4 seconds total).
 local function audio_refresh(attempt)
+    -- Native refresh renders synchronously. Mark it before rendering so the
+    -- Audio/Quick page cannot re-enter this function through render().
+    audio_refreshed = true
     attempt = attempt or 1
     audio.version = audio.version + 1
     local current_version = audio.version
     audio.pending = true
+
+    if using_native_audio() then
+        -- Ask the WASAPI plugin to re-read the Windows session volume for
+        -- our process. The plugin pushes it back to mpv's "volume" property,
+        -- and the observe_property("volume", ...) handler below picks up the
+        -- change and re-renders. This is what makes the reload button and
+        -- menu-open refresh actually sync with the OS mixer for this backend.
+        mp.commandv("script-message-to", "msc_audio", "msc-audio-refresh")
+
+        -- Read the values we already have locally right now. The volume
+        -- will be refreshed asynchronously once the plugin's round-trip
+        -- completes; the observer will fire then and re-render.
+        audio.muted = mp.get_property_bool("mute", false)
+        audio.boost = tonumber(mp.get_property_native("user-data/audio-boost")) or 100
+        if audio.volume == nil then
+            audio.volume = math.floor((mp.get_property_number("volume") or 100) + 0.5)
+        end
+        audio.pending = false
+        if visible then render() end
+        if edge_visible then edge_render() end
+        return
+    end
+
     ps("data/ffplayvol.ps1", { "get", "ffplay" }, function(ok, r)
         if current_version ~= audio.version then return end
         local n = ok and r and num(r.stdout)
-        if not n and attempt < 8 and visible then
+        if not n and attempt < 8 and (visible or edge_visible) then
             mp.add_timeout(0.5, function()
-                if visible then audio_refresh(attempt + 1) end
+                if visible or edge_visible then audio_refresh(attempt + 1) end
             end)
             return
         end
@@ -279,6 +384,7 @@ local function audio_refresh(attempt)
             if b then audio.boost = b end
             audio.pending = false
             if visible then render() end
+            if edge_visible then edge_render() end
         end)
     end)
 end
@@ -287,6 +393,12 @@ end
 -- Prevents parallel ffplay restart storms when the user drags fast.
 local function schedule_volume_send(value)
     if volume_debounce then volume_debounce:kill(); volume_debounce = nil end
+    if using_native_audio() then
+        -- Native volume is cheap to update in-process, including during a drag.
+        mp.set_property_number("volume", value)
+        mp.set_property("user-data/audio-volume", tostring(value))
+        return
+    end
     volume_debounce = mp.add_timeout(0.4, function()
         volume_debounce = nil
         ps("data/ffplayvol.ps1", { "set", "ffplay", tostring(value) })
@@ -297,7 +409,11 @@ local function schedule_boost_send(value)
     if boost_debounce then boost_debounce:kill(); boost_debounce = nil end
     boost_debounce = mp.add_timeout(0.5, function()
         boost_debounce = nil
-        ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        if using_native_audio() then
+            mp.commandv("script-message-to", "audio_mode", "audio-boost-set", tostring(value))
+        else
+            ps("data/ffplayboost.ps1", { "set", tostring(value) })
+        end
     end)
 end
 
@@ -319,6 +435,10 @@ local function boostset(v)
 end
 
 local function mute()
+    if using_native_audio() then
+        mp.commandv("script-message-to", "audio_mode", "audio-mute")
+        return
+    end
     ps("data/ffplayvol.ps1", { "togglemute", "ffplay" }, function(ok, r)
         if ok and r then
             audio.muted = not (r.stdout or ""):match("unmuted")
@@ -352,10 +472,18 @@ end
 -- ------------------------------------------------------------
 -- menu.conf parsing
 -- ------------------------------------------------------------
-local function labelof(s)
+-- Splits a raw menu.conf label into (icon, label).
+-- The icon is any leading run of non-alphanumeric characters
+-- (emoji, arrows, geometric shapes, ASCII art). The label starts at
+-- the first ASCII alphanumeric character. If the string already
+-- starts with an alphanumeric character, the icon is empty.
+local function split_icon_label(s)
     s = (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
     local first = s:find("[%a%d]")
-    return first and s:sub(first):gsub("^%s+", "") or s
+    if not first or first == 1 then return "", s end
+    local icon  = s:sub(1, first - 1):gsub("%s+$", "")
+    local label = s:sub(first):gsub("^%s+", "")
+    return icon, label
 end
 
 local function checked(s)
@@ -396,13 +524,14 @@ local function item(body, indent)
         f[#f + 1] = q:gsub("^%s+", ""):gsub("%s+$", "")
     end
     local raw = f[1] or ""
-    local lbl = labelof(raw)
+    local icon, lbl = split_icon_label(raw)
     local lbl_lower = lbl:lower()
     local is_clear = lbl_lower:find("clear", 1, true) ~= nil
                   or lbl_lower:find("clean", 1, true) ~= nil
                   or lbl_lower:find("remove all", 1, true) ~= nil
     local x = {
         raw = raw,
+        icon = icon,
         label = T(lbl),
         label_en = lbl,
         is_clear = is_clear,
@@ -549,8 +678,8 @@ local function is_close_after_command(c)
     return false
 end
 
--- Commands that change the audio boost value. After running one,
--- hide the menu and auto-reopen it so the slider reflects the new value.
+-- Commands that change the audio boost value. After running one, hide the
+-- menu and auto-reopen it so the slider reflects the new value.
 local function is_boost_command(c)
     if not c then return false end
     return c:find("ffplayboost", 1, true) ~= nil
@@ -564,11 +693,11 @@ local function card(x, state)
     if property then
         local normalized = canon(expected)
         if tostring(expected):find("&&", 1, true) then
-            display_value = "OFF"
+            display_value = T("OFF")
         elseif normalized == "yes" then
-            display_value = "ON"
+            display_value = T("ON")
         elseif normalized == "no" then
-            display_value = "OFF"
+            display_value = T("OFF")
         else
             display_value = normalized
         end
@@ -576,6 +705,7 @@ local function card(x, state)
     return {
         label = x.label,
         label_en = x.label_en or x.label,
+        icon = x.icon,
         is_clear = x.is_clear or false,
         sub = display_value,
         id = property and canon(expected) or nil,
@@ -597,24 +727,88 @@ local function collect(xs, into, state)
     end
 end
 
+-- Builds the BEZELS tabs. Supports two nesting levels:
+--   * Level 1: normal tabs (All, NSO, PERSONAL, ...).
+--   * Level 2: subtabs that only appear when a level-1 tab declares them.
+-- A level-1 node is a tab (disabled, no command) whose children are
+-- either cards (command nodes) or other disabled nodes (= subtabs).
 local function bezel_tabs(xs)
-    local groups, all, cur, state = {}, {}, nil, { prop = nil }
-    for _, x in ipairs(xs) do
-        if x.disabled and not x.command then
-            cur = { name = x.label, cards = {} }
-            groups[#groups + 1] = cur
-        elseif x.command then
-            local p, v = checked(x.check)
-            local clear = p and (canon(v) == "none" or v == "")
-            local target = (clear or not cur) and all or cur.cards
-            local c = card(x, state)
-            if c then target[#target + 1] = c end
+    local groups, all, state = {}, {}, { prop = nil }
+
+    -- Recursively collects every card under a node (used to feed the "All"
+    -- tab, which should show every bezel regardless of nesting).
+    local function collect_all(node, dest)
+        for _, child in ipairs(node.children or {}) do
+            if child.command and not child.disabled then
+                local p, v = checked(child.check)
+                local clear = p and (canon(v) == "none" or v == "")
+                if not clear then
+                    local c = card(child, state)
+                    if c then dest[#dest + 1] = c end
+                end
+            end
+            if child.children and #child.children > 0 then
+                collect_all(child, dest)
+            end
         end
     end
+
+    -- Builds one tab from a level-1 disabled node. If any of its children
+    -- are also disabled nodes, they become subtabs; otherwise the tab gets
+    -- a flat list of cards.
+    local function make_group(x)
+        local g = { name = x.label, key = x.key }
+        local direct_cards = {}
+        local subtabs_list = {}
+
+        for _, child in ipairs(x.children or {}) do
+            if child.disabled and not child.command then
+                local sub = { name = child.label, key = child.key, cards = {} }
+                collect(child.children, sub.cards, state)
+                if #sub.cards > 0 then
+                    subtabs_list[#subtabs_list + 1] = sub
+                end
+            elseif child.command then
+                local p, v = checked(child.check)
+                local clear = p and (canon(v) == "none" or v == "")
+                if not clear then
+                    local c = card(child, state)
+                    if c then direct_cards[#direct_cards + 1] = c end
+                end
+            end
+        end
+
+        if #subtabs_list > 0 then
+            g.subtabs = subtabs_list
+        else
+            g.cards = direct_cards
+        end
+        return g
+    end
+
+    for _, x in ipairs(xs) do
+        if x.disabled and not x.command then
+            local g = make_group(x)
+            if (g.cards and #g.cards > 0) or (g.subtabs and #g.subtabs > 0) then
+                groups[#groups + 1] = g
+            end
+        elseif x.command then
+            -- Loose cards at the section root (Fit Full, Clear Bezels):
+            -- these only appear in the "All" tab.
+            local p, v = checked(x.check)
+            local clear = p and (canon(v) == "none" or v == "")
+            local c = card(x, state)
+            if c then all[#all + 1] = c end
+        end
+    end
+
+    -- "All" shows only the cards that live at the section root, i.e. the
+    -- ones not nested under any group (Fit Full, Clear Bezels). Cards
+    -- belonging to a group are reachable through that group's own tab.
     local out = {}
-    if #all > 0 then out[#out + 1] = { name = T("All"), cards = all } end
+    if #all > 0 then out[#out + 1] = { name = T("All"), key = "all", cards = all } end
     for _, g in ipairs(groups) do
-        if #g.cards > 0 then out[#out + 1] = g end
+        out[#out + 1] = g
     end
     return out, state.prop
 end
@@ -629,7 +823,7 @@ local function window_tabs(xs)
     }
     local g, order = {}, {}
     for _, z in ipairs(WG) do
-        g[z[1]] = { name = z[2], cards = {} }
+        g[z[1]] = { name = z[2], key = z[1], cards = {} }
         order[#order + 1] = z[1]
     end
     local cur, state = nil, { prop = nil }
@@ -661,7 +855,7 @@ local function generic_tabs(xs)
         if not x.command and #x.children > 0 then
             local cs = {}
             collect(x.children, cs, state)
-            if #cs > 0 then out[#out + 1] = { name = x.label, cards = cs } end
+            if #cs > 0 then out[#out + 1] = { name = x.label, key = x.key, cards = cs } end
         elseif x.command then
             flat[#flat + 1] = x
         end
@@ -669,7 +863,7 @@ local function generic_tabs(xs)
     if #flat > 0 then
         local cs = {}
         collect(flat, cs, state)
-        if #cs > 0 then table.insert(out, 1, { name = T("All"), cards = cs }) end
+        if #cs > 0 then table.insert(out, 1, { name = T("All"), key = "all", cards = cs }) end
     end
     return out, state.prop
 end
@@ -684,6 +878,7 @@ local function list_rows(xs, state)
                 out[#out + 1] = {
                     label = c.label,
                     label_en = c.label_en,
+                    icon = c.icon,
                     is_clear = c.is_clear,
                     kind = "action",
                     run = c.run,
@@ -712,10 +907,14 @@ local SECTIONS = {}
 -- Without it, the reference inside the IIFE resolves to a nil global.
 local toggle_language
 
+-- Quick-card builder. `sub_en` can be either a static string (translated
+-- at build time via T()) or a function that returns the current value at
+-- render time. The function form lets the sub-text reflect live state,
+-- e.g. "ON" / "OFF" for toggle cards.
 local function quickcard(en_label, run, sub_en, close_after, icon)
     return {
         label = T(en_label),
-        sub = T(sub_en or "Quick"),
+        sub = type(sub_en) == "function" and sub_en or T(sub_en or "Quick"),
         id = en_label,
         run = run,
         close_after = close_after or false,
@@ -759,7 +958,7 @@ local function build_quick_section()
                               "\u{1F4AC}"),                    -- 💬 speech balloon
                     quickcard("Hide OSD Messages",
                               cmd("script-message toggle-osd"), "Help", false,
-                              "\u{1F648}"),            -- 🙈 monkey covering itself
+                              "\u{1F648}"),                    -- 🙈 monkey covering itself
                     quickcard("Info Stream",
                               cmd("script-message toggle-stats"), "Help", true,
                               "\u{2139}\u{FE0F}"),             -- ℹ️ info
@@ -768,6 +967,18 @@ local function build_quick_section()
             {
                 name = T("SETTINGS"),
                 cards = {
+                    -- Toggle card: cycles the mpv property, and the sub-text
+                    -- is a function so it always reflects the current state.
+                    -- Persistence to data/menu/icc_profile.txt is handled by
+                    -- the observer registered at the top of the file.
+                    quickcard("Change to Auto ICC Profile",
+                              cmd("cycle icc-profile-auto"),
+                              function()
+                                  return mp.get_property_bool("icc-profile-auto", false)
+                                      and T("ON") or T("OFF")
+                              end,
+                              false,
+                              "\u{1F3A8}"),                 -- 🎨 palette
                     (function()
                         local cur = current_lang_code()
                         local target = next_language(cur)
@@ -809,7 +1020,12 @@ local function rebuild_sections()
         if #tabs2 > 0 and use_grid then
             m = { name = T(d.name), key_en = d.key, layout = "grid", tabs = tabs2 }
             local n = 0
-            for _, g in ipairs(tabs2) do n = n + #g.cards end
+            for _, g in ipairs(tabs2) do
+                if g.cards then n = n + #g.cards end
+                if g.subtabs then
+                    for _, sub in ipairs(g.subtabs) do n = n + #sub.cards end
+                end
+            end
             m.badge = function() return tostring(n) end
         else
             local st = { prop = nil }
@@ -842,6 +1058,35 @@ local function rebuild_sections()
             local p = prop
             m.active = function() return canon(mp.get_property(p)) end
         end
+
+        -- Informational description for the footer, looked up from the
+        -- language files as DESC_<SECTION_KEY>. If not present, nothing
+        -- is drawn for this section.
+        do
+            local section_key = "DESC_" .. d.key:upper():gsub(" ", "_")
+            local section_desc = AS[section_key]
+            if section_desc and section_desc ~= "" then
+                m.description = section_desc
+            end
+            -- Per-tab descriptions. Each tab looks up
+            -- DESC_<SECTION>_<TABKEY> and falls back to the section
+            -- description when not defined.
+            if m.tabs then
+                for _, tab in ipairs(m.tabs) do
+                    local tab_key = (tab.key or ""):upper():gsub(" ", "_")
+                    if tab_key ~= "" then
+                        local tab_desc = AS[section_key .. "_" .. tab_key]
+                        if tab_desc and tab_desc ~= "" then
+                            tab.description = tab_desc
+                        elseif section_desc and section_desc ~= "" then
+                            tab.description = section_desc
+                        end
+                    elseif section_desc and section_desc ~= "" then
+                        tab.description = section_desc
+                    end
+                end
+            end
+        end
         new[#new + 1] = m
     end
 
@@ -868,8 +1113,9 @@ local function set_language_and_reload(new_lang)
     ROOTS = load_roots()
     rebuild_sections()
     tabs = {}
+    subtabs = {}
 
-    -- Notify other scripts to reload their language resources
+    -- Notify other scripts to reload their language resources.
     mp.command("script-message reload-osd-messages")
 
     if section > #SECTIONS then section = 1 end
@@ -938,6 +1184,18 @@ local function text(a, x, y, s, colour, size, bold, align)
     a:append(tostring(s):gsub("\\", "\\\\"):gsub("{", "\\{"):gsub("}", "\\}"))
 end
 
+-- Renders text without escaping braces, so inline ASS override tags
+-- (e.g. \1c&Hxxxxxx&) can be embedded inside the string. Use this only
+-- with strings that are fully controlled by the script, never with
+-- user-supplied content.
+local function text_raw(a, x, y, s, size, bold, align)
+    a:new_event()
+    a:append(string.format(
+        "{\\pos(%.1f,%.1f)\\an%d\\bord0\\shad0\\fs%.1f\\b%d\\fnSegoe UI}",
+        x, y, align or 4, size, bold and 1 or 0))
+    a:append(tostring(s))
+end
+
 local function cross(a, x, y, r, t, colour)
     local st = string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", colour)
     a:new_event()
@@ -991,27 +1249,169 @@ local function lcd_icon(a, x, y, on)
     rect(a, x - 5 * sx, y + h / 2 + 2 * sy, 10 * sx, 2 * sy, c, 0x40)
 end
 
--- Draw the card icon. If the card has a custom `icon` (emoji), draw it;
--- otherwise, fall back to the default LCD icon.
+-- Forces color emoji presentation for arrows and geometric shapes.
+-- Windows picks the text variant by default; appending U+FE0F (VS16)
+-- tells it to use the emoji (color) variant instead. Characters that
+-- don't have an emoji variant (e.g. ⛶) are left untouched.
+local function force_emoji_presentation(icon)
+    if not icon or icon == "" then return icon end
+
+    -- Codepoint ranges with color emoji variants that are commonly used
+    -- as UI icons. Anything outside these ranges is left as-is.
+    local function has_emoji_variant(cp)
+        return (cp >= 0x2190 and cp <= 0x21FF)   -- arrows
+            or (cp >= 0x25A0 and cp <= 0x25FF)   -- geometric shapes
+            or (cp >= 0x2600 and cp <= 0x26FF)   -- misc symbols
+            or (cp >= 0x2B00 and cp <= 0x2BFF)   -- misc symbols and arrows
+    end
+
+    local out = {}
+    local i, n = 1, #icon
+    while i <= n do
+        local b1 = icon:byte(i)
+        local len, cp
+        if b1 < 0x80 then len, cp = 1, b1
+        elseif b1 < 0xE0 then len, cp = 2, b1 - 0xC0
+        elseif b1 < 0xF0 then len, cp = 3, b1 - 0xE0
+        else len, cp = 4, b1 - 0xF0 end
+        for k = 1, len - 1 do
+            local bk = icon:byte(i + k)
+            cp = cp * 0x40 + (bk - 0x80)
+        end
+        out[#out + 1] = icon:sub(i, i + len - 1)
+
+        -- If U+FE0F already follows, don't add a second one.
+        local next_i = i + len
+        local has_vs16 =
+            (next_i + 2 <= n)
+            and icon:byte(next_i)     == 0xEF
+            and icon:byte(next_i + 1) == 0xB8
+            and icon:byte(next_i + 2) == 0x8F
+
+        if has_emoji_variant(cp) and not has_vs16 then
+            out[#out + 1] = "\u{FE0F}"
+        end
+        i = next_i
+    end
+    return table.concat(out)
+end
+
+-- Map of menu.conf icon glyphs to a direction code, so we can render
+-- all 9 window positions with the same custom "arrow in a rounded square"
+-- look. Multiple glyphs can map to the same direction (the legacy "←■"
+-- and "■→" combos are kept for compatibility with the current menu.conf).
+local POSITION_DIR = {
+    ["\u{2196}"]         = "nw",
+    ["\u{2191}"]         = "n",
+    ["\u{2197}"]         = "ne",
+    ["\u{2190}"]         = "w",
+    ["\u{2190}\u{25A0}"] = "w",
+    ["\u{25A0}"]         = "center",
+    ["\u{2192}"]         = "e",
+    ["\u{25A0}\u{2192}"] = "e",
+    ["\u{2199}"]         = "sw",
+    ["\u{2193}"]         = "s",
+    ["\u{2198}"]         = "se",
+}
+
+-- Unit vectors per direction (screen coordinates: +x right, +y down).
+local DIR_UNIT = {
+    n  = { 0, -1 }, s  = { 0,  1 },
+    e  = { 1,  0 }, w  = {-1,  0 },
+    ne = { 0.7071, -0.7071 }, nw = {-0.7071, -0.7071 },
+    se = { 0.7071,  0.7071 }, sw = {-0.7071,  0.7071 },
+}
+
+-- Draws a rounded square with a bold arrow inside, used for the 9 window
+-- positions so they all share the same look regardless of how the OS font
+-- decides to render each individual Unicode arrow.
+local function draw_position_icon(a, x, y, dir, square_colour)
+    local size = 24 * sx
+    local r = size * 0.5
+    local k = size * 0.1
+
+    -- Filled rounded square (icon background).
+    a:new_event()
+    a:append(string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", square_colour))
+    a:draw_start()
+    a:move_to(x - r + k, y - r)
+    a:line_to(x + r - k, y - r)
+    a:line_to(x + r,     y - r + k)
+    a:line_to(x + r,     y + r - k)
+    a:line_to(x + r - k, y + r)
+    a:line_to(x - r + k, y + r)
+    a:line_to(x - r,     y + r - k)
+    a:line_to(x - r,     y - r + k)
+    a:draw_stop()
+
+    -- CENTER: just a small filled dot in the middle.
+    if dir == "center" then
+        local d = size * 0.15
+        a:new_event()
+        a:append(string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", C.hi))
+        a:draw_start()
+        a:move_to(x - d, y - d)
+        a:line_to(x + d, y - d)
+        a:line_to(x + d, y + d)
+        a:line_to(x - d, y + d)
+        a:draw_stop()
+        return
+    end
+
+    local v = DIR_UNIT[dir]
+    local dx, dy = v[1], v[2]
+    local px, py = -dy, dx   -- perpendicular
+
+    local shaft_len = size * 0.44
+    local half_w    = size * 0.08
+    local head_len  = size * 0.3
+    local head_w    = size * 0.2
+
+    local tx, ty = x + dx * shaft_len, y + dy * shaft_len           -- tip
+    local bx, by = x - dx * shaft_len * 0.55, y - dy * shaft_len * 0.55  -- shaft base
+    local hx, hy = tx - dx * head_len, ty - dy * head_len           -- head base
+
+    -- Shaft (a narrow rectangle).
+    a:new_event()
+    a:append(string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", C.hi))
+    a:draw_start()
+    a:move_to(bx + px * half_w, by + py * half_w)
+    a:line_to(hx + px * half_w, hy + py * half_w)
+    a:line_to(hx - px * half_w, hy - py * half_w)
+    a:line_to(bx - px * half_w, by - py * half_w)
+    a:draw_stop()
+
+    -- Arrowhead (a triangle at the tip).
+    a:new_event()
+    a:append(string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", C.hi))
+    a:draw_start()
+    a:move_to(tx, ty)
+    a:line_to(hx + px * head_w, hy + py * head_w)
+    a:line_to(hx - px * head_w, hy - py * head_w)
+    a:draw_stop()
+end
+
+-- Draw the card icon. If the card carries an `icon` string, render it;
+-- otherwise, fall back to the default LCD monitor.
+--   * Quick section cards: icon is set programmatically (emoji) in quickcard().
+--   * Regular cards: icon is extracted from menu.conf by split_icon_label().
+--   * Window positions: drawn by draw_position_icon() so all 9 share a look.
 local function draw_card_icon(a, x, y, q, on, sel)
-    if q and q.icon then
+    if q and q.icon and q.icon ~= "" then
+        -- Window positions: custom "arrow in a rounded square" icon so all
+        -- 9 slots render with the same look.
+        local dir = POSITION_DIR[q.icon]
+        if dir then
+            local square = (on or sel) and C.accent or C.faint
+            draw_position_icon(a, x, y, dir, square)
+            return
+        end
+        -- Other cards: emoji or plain glyph.
         local c = (on or sel) and C.hi or C.text
-        text(a, x, y, q.icon, c, 28 * sx, false, 5)
+        text(a, x, y, force_emoji_presentation(q.icon), c, 28 * sx, false, 5)
     else
         lcd_icon(a, x, y, on)
     end
-end
-
-local function video_icon(a, x, y, colour)
-    local size = 8 * sx
-    local st = string.format("{\\pos(0,0)\\bord0\\shad0\\1c&H%s&}", colour)
-    a:new_event()
-    a:append(st)
-    a:draw_start()
-    a:move_to(x - size, y - size)
-    a:line_to(x - size, y + size)
-    a:line_to(x + size, y)
-    a:draw_stop()
 end
 
 local function trash_icon(a, x, y, colour)
@@ -1093,7 +1493,15 @@ local function gridcards()
     if s.flat then return s.flat_cards end
     local ti = tabs[section] or 1
     if ti > #s.tabs then ti = 1 end
-    return s.tabs[ti].cards
+    local g = s.tabs[ti]
+    -- If the active tab is a container of subtabs, return the active
+    -- subtab's cards. Otherwise return the tab's own cards.
+    if g.subtabs then
+        local sti = subtabs[section] or 1
+        if sti > #g.subtabs then sti = 1 end
+        return g.subtabs[sti].cards
+    end
+    return g.cards
 end
 
 local function first()
@@ -1137,16 +1545,17 @@ function render()
     rect(a, X(P.x) - 1, Y(P.y) - 1, P.w * sx + 2, P.h * sy + 2, C.edge, 0x10)
     rect(a, X(P.x), Y(P.y), P.w * sx, P.h * sy, C.panel, 0x0A)
 
+    -- ============================================================
+    -- Header: title, app version, device name.
+    -- ============================================================
     local hy = Y(P.y)
     rect(a, X(P.x), hy + HH * sy, P.w * sx, 1, C.edge, 0x10)
     rect(a, X(P.x + 24), hy + 19 * sy, 4 * sx, 26 * sy, C.accent, 0)
     text(a, X(P.x + 38), hy + 32 * sy, "MPV-SW-CAPTURE", C.hi, 20 * sx, true)
     text(a, X(P.x + 185), hy + 32 * sy, app_version, C.text, 16 * sx, false)
     if device ~= "" then
-        -- Emoji icon, matching the style of the header buttons
         local dev_icon = "\u{1F3AE}"   -- 🎮 videogame controller
         text(a, X(P.x + 254), hy + 28 * sy, dev_icon, C.text, 36 * sx, false, 5)
-        -- Device name (truncated to fit)
         local dev_max_chars = 32
         local dev_text = device
         if #dev_text > dev_max_chars then
@@ -1155,15 +1564,29 @@ function render()
         text(a, X(P.x + 274), hy + 32 * sy, dev_text, C.dim, 16 * sx, false)
     end
 
+    -- ============================================================
+    -- Video status line (compact label + FPS).
+    -- ============================================================
     local w, h = mp.get_property_number("width"), mp.get_property_number("height")
-    local st = w and h and string.format("%dx%d", w, h) or T("no signal")
     local fps = mp.get_property_number("estimated-vf-fps")
-    if fps and fps > 0 then st = st .. string.format(" %d fps", math.floor(fps + 0.5)) end
+    local st
+    if w and h then
+        -- Compact label: "4K", "8K", or "<height>p" (e.g. "1080p").
+        -- Progressive is implicit for capture streams.
+        local label
+        if h == 2160 then label = "4K"
+        elseif h == 4320 then label = "8K"
+        else label = string.format("%dp", h) end
+        local fps_str = (fps and fps > 0) and string.format(" %d FPS", math.floor(fps + 0.5)) or ""
+        st = label .. fps_str
+    else
+        st = T("no signal")
+    end
     local right = P.x + P.w - 24
     local hcy = hy + 32 * sy   -- header vertical center
 
     -- ============================================================
-    -- Right side: resolution info + close button
+    -- Right side: close button.
     -- ============================================================
     local ix, iy = X(right - 10), hcy
     hit.close = { ix - 18 * sx, iy - 18 * sy, ix + 18 * sx, iy + 18 * sy }
@@ -1172,27 +1595,70 @@ function render()
     end
     cross(a, ix, iy, 8 * sx, 2.5 * sx, hover_close and C.hi or C.accent)
 
+    -- Separator between the info block and the close button.
     rect(a, X(right - 40), hy + 21 * sy, 1, 22 * sy, C.edge, 0x10)
-    text(a, X(right - 50), hcy, st, C.text, 16 * sx, false, 6)
 
-    -- Green video icon (play triangle) - anchored in design space
-    local approx_text_w = #st * 8
-    local dot_x = X(right - 50 - approx_text_w - -15)
-    video_icon(a, dot_x, hcy, w and C.green or C.amber)
+    -- ============================================================
+    -- Two-row info block: video status on top, audio backend below.
+    -- Icons use align=5 (center-middle); texts use align=4 (left-middle).
+    -- Both rows share the same baseline; two independent offsets let us
+    -- nudge icons and texts separately if the emoji baseline drifts.
+    -- ============================================================
+    local info_icon_cx = X(right - 190)
+    local info_text_x  = info_icon_cx + 24 * sx
+    local info_icon_dy = -2 * sx     -- vertical nudge for the icons only
+    local info_text_dy = -1 * sx     -- vertical nudge for the texts only
+    local info_row1_y  = hy + 18 * sy
+    local info_row2_y  = hy + 44 * sy
+
+    -- Row 1: video camera icon + compact resolution / FPS.
+    text(a, info_icon_cx, info_row1_y + info_icon_dy, "\u{1F4FA}",
+         w and C.green or C.amber, 26 * sx, false, 5)
+    text(a, info_text_x, info_row1_y + info_text_dy, st, C.text, 16 * sx, false, 4)
+
+    -- Row 2: audio icon (mirrors the mute button state) + active backend.
+    local audio_mode = mp.get_property_native("user-data/audio-active-mode")
+                    or mp.get_property_native("user-data/audio-mode")
+    local audio_label = (audio_mode == "ffplay" and "FFplay " or "WASAPI ") .. T("AUDIO")
+
+    -- Clickable audio icon. The hitbox is intentionally a bit smaller than
+    -- the emoji glyph so it doesn't overlap neighbouring elements.
+    local icon_hit_size = 20 * sx
+    local icon_cy = info_row2_y + info_icon_dy
+    hit.audio_icon = {
+        info_icon_cx - icon_hit_size / 2,
+        icon_cy - icon_hit_size / 2,
+        info_icon_cx + icon_hit_size / 2,
+        icon_cy + icon_hit_size / 2,
+    }
+
+    -- No hover rectangle. The icon responds to hover with color + size:
+    --   * default unmuted: green
+    --   * default muted:   amber
+    --   * hover:           white and 15% bigger
+    local icon_base_size  = 26 * sx
+    local icon_hover_size = icon_base_size * 1.15
+
+    local audio_icon = audio.muted and "\u{1F507}" or "\u{1F50A}"
+    local audio_color = hover_audio_icon and C.hi
+                     or (audio.muted and C.amber or C.green)
+    local audio_size  = hover_audio_icon and icon_hover_size or icon_base_size
+    text(a, info_icon_cx, info_row2_y + info_icon_dy, audio_icon, audio_color, audio_size, false, 5)
+    text(a, info_text_x, info_row2_y + info_text_dy, audio_label, C.dim, 16 * sx, false, 4)
 
     -- ============================================================
     -- Header action buttons: [SCREENSHOT] [RECORD] [LANG]
-    -- Placed to the LEFT of the green icon.
+    -- Placed to the LEFT of the info block.
     -- ============================================================
     local btn_h   = 30 * sy
     local btn_gap = 8 * sx
     local btn_y   = hcy - btn_h / 2
 
-    -- Separator between buttons and the green icon
-    local sep_x = dot_x - 14 * sx
+    -- Separator between buttons and the info block on the right.
+    local sep_x = info_icon_cx - 20 * sx
     rect(a, sep_x, hy + 21 * sy, 1, 22 * sy, C.edge, 0x10)
 
-    -- Rightmost: language badge (clickable)
+    -- Rightmost: language badge (clickable).
     local btn_right_edge = sep_x - 8 * sx
     local lang_code = current_lang_code():upper()
     local lang_w    = math.max(44, #lang_code * 14 + 10) * sx
@@ -1210,41 +1676,39 @@ function render()
     text(a, lang_x + lang_w / 2, hcy, lang_code,
          hover_lang and C.hi or C.blue, 22 * sx, true, 5)
 
-    -- Icon size (bigger than the label)
-    local btn_icon_fs = 26 * sx   -- ← change this to resize the icon
-    local btn_label_fs = 14 * sx  -- ← change this to resize the label
+    -- Icon size (bigger than the label).
+    local btn_icon_fs = 26 * sx
+    local btn_label_fs = 14 * sx
 
-    -- Icon offset within the button (from the left edge)
-    -- Tweak these if the icon looks off-center.
-    local icon_offset_x = 11 * sx   -- ← move icon left/right
-    local icon_offset_y = -2 * sy   -- ← move icon up (negative) / down (positive)
+    -- Icon offset within the button (from the left edge).
+    local icon_offset_x = 11 * sx
+    local icon_offset_y = -2 * sy
 
-    -- Middle: RECORD button
+    -- Middle: RECORD button.
     local rec_w    = 108 * sx
     local rec_x    = lang_x - btn_gap - rec_w
     hit.record     = { rec_x, btn_y, rec_x + rec_w, btn_y + btn_h }
     local rec_bg   = hover_record and C.btn_hover or C.btn_yellow
     rect(a, rec_x, btn_y, rec_w, btn_h, rec_bg, 0)
-    -- Icon (left, larger)
     text(a, rec_x + icon_offset_x, hcy + icon_offset_y,
          "\u{1F3A5}", C.btn_black, btn_icon_fs, true, 5)
-    -- Label (right of the icon, smaller)
     text(a, rec_x + 32 * sx + (rec_w - 48 * sx) / 2, hcy,
          T("RECORD_HEADER"), C.btn_black, btn_label_fs, true, 5)
 
-    -- Leftmost: SCREENSHOT button
+    -- Leftmost: SCREENSHOT button.
     local sht_w    = 138 * sx
     local sht_x    = rec_x - btn_gap - sht_w
     hit.screenshot = { sht_x, btn_y, sht_x + sht_w, btn_y + btn_h }
     local sht_bg   = hover_screenshot and C.btn_hover or C.btn_yellow
     rect(a, sht_x, btn_y, sht_w, btn_h, sht_bg, 0)
-    -- Icon (left, larger)
     text(a, sht_x + icon_offset_x, hcy + icon_offset_y,
          "\u{1F4F8}", C.btn_black, btn_icon_fs, true, 5)
-    -- Label (right of the icon, smaller)
     text(a, sht_x + 32 * sx + (sht_w - 48 * sx) / 2, hcy,
          T("SCREENSHOT_HEADER"), C.btn_black, btn_label_fs, true, 5)
 
+    -- ============================================================
+    -- Left sidebar: section list + footer actions.
+    -- ============================================================
     local bx, by = X(P.x), hy + HH * sy
     rect(a, bx + SW * sx, by, 1, (P.h - HH) * sy, C.edge, 0x10)
     for i, s in ipairs(SECTIONS) do
@@ -1283,51 +1747,93 @@ function render()
     text(a, bx + 41 * sx, fy + 6 * sy, T("Close MPV-SW-Capture"),
         hover_quit and C.hi or C.faint, 17 * sx, hover_quit)
 
+    -- ============================================================
+    -- Content area: sliders + tabs/cards for the active section.
+    -- ============================================================
     local s = SECTIONS[section]
     local cx, cw, cy = bx + (SW + 24) * sx, P.w - SW - 48, by + 22 * sy
     local active = s.active and s.active() or nil
     local top = cy
 
-    if s.layout == "quick" then
-        local function meter(label, val, pct, colour, row)
-            local yy = top + row * 34 * sy
-            text(a, cx, yy + 17 * sy, label, C.text, 17 * sx, row == 0)
-            local barx, bw = cx + 96 * sx, (cw - 162) * sx
-            rect(a, barx, yy + 15 * sy, bw, 4 * sy, C.track, 0x10)
-            rect(a, barx, yy + 15 * sy, bw * pct, 4 * sy, colour, 0)
-            text(a, cx + cw * sx, yy + 17 * sy, val, colour, 19 * sx, true, 6)
-            hit.rows[#hit.rows + 1] = {
-                x1 = cx - 10 * sx, y1 = yy,
-                x2 = cx + (cw + 20) * sx, y2 = yy + 34 * sy,
-                index = -row - 1,
-                kind = "meter",
-                meter = row == 0 and "volume" or "boost",
-                bar_x1 = barx,
-                bar_x2 = barx + bw,
-            }
-            if row == 0 then
-                local rx = cx + 72 * sx
-                local ry = yy + 12 * sy
-                local rsize = 28 * sx
-                local hover_size = 12 * sx
-                hit.reload = { rx - hover_size, ry - hover_size, rx + hover_size, ry + hover_size }
-                if hover_reload then
-                    rect(a, rx - hover_size, ry - hover_size, hover_size * 2, hover_size * 2, C.accent, 0x20)
-                end
-                a:new_event()
-                a:append(string.format("{\\pos(%.1f,%.1f)\\an5\\bord0\\shad0\\1c&H%s&\\fs%.1f\\fnSegoe UI}",
-                    rx, ry, hover_reload and C.accent or C.faint, rsize * 1.2))
-                a:append("\u{21BB}")
+    -- Unified slider row renderer. Used by both the Quick section and the
+    -- Audio section, which share the same two sliders at the top of the
+    -- content area. Defined once here so both call sites stay in sync.
+    local function draw_meter(label, val, pct, colour, row)
+        local yy = top + row * 34 * sy
+
+        -- Right-side reserved space: a mute button on the volume row and
+        -- an equal empty slot on the boost row, so both bars end at the
+        -- same X position.
+        local btn_size = 36 * sx
+        local btn_gap  = 8 * sx
+        local value_w  = 62 * sx   -- approx width of the "100%" label
+
+        local value_right = cx + cw * sx - btn_size - btn_gap
+        local value_left  = value_right - value_w
+        local bar_right   = value_left - 6 * sx
+
+        text(a, cx, yy + 17 * sy, label, C.text, 17 * sx, row == 0)
+        local barx = cx + 96 * sx
+        local bw = bar_right - barx
+        rect(a, barx, yy + 15 * sy, bw, 4 * sy, C.track, 0x10)
+        rect(a, barx, yy + 15 * sy, bw * pct, 4 * sy, colour, 0)
+        text(a, value_right, yy + 17 * sy, val, colour, 19 * sx, true, 6)
+
+        hit.rows[#hit.rows + 1] = {
+            x1 = cx - 10 * sx, y1 = yy,
+            x2 = cx + (cw + 20) * sx, y2 = yy + 34 * sy,
+            index = -row - 1,
+            kind = "meter",
+            meter = row == 0 and "volume" or "boost",
+            bar_x1 = barx,
+            bar_x2 = barx + bw,
+        }
+
+        -- Reload and mute controls only exist on the volume row.
+        if row == 0 then
+            local rx = cx + 72 * sx
+            local ry = yy + 12 * sy
+            local rsize = 28 * sx
+            local hover_size = 12 * sx
+            hit.reload = { rx - hover_size, ry - hover_size, rx + hover_size, ry + hover_size }
+            if hover_reload then
+                rect(a, rx - hover_size, ry - hover_size,
+                     hover_size * 2, hover_size * 2, C.accent, 0x20)
             end
+            a:new_event()
+            a:append(string.format(
+                "{\\pos(%.1f,%.1f)\\an5\\bord0\\shad0\\1c&H%s&\\fs%.1f\\fnSegoe UI}",
+                rx, ry, hover_reload and C.accent or C.faint, rsize * 1.2))
+            a:append("\u{21BB}")
+
+            -- Mute button. No hover rectangle: the icon grows 25% and
+            -- shifts to a dark golden tone (CSS "darkgoldenrod" = RGB
+            -- 184,134,11 -> ASS BGR 0B86B8) when the cursor is over it.
+            local mx = cx + cw * sx - btn_size / 2 + 4 * sx
+            local my = yy + 17 * sy
+            hit.mute = { mx - btn_size / 2, my - btn_size / 2,
+                         mx + btn_size / 2, my + btn_size / 2 }
+            local mute_icon = audio.muted and "\u{1F507}" or "\u{1F50A}"
+            local mute_base_size  = 33 * sx
+            local mute_hover_size = mute_base_size * 1.25
+            local mute_color = hover_mute and "0B86B8"
+                            or (audio.muted and C.amber or C.hi)
+            local mute_size  = hover_mute and mute_hover_size or mute_base_size
+            text(a, mx, my, mute_icon, mute_color, mute_size, false, 5)
         end
-        meter(T("Volume"),
+    end
+
+    -- Sections that show the sliders at the top: Quick (by layout) and
+    -- Audio (by key). Both use the exact same block.
+    if s.layout == "quick" or s.key_en == "audio" then
+        draw_meter(T("Volume"),
             audio.muted and T("MUTED") or (audio.volume and audio.volume .. "%" or "--"),
             (audio.volume or 0) / 100, C.blue, 0)
-        meter(T("Audio Boost"),
+        draw_meter(T("Audio Boost"),
             audio.boost .. "%",
             (audio.boost - 100) / (BOOST - 100), C.accent, 1)
 
-        -- Effective gain (right-aligned, below the two sliders)
+        -- Effective gain (right-aligned, below the two sliders).
         local eff_str, eff_colour = compute_effective_gain()
         local yy_eff = top + 2 * 34 * sy
         text(a, cx + cw * sx, yy_eff + 8 * sy, eff_str, eff_colour, 13 * sx, false, 6)
@@ -1335,55 +1841,11 @@ function render()
         top = top + 98 * sy
     end
 
-    if s.key_en == "audio" then
-        local function audio_meter(label, val, pct, colour, row)
-            local yy = top + row * 34 * sy
-            text(a, cx, yy + 17 * sy, label, C.text, 17 * sx, row == 0)
-            local barx, bw = cx + 96 * sx, (cw - 162) * sx
-            rect(a, barx, yy + 15 * sy, bw, 4 * sy, C.track, 0x10)
-            rect(a, barx, yy + 15 * sy, bw * pct, 4 * sy, colour, 0)
-            text(a, cx + cw * sx, yy + 17 * sy, val, colour, 19 * sx, true, 6)
-            hit.rows[#hit.rows + 1] = {
-                x1 = cx - 10 * sx, y1 = yy,
-                x2 = cx + (cw + 20) * sx, y2 = yy + 34 * sy,
-                index = -row - 1,
-                kind = "meter",
-                meter = row == 0 and "volume" or "boost",
-                bar_x1 = barx,
-                bar_x2 = barx + bw,
-            }
-            if row == 0 then
-                local rx = cx + 72 * sx
-                local ry = yy + 12 * sy
-                local rsize = 28 * sx
-                local hover_size = 12 * sx
-                hit.reload = { rx - hover_size, ry - hover_size, rx + hover_size, ry + hover_size }
-                if hover_reload then
-                    rect(a, rx - hover_size, ry - hover_size, hover_size * 2, hover_size * 2, C.accent, 0x20)
-                end
-                a:new_event()
-                a:append(string.format("{\\pos(%.1f,%.1f)\\an5\\bord0\\shad0\\1c&H%s&\\fs%.1f\\fnSegoe UI}",
-                    rx, ry, hover_reload and C.accent or C.faint, rsize * 1.2))
-                a:append("\u{21BB}")
-            end
-        end
-        audio_meter(T("Volume"),
-            audio.muted and T("MUTED") or (audio.volume and audio.volume .. "%" or "--"),
-            (audio.volume or 0) / 100, C.blue, 0)
-        audio_meter(T("Audio Boost"),
-            audio.boost .. "%",
-            (audio.boost - 100) / (BOOST - 100), C.accent, 1)
-
-        -- Effective gain (right-aligned, below the two sliders)
-        local eff_str, eff_colour = compute_effective_gain()
-        local yy_eff = top + 2 * 34 * sy
-        text(a, cx + cw * sx, yy_eff + 8 * sy, eff_str, eff_colour, 13 * sx, false, 6)
-
-        top = top + 98 * sy
-    end
-
+    -- ============================================================
+    -- Card grids (flat quick layout, or tabbed layout for other sections).
+    -- ============================================================
     if s.flat then
-        -- Flat layout: headers + all cards visible at once (no tabs bar)
+        -- Flat layout: headers + all cards visible at once (no tabs bar).
         hit.tabs = {}
         hit.cards = {}
         local cols, gap = 3, 12 * sx
@@ -1394,7 +1856,7 @@ function render()
         local bottom_limit = Y(P.y + P.h) - 30 * sy
 
         for _, t in ipairs(s.tabs) do
-            -- Section header (visual only, not clickable)
+            -- Section header (visual only, not clickable).
             text(a, cx, gy + 12 * sy, t.name, C.accent, 12 * sx, true)
             gy = gy + 26 * sy
 
@@ -1404,13 +1866,8 @@ function render()
                 local px = cx + col * (cardw + gap)
                 local py = gy
                 if py + cardh <= bottom_limit then
-                    -- Each card has its own ON/OFF state via check_matches.
                     local is_checked = check_matches(q)
-                    -- Navigation index in the flat layout.
                     local sel = card_global == cursor
-                    -- Border and text follow the cursor only. The checkmark
-                    -- below shows the active state, so the accent border is
-                    -- reserved for "where you are".
                     local on = sel
 
                     rect(a, px, py, cardw, cardh, on and C.active or C.card, on and 0x08 or 0x18)
@@ -1433,7 +1890,10 @@ function render()
                     local label_font_size = 16.5 * sx
                     local sub_font_size = 12.6 * sx
                     local truncated_label = truncate_text(q.label, max_text_width, label_font_size)
-                    local truncated_sub = q.sub and truncate_text(q.sub, max_text_width, sub_font_size) or nil
+                    -- q.sub can be a static string or a function that
+                    -- returns the current value (used by toggle cards).
+                    local sub_val = type(q.sub) == "function" and q.sub() or q.sub
+                    local truncated_sub = sub_val and truncate_text(sub_val, max_text_width, sub_font_size) or nil
 
                     text(a, text_start_x, py + 18 * sy, truncated_label,
                         sel and C.hi or C.text, label_font_size, sel, 4)
@@ -1467,7 +1927,7 @@ function render()
         local lasty = ty
 
         for i, t in ipairs(s.tabs) do
-            local tw = (#t.name * 5.0 + 50) * sx
+            local tw = (#t.name * 6.0 + 50) * sx
             if tx + tw > maxright and tx > cx then
                 tx = cx
                 ty = ty + 38 * sy
@@ -1479,9 +1939,43 @@ function render()
                 rect(a, tx, ty + 29 * sy, tw, 1, C.cardedge, 0x30)
             end
             text(a, tx + tw / 2, ty + 15 * sy, t.name, on and C.panel or C.text, 17 * sx, on, 5)
-            hit.tabs[i] = { tx, ty, tx + tw, ty + 30 * sy }
+            hit.tabs[#hit.tabs + 1] = { tx, ty, tx + tw, ty + 30 * sy, index = i, sub = false }
             tx = tx + tw + 8 * sx
             lasty = ty
+        end
+
+        -- Second-level row of subtabs. Only drawn when the active level-1
+        -- tab declares subtabs (e.g. BEZELS -> NSO).
+        local active_cards
+        if g.subtabs then
+            local sti = subtabs[section] or 1
+            if sti > #g.subtabs then sti = 1 end
+            subtabs[section] = sti
+
+            tx = cx
+            ty = lasty + 38 * sy
+
+            for i, st in ipairs(g.subtabs) do
+                local stw = (#st.name * 5.0 + 50) * sx
+                if tx + stw > maxright and tx > cx then
+                    tx = cx
+                    ty = ty + 38 * sy
+                end
+                local on = i == sti
+                rect(a, tx, ty, stw, 30 * sy, on and C.accent or C.card, on and 0 or 0x18)
+                if not on then
+                    rect(a, tx, ty, stw, 1, C.cardedge, 0x30)
+                    rect(a, tx, ty + 29 * sy, stw, 1, C.cardedge, 0x30)
+                end
+                text(a, tx + stw / 2, ty + 15 * sy, st.name, on and C.panel or C.text, 17 * sx, on, 5)
+                hit.tabs[#hit.tabs + 1] = { tx, ty, tx + stw, ty + 30 * sy, index = i, sub = true }
+                tx = tx + stw + 8 * sx
+                lasty = ty
+            end
+
+            active_cards = g.subtabs[sti].cards
+        else
+            active_cards = g.cards
         end
 
         local gy = lasty + 46 * sy
@@ -1490,18 +1984,13 @@ function render()
         local cardw = (cw * sx - gap * (cols - 1)) / cols
         local cardh = 55 * sy
 
-        for i, q in ipairs(g.cards) do
+        for i, q in ipairs(active_cards) do
             local px = cx + ((i - 1) % cols) * (cardw + gap)
             local py = gy + math.floor((i - 1) / cols) * (cardh + gap)
             if py + cardh > Y(P.y + P.h) - 30 * sy then break end
 
-            -- Each card has its own ON/OFF state via check_matches.
             local is_checked = check_matches(q)
-            -- Navigation index in the current tab.
             local sel = i == cursor
-            -- Border and text follow the cursor only. The checkmark below
-            -- shows the active state, so the accent border is reserved for
-            -- "where you are".
             local on = sel
 
             rect(a, px, py, cardw, cardh, on and C.active or C.card, on and 0x08 or 0x18)
@@ -1526,7 +2015,10 @@ function render()
             local label_font_size = 16.5 * sx
             local sub_font_size = 12.6 * sx
             local truncated_label = truncate_text(q.label, max_text_width, label_font_size)
-            local truncated_sub = q.sub and truncate_text(q.sub, max_text_width, sub_font_size) or nil
+            -- q.sub can be a static string or a function that returns the
+            -- current value (used by toggle cards).
+            local sub_val = type(q.sub) == "function" and q.sub() or q.sub
+            local truncated_sub = sub_val and truncate_text(sub_val, max_text_width, sub_font_size) or nil
 
             text(a, text_start_x, py + 18 * sy, truncated_label,
                 sel and C.hi or C.text, label_font_size, sel, 4)
@@ -1538,6 +2030,7 @@ function render()
             hit.cards[i] = { px, py, px + cardw, py + cardh, index = i }
         end
     else
+        -- List layout: rows of actions with optional headings.
         local r = s.rows()
         local max = math.floor((P.h - HH - 44 - (s.footer and 34 or 0)) / 34)
         if cursor < scroll + 1 then scroll = cursor - 1 end
@@ -1598,6 +2091,50 @@ function render()
         end
     end
 
+    -- ============================================================
+    -- Footer: description + keyboard/mouse hints.
+    -- ============================================================
+    -- Pick the description to display:
+    --   * Grid/quick sections with tabs use the active tab's description,
+    --     which already falls back to the section description when no
+    --     per-tab entry exists.
+    --   * Flat sections and sections without tabs use the section one.
+    local current_desc = s.description
+    if s.tabs and not s.flat and (s.layout == "grid" or s.layout == "quick") then
+        local ti = tabs[section] or 1
+        if ti > #s.tabs then ti = 1 end
+        local active_tab = s.tabs[ti]
+        if active_tab and active_tab.description and active_tab.description ~= "" then
+            current_desc = active_tab.description
+        end
+    end
+
+    if current_desc and current_desc ~= "" then
+        local sep_y  = Y(P.y + P.h) - 42 * sy
+        local desc_y = Y(P.y + P.h) - 55 * sy
+        rect(a, cx, sep_y, cw * sx, 1, C.edge, 0x10)
+        rect(a, cx - 10 * sx, desc_y - 12 * sy,
+             cw * sx + 20 * sx, 24 * sy, C.active, 0x18)
+
+        -- Split on "|" into prefix (color A) and body (color B).
+        -- If there's no prefix, the whole thing renders in one color.
+        local prefix, body = current_desc:match("^(.-)|(.*)$")
+        if prefix and prefix ~= "" then
+            -- Reserve width for the prefix so the body can be truncated
+            -- independently. Uses the same 0.35 factor as truncate_text.
+            local prefix_w = #prefix * 18 * 0.35 * sx + 12 * sx  -- +": "
+            local body_max = cw * sx - prefix_w
+            local body_trunc = truncate_text(body, body_max, 18 * sx)
+            local line = string.format("{\\1c&H%s&}%s:{\\1c&H%s&} %s",
+                C.text, prefix, C.amber, body_trunc)
+            text_raw(a, cx, desc_y, line, 18 * sx, true, 4)
+        else
+            -- No prefix: render single-color as before.
+            local desc_trunc = truncate_text(current_desc, cw * sx, 18 * sx)
+            text(a, cx, desc_y, desc_trunc, C.amber, 18 * sx, true, 4)
+        end
+    end
+
     text(a, cx, Y(P.y + P.h) - 29 * sy,
         T("KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu."),
         C.hi, 14.7 * sx, false)
@@ -1612,21 +2149,197 @@ function render()
 end
 
 -- ------------------------------------------------------------
+-- Edge audio sliders
+-- Appears only when the pointer reaches the far-left edge of the video.
+-- ------------------------------------------------------------
+edge_render = function()
+    if not edge_visible then
+        edge_ov.data = ""
+        edge_ov:update()
+        return
+    end
+
+    local ow = mp.get_property_number("osd-width") or RW
+    local oh = mp.get_property_number("osd-height") or RH
+    local rail_h = math.min(260, math.max(160, oh - 120))
+    local rail_y = math.floor((oh - rail_h) / 2)
+    local rail_x, rail_w = 0, 104
+    local track_x, boost_x, track_w = 28, 72, 10
+    local track_y, track_h = rail_y + 34, rail_h - 68
+    local volume = math.max(0, math.min(100, tonumber(audio.volume) or 100))
+    local boost = math.max(100, math.min(BOOST, tonumber(audio.boost) or 100))
+    local volume_h = math.floor(track_h * volume / 100 + 0.5)
+    local boost_h = math.floor(track_h * (boost - 100) / (BOOST - 100) + 0.5)
+    local volume_y = track_y + track_h - volume_h
+    local boost_y = track_y + track_h - boost_h
+
+    edge_hit = {
+        panel = { rail_x, rail_y, rail_x + rail_w, rail_y + rail_h },
+        bars = {
+            { x1 = 10, x2 = 50, y1 = track_y, y2 = track_y + track_h, meter = "volume" },
+            { x1 = 54, x2 = 96, y1 = track_y, y2 = track_y + track_h, meter = "boost" },
+        },
+    }
+
+    local a = assdraw.ass_new()
+    rect(a, rail_x, rail_y, rail_w, rail_h, C.panel, 0x12)
+    rect(a, rail_w - 1, rail_y, 1, rail_h, C.edge, 0x00)
+    rect(a, track_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, track_x, volume_y, track_w, volume_h, C.accent, 0x00)
+    rect(a, 23, volume_y - 2, 20, 4, C.hi, 0x00)
+    rect(a, boost_x, track_y, track_w, track_h, C.track, 0x00)
+    rect(a, boost_x, boost_y, track_w, boost_h, C.amber, 0x00)
+    rect(a, 67, boost_y - 2, 20, 4, C.hi, 0x00)
+    text(a, 29, rail_y + 17, "VOL", C.dim, 11, true, 5)
+    text(a, 77, rail_y + 17, "BST", C.dim, 11, true, 5)
+    text(a, 29, rail_y + rail_h - 15, string.format("%d", volume), C.hi, 12, true, 5)
+    text(a, 77, rail_y + rail_h - 15, string.format("%d", boost), C.hi, 12, true, 5)
+
+    edge_ov.res_x, edge_ov.res_y = ow, oh
+    edge_ov.data = a.text
+    edge_ov:update()
+end
+
+local function edge_unbind()
+    if not edge_bound then return end
+    mp.remove_key_binding("msc_edge_lmb")
+    edge_bound = false
+end
+
+local function edge_hide()
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    edge_drag = false
+    edge_visible = false
+    edge_hit = nil
+    edge_unbind()
+    if edge_window_dragging ~= nil then
+        mp.set_property("window-dragging", edge_window_dragging and "yes" or "no")
+        edge_window_dragging = nil
+    end
+    edge_render()
+end
+
+local function toggle_edge_enabled()
+    local enabled = not edge_enabled
+    local ok, err = settings.write("hover_volume.txt", enabled and "yes\n" or "no\n")
+    if not ok then
+        msg.error("Cannot save hover volume setting: " .. tostring(err))
+        osd("Could not save hover volume setting")
+        return
+    end
+    edge_enabled = enabled
+    mp.set_property_bool("user-data/hover-volume", edge_enabled)
+    if not edge_enabled then edge_hide() end
+    if visible then render() end
+end
+
+local function edge_show()
+    if not edge_enabled then return end
+    if edge_hide_timer then edge_hide_timer:kill(); edge_hide_timer = nil end
+    if edge_visible then return end
+    edge_visible = true
+    -- mpv enables click-and-drag window movement by default. Disable it
+    -- only while this rail is available, otherwise Windows can treat a
+    -- slider drag as a request to move the capture window.
+    edge_window_dragging = mp.get_property_bool("window-dragging", true)
+    mp.set_property("window-dragging", "no")
+    audio_refresh()
+    edge_render()
+    mp.add_forced_key_binding("MBTN_LEFT", "msc_edge_lmb", function(e)
+        local x, y = pos()
+        if e.event == "down" and edge_hit and x and y then
+            for _, bar in ipairs(edge_hit.bars or {}) do
+                if inside(bar, x, y) then
+                    edge_drag = bar
+                    edge_set_from_y(y, bar)
+                    break
+                end
+            end
+        elseif e.event == "up" and edge_drag then
+            local meter = edge_drag.meter
+            edge_drag = false
+            if meter == "boost" then
+                schedule_boost_send(audio.boost or 100)
+            else
+                schedule_volume_send(audio.volume or 100)
+            end
+        end
+    end, { complex = true })
+    edge_bound = true
+end
+
+edge_set_from_y = function(y, bar)
+    local b = bar or edge_drag
+    if not b or not y then return end
+    local f = (b.y2 - y) / (b.y2 - b.y1)
+    f = math.max(0, math.min(1, f))
+    if b.meter == "boost" then
+        audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
+    else
+        audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
+    end
+    edge_render()
+end
+
+local edge_mouse_initialized = false
+local edge_mouse_x, edge_mouse_y
+local function edge_mousemove()
+    local mouse = mp.get_property_native("mouse-pos")
+    if not mouse then return end
+    local x, y = mouse.x, mouse.y
+    local moved = x ~= edge_mouse_x or y ~= edge_mouse_y
+    edge_mouse_x, edge_mouse_y = x, y
+    -- Observers receive an initial snapshot, often (0, 0), before any mouse
+    -- movement. Establish a baseline without treating it as an edge hover.
+    if not edge_mouse_initialized then
+        edge_mouse_initialized = true
+        return
+    end
+    if visible or not edge_enabled then return end
+    if not x or not y then return end
+
+    if edge_drag then
+        edge_set_from_y(y, edge_drag)
+        return
+    end
+
+    if not mouse.hover then
+        if edge_visible and not edge_hide_timer then
+            edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+        end
+        return
+    end
+    if not moved and not edge_visible then return end
+
+    -- The first 10 pixels are the reveal zone; once shown, the whole rail
+    -- remains interactive and hides one second after the pointer leaves it.
+    if (x >= 0 and x <= 10) or (edge_hit and inside(edge_hit.panel, x, y)) then
+        edge_show()
+        return
+    end
+
+    if edge_visible and not edge_hide_timer then
+        edge_hide_timer = mp.add_timeout(1.0, edge_hide)
+    end
+end
+
+-- ------------------------------------------------------------
 -- Input handling
 -- ------------------------------------------------------------
-local function inside(box, x, y)
+inside = function(box, x, y)
     if not box then return false end
     local x1, y1, x2, y2 = box[1] or box.x1, box[2] or box.y1, box[3] or box.x2, box[4] or box.y2
     return x >= x1 and x <= x2 and y >= y1 and y <= y2
 end
 
-local function pos()
+pos = function()
     local m = mp.get_property_native("mouse-pos")
     return m and m.x, m and m.y
 end
 
--- Slider drag: update only the visual state while dragging,
--- send the final value to PowerShell once on release.
+-- Slider drag: apply native volume immediately; send FFplay's final value
+-- to PowerShell once on release.
 -- Guards against NaN, division by zero, and stale hitboxes.
 local function fromx(h, x)
     if not h or not h.bar_x1 or not h.bar_x2 then return end
@@ -1635,8 +2348,8 @@ local function fromx(h, x)
     if f ~= f then return end   -- NaN check
     f = math.max(0, math.min(1, f))
     if h.meter == "volume" then
-        -- Visual-only update; the real value is sent on release.
         audio.volume = math.floor(f * 100 + 0.5)
+        if using_native_audio() then volset(audio.volume) end
         render()
     else
         audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
@@ -1735,16 +2448,34 @@ local function horiz(d)
     if cs then
         local s = SECTIONS[section]
         if s.flat then
-            -- Flat layout: no tab switching, just move within cards
+            -- Flat layout: no tab switching, just move within cards.
             cursor = math.max(1, math.min(#cs, cursor + d))
             render()
             return
         end
         local i = cursor + d
         if i < 1 or i > #cs then
-            local t = (tabs[section] or 1) + d
-            if t < 1 then t = #s.tabs elseif t > #s.tabs then t = 1 end
-            tabs[section] = t
+            -- Cursor went past the edge of the current card set. Step to
+            -- the next subtab if the current tab has them; otherwise step
+            -- to the next level-1 tab.
+            local ti = tabs[section] or 1
+            local g = s.tabs[ti]
+            if g.subtabs then
+                local sti = subtabs[section] or 1
+                local new_sti = sti + d
+                if new_sti < 1 or new_sti > #g.subtabs then
+                    local t = ti + d
+                    if t < 1 then t = #s.tabs elseif t > #s.tabs then t = 1 end
+                    tabs[section] = t
+                    subtabs[section] = 1
+                else
+                    subtabs[section] = new_sti
+                end
+            else
+                local t = ti + d
+                if t < 1 then t = #s.tabs elseif t > #s.tabs then t = 1 end
+                tabs[section] = t
+            end
             cursor = 1
         else
             cursor = i
@@ -1790,6 +2521,8 @@ function hide()
     hover_screenshot = false
     hover_record = false
     hover_lang = false
+    hover_mute = false
+    hover_audio_icon = false
     stopdrag()
     unbind()
     reset_hit()
@@ -1807,13 +2540,15 @@ function mousemove()
         return
     end
 
-    local new_close      = hit.close and inside(hit.close, x, y) or false
-    local new_quit       = hit.quit and inside(hit.quit, x, y) or false
-    local new_clean      = hit.clean and inside(hit.clean, x, y) or false
-    local new_reload     = hit.reload and inside(hit.reload, x, y) or false
-    local new_screenshot = hit.screenshot and inside(hit.screenshot, x, y) or false
-    local new_record     = hit.record and inside(hit.record, x, y) or false
-    local new_lang       = hit.lang and inside(hit.lang, x, y) or false
+    local new_close        = hit.close and inside(hit.close, x, y) or false
+    local new_quit         = hit.quit and inside(hit.quit, x, y) or false
+    local new_clean        = hit.clean and inside(hit.clean, x, y) or false
+    local new_reload       = hit.reload and inside(hit.reload, x, y) or false
+    local new_screenshot   = hit.screenshot and inside(hit.screenshot, x, y) or false
+    local new_record       = hit.record and inside(hit.record, x, y) or false
+    local new_lang         = hit.lang and inside(hit.lang, x, y) or false
+    local new_mute         = hit.mute and inside(hit.mute, x, y) or false
+    local new_audio_icon   = hit.audio_icon and inside(hit.audio_icon, x, y) or false
 
     if new_close ~= hover_close
        or new_quit ~= hover_quit
@@ -1821,20 +2556,25 @@ function mousemove()
        or new_reload ~= hover_reload
        or new_screenshot ~= hover_screenshot
        or new_record ~= hover_record
-       or new_lang ~= hover_lang then
-        hover_close      = new_close
-        hover_quit       = new_quit
-        hover_clean      = new_clean
-        hover_reload     = new_reload
-        hover_screenshot = new_screenshot
-        hover_record     = new_record
-        hover_lang       = new_lang
+       or new_lang ~= hover_lang
+       or new_mute ~= hover_mute
+       or new_audio_icon ~= hover_audio_icon then
+        hover_close       = new_close
+        hover_quit        = new_quit
+        hover_clean       = new_clean
+        hover_reload      = new_reload
+        hover_screenshot  = new_screenshot
+        hover_record      = new_record
+        hover_lang        = new_lang
+        hover_mute        = new_mute
+        hover_audio_icon  = new_audio_icon
         render()
         return
     end
 
     if hover_close or hover_quit or hover_clean or hover_reload
-       or hover_screenshot or hover_record or hover_lang then return end
+       or hover_screenshot or hover_record or hover_lang or hover_mute
+       or hover_audio_icon then return end
 
     for _, h in ipairs(hit.rows) do
         if inside(h, x, y) and h.index > 0 and cursor ~= h.index then
@@ -1854,8 +2594,25 @@ local function mousedown()
     if hit.quit and inside(hit.quit, x, y) then mp.command("quit"); return end
     if hit.clean and inside(hit.clean, x, y) then cleanall(); return end
     if hit.reload and inside(hit.reload, x, y) then audio_refresh(); return end
+    if hit.mute and inside(hit.mute, x, y) then
+        -- Optimistic UI update so the icon flips immediately; the real
+        -- state syncs back via observe_property (native) or the ffplay
+        -- callback, which will overwrite this if it disagrees.
+        audio.muted = not audio.muted
+        render()
+        mute()
+        return
+    end
+    if hit.audio_icon and inside(hit.audio_icon, x, y) then
+        -- Same behavior as the mute button next to the volume bar.
+        -- Kept in a separate handler so both hitboxes stay independent.
+        audio.muted = not audio.muted
+        render()
+        mute()
+        return
+    end
 
-    -- Header action buttons
+    -- Header action buttons.
     if hit.screenshot and inside(hit.screenshot, x, y) then
         mp.command("screenshot")
         hide()
@@ -1878,9 +2635,14 @@ local function mousedown()
         end
     end
 
-    for i, h in ipairs(hit.tabs or {}) do
+    for _, h in ipairs(hit.tabs or {}) do
         if inside(h, x, y) then
-            tabs[section] = i
+            if h.sub then
+                subtabs[section] = h.index
+            else
+                tabs[section] = h.index
+                subtabs[section] = 1
+            end
             cursor = 1
             render()
             return
@@ -1910,7 +2672,7 @@ local function mousedown()
         if inside(h, x, y) then
             if h.index > 0 then cursor = h.index end
             if h.kind == "meter" then
-                -- Kill any stale timer before starting a new drag
+                -- Kill any stale timer before starting a new drag.
                 if timer then timer:kill(); timer = nil end
                 drag = h
                 fromx(h, x)
@@ -1962,6 +2724,7 @@ end
 -- ------------------------------------------------------------
 function show()
     if visible then return end
+    edge_hide()
     visible = true
     cancel_hide_timer()
     if section > #SECTIONS then section = 1 end
@@ -1982,6 +2745,7 @@ end
 mp.add_key_binding(nil, "toggle-overlay", toggle)
 mp.register_script_message("toggle-overlay", toggle)
 mp.register_script_message("close-overlay", hide)
+mp.register_script_message("toggle-hover-volume", toggle_edge_enabled)
 
 mp.register_script_message("reload-lang", function()
     rebuild_dicts()
@@ -1989,6 +2753,7 @@ mp.register_script_message("reload-lang", function()
     ROOTS = load_roots()
     rebuild_sections()
     tabs = {}
+    subtabs = {}
     if visible then
         if section > #SECTIONS then section = 1 end
         cursor = first()
@@ -1998,9 +2763,46 @@ end)
 
 mp.observe_property("osd-width", "number", function()
     if visible then render() end
+    if edge_visible then edge_render() end
 end)
 
-mp.register_event("shutdown", hide)
+-- Native MPV audio changes happen in-process, so reflect them immediately
+-- in both the full Audio page and the edge sliders.
+mp.observe_property("volume", "number", function(_, value)
+    if using_native_audio() and value then
+        audio.volume = math.floor(value + 0.5)
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("mute", "bool", function(_, value)
+    if using_native_audio() then
+        audio.muted = value and true or false
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-boost", "native", function(_, value)
+    if using_native_audio() and value then
+        audio.boost = tonumber(value) or 100
+        if visible then render() end
+        if edge_visible then edge_render() end
+    end
+end)
+mp.observe_property("user-data/audio-mode", "native", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
+end)
+mp.observe_property("user-data/audio-active-mode", "native", function()
+    audio_refreshed = false
+    if visible or edge_visible then audio_refresh() end
+end)
+
+mp.observe_property("mouse-pos", "native", edge_mousemove)
+mp.register_event("shutdown", function()
+    hide()
+    edge_hide()
+end)
 
 msg.info("MSC overlay loaded. Use script-message toggle-overlay.")
 

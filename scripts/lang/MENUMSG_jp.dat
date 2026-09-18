@@ -147,6 +147,11 @@ Other Video Options=その他のビデオオプション
 #  AUDIO
 # ============================================================
 Mute/Unmute=ミュート切替
+Audio plugin is not built. Run native-audio/build.ps1 first.=オーディオプラグインがビルドされていません。先にnative-audio/build.ps1を実行してください。
+WASAPI Audio Plugin selected. Restart MPV-SW-Capture to apply.=WASAPIプラグインを選択しました。MPV-SW-Captureを再起動して適用してください。
+FFplay low-latency audio selected. Restart MPV-SW-Capture to apply.=FFplay低遅延オーディオを選択しました。MPV-SW-Captureを再起動して適用してください。
+Audio plugin: no capture device configured. Run Setup first.=オーディオプラグイン: キャプチャデバイスが設定されていません。先にSetupを実行してください。
+Audio plugin:=オーディオプラグイン:
 
 # ============================================================
 #  OTHERS - TOOLS

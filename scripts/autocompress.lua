@@ -26,11 +26,23 @@ local ok, err = pcall(function()
 end)
 
 if not ok then
-    -- Fallback: funciones básicas
+    -- Fallback: minimal OSD helpers. Keys mirror the ones actually used
+    -- below (autocompress_*) so the fallback resolves them to English text
+    -- instead of leaking the raw key to the OSD.
+    local defaults = {
+        autocompress_recording_label = "Recording",
+        autocompress_finishing_label = "Finishing...",
+        autocompress_done_label      = "Done!",
+        autocompress_processing      = "Processing...",
+        autocompress_merge_error     = "Error while merging. Check the log.",
+        autocompress_wait_processing = "Please wait, still processing...",
+        autocompress_mkdir_fail      = "Could not create the recording folder.",
+    }
+
     osd = {
-        get = function(key) return key end,
+        get = function(key) return defaults[key] or key end,
         show = function(key, duration)
-            local text = key
+            local text = osd.get(key)
             local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
             if osd_duration_ms == 0 then return end
             if duration == nil then duration = osd_duration_ms / 1000 end

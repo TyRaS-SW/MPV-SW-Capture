@@ -215,8 +215,15 @@ function Copy-PngToBezels([string]$SourcePath) {
     Write-Log ('PNG copied/replaced to ' + $destPath)
     @{ Copied=$true; FileName=$destName; FullPath=$destPath }
 }
-function Make-BezelLine($B) {
-    '    ' + $B.name + "`tscript-message toggle-bezel `"" + $B.png + "`" `"" + $B.bid + "`" " + $B.x + ' ' + $B.y + ' ' + $B.w + ' ' + $B.h + " ; show-text `"" + $B.name + "`"`tchecked=get(`"user-data/active_bezel`")==`"" + $B.bid + "`""
+
+# Builds a menu.conf line for a bezel. The indent level (in tabs) depends
+# on where the bezel lives in the hierarchical structure:
+#   * 3 tabs -> inside an NSO sub-header (NES / Famicom, GB / GBC, ...)
+#   * 2 tabs -> directly under a top-level header like PERSONAL
+function Make-BezelLine($B, [int]$IndentLevel = 3) {
+    $tabs = ''
+    for($k = 0; $k -lt $IndentLevel; $k++) { $tabs += "`t" }
+    $tabs + $B.name + "`tscript-message toggle-bezel `"" + $B.png + "`" `"" + $B.bid + "`" " + $B.x + ' ' + $B.y + ' ' + $B.w + ' ' + $B.h + " ; show-text `"" + $B.name + "`"`tchecked=get(`"user-data/active_bezel`")==`"" + $B.bid + "`""
 }
 function Remove-AllBidLines([string[]]$Lines) {
     $result = New-Object System.Collections.Generic.List[string]
@@ -264,65 +271,17 @@ function Get-ClearBezelLine([string[]]$Block) {
     foreach($line in $Block) {
         if($line -match 'clear-bezel silent') { return $line }
     }
-    return '    🧹 Clear Bezels	script-message clear-bezel silent ; show-text "Bezels Cleared"	checked=get("user-data/active_bezel")=="none"'
+    return "`t🧹 Clear Bezels`tscript-message clear-bezel silent ; show-text `"Bezels Cleared`"`tchecked=get(`"user-data/active_bezel`")==`"none`""
 }
 
+# The BEZELS block is now a hierarchical structure: NSO contains sub-headers
+# (NES / Famicom, SNES / Genesis, GB / GBC, GBA, N64 / GC) and each sub-header
+# owns its own set of cards. The old flat-list normalize algorithm would
+# corrupt this layout, so spacing is now handled directly by Apply-MenuConf
+# and Collapse-BlankLinesBeforeClearBezel. This function is a passthrough
+# kept for backward compatibility with the remaining callers.
 function Normalize-BezelSpacing([string[]]$Lines) {
-    $bezelHeader = -1
-    $windowHeader = -1
-    for($i=0; $i -lt $Lines.Count; $i++) {
-        if($bezelHeader -lt 0 -and $Lines[$i] -match 'BEZELS|MARCOS') { $bezelHeader = $i; continue }
-        if($bezelHeader -ge 0 -and $Lines[$i] -match '▶WINDOW◀') { $windowHeader = $i; break }
-    }
-    if($bezelHeader -lt 0 -or $windowHeader -lt 0) { return $Lines }
-
-    $before = New-Object System.Collections.Generic.List[string]
-    for($i=0; $i -lt $bezelHeader; $i++) { [void]$before.Add($Lines[$i]) }
-    $block = @($Lines[$bezelHeader..($windowHeader-1)])
-    $after = New-Object System.Collections.Generic.List[string]
-    for($i=$windowHeader; $i -lt $Lines.Count; $i++) { [void]$after.Add($Lines[$i]) }
-
-    $title = $block[0]
-    $clearLine = Get-ClearBezelLine $block
-    $groups = New-Object System.Collections.Generic.List[object]
-    $current = $null
-
-    for($i=1; $i -lt $block.Count; $i++) {
-        $line = $block[$i]
-        if($line -match '^\s*NSO:') {
-            $current = [ordered]@{ header = $line; items = New-Object System.Collections.Generic.List[string] }
-            $groups.Add($current)
-            continue
-        }
-        if($line -match 'Clear Bezels|Borrar Marcos') { continue }
-        if([string]::IsNullOrWhiteSpace($line)) { continue }
-        if($null -ne $current) { [void]$current.items.Add($line) }
-    }
-
-    $out = New-Object System.Collections.Generic.List[string]
-    foreach($line in $before) { [void]$out.Add($line) }
-    [void]$out.Add($title)
-    for($i=0; $i -lt $groups.Count; $i++) {
-        $g = $groups[$i]
-        [void]$out.Add($g.header)
-        foreach($item in $g.items) { [void]$out.Add($item) }
-        if($i -lt ($groups.Count - 1)) { [void]$out.Add('') }
-    }
-
-    while($out.Count -gt 0 -and [string]::IsNullOrWhiteSpace($out[$out.Count-1])) { $out.RemoveAt($out.Count-1) }
-
-    $needsSpacer = $false
-    if($groups.Count -gt 0) {
-        $lastGroup = $groups[$groups.Count - 1]
-        if($lastGroup.items.Count -gt 0) { $needsSpacer = $true }
-    }
-    if($needsSpacer) { [void]$out.Add('') }
-
-    [void]$out.Add($clearLine)
-
-    if($after.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace($after[0])) { [void]$out.Add('') }
-    foreach($line in $after) { [void]$out.Add($line) }
-    return $out.ToArray()
+    return $Lines
 }
 
 function Collapse-BlankLinesBeforeClearBezel([string[]]$Lines) {
@@ -351,39 +310,57 @@ function Remove-PersonalBlock([string[]]$Lines) {
     }
     return $result.ToArray()
 }
+
+# Finds where in menu.conf the bezels of a given group should be inserted.
+# Each group (NES, SNES, GB, GBA, N64) maps to a sub-header inside the
+# NSO block. Sub-headers sit at exactly 2 tabs.
+#
+# Returns the line index right after the last card belonging to that
+# sub-header, or -1 if the sub-header can't be found.
 function Find-SectionInsertIndex([string[]]$Lines, [string]$GroupKey) {
     $bezelHeader = -1
-    for($i=0; $i -lt $Lines.Count; $i++) {
+    for($i = 0; $i -lt $Lines.Count; $i++) {
         if($Lines[$i] -match 'BEZELS|MARCOS') { $bezelHeader = $i; break }
     }
     if($bezelHeader -lt 0) { return -1 }
 
-    $pattern = ''
+    $key = ''
     switch($GroupKey) {
-        'NES'  { $pattern = 'NSO:.*NES.*Famicom' }
-        'SNES' { $pattern = 'NSO:.*SNES.*GEN|NSO:.*Megadrive' }
-        'GB'   { $pattern = 'NSO:.*GB.*GBC|NSO:.*GBC' }
-        'GBA'  { $pattern = 'NSO:.*GBA' }
-        'N64'  { $pattern = 'NSO:.*N64.*GC|NSO:.*GC.*N64' }
+        'NES'   { $key = 'NES'  }
+        'SNES'  { $key = 'SNES' }
+        'GB'    { $key = 'GB'   }
+        'GBA'   { $key = 'GBA'  }
+        'N64'   { $key = 'N64'  }
         default { return -1 }
     }
 
+    # Match exactly 2 tabs, then the group key as a standalone word.
+    # This skips cards at 3 tabs and doesn't confuse "NES" with "SNES".
+    $subHeaderPattern = "^\t\t" + [regex]::Escape($key) + "\b"
+
     $section = -1
-    for($i=$bezelHeader+1; $i -lt $Lines.Count; $i++) {
-        if($Lines[$i] -match $pattern) { $section = $i; break }
-        if($i -gt $bezelHeader+1 -and $Lines[$i] -match '▶WINDOW◀') { break }
+    for($i = $bezelHeader + 1; $i -lt $Lines.Count; $i++) {
+        if($Lines[$i] -match $subHeaderPattern) { $section = $i; break }
+        if($i -gt $bezelHeader + 1 -and $Lines[$i] -match '▶WINDOW◀') { break }
     }
     if($section -lt 0) { return -1 }
 
+    # Walk forward until we hit a sibling sub-header (2 tabs), a top-level
+    # item (1 tab, like PERSONAL or Clear Bezels), the Clear Bezels line,
+    # or the WINDOW section. Insertion point is right after the last
+    # non-blank line of the current section.
     $lastContent = $section
-    for($i=$section+1; $i -lt $Lines.Count; $i++) {
-        if($Lines[$i] -match 'Clear Bezels|Borrar Marcos') { return $i }
-        if($i -gt $section+1 -and $Lines[$i] -match '^\s*NSO:') { return $i }
-        if($i -gt $section+1 -and $Lines[$i] -match '▶WINDOW◀') { return $i }
-        if(-not [string]::IsNullOrWhiteSpace($Lines[$i])) { $lastContent = $i }
+    for($i = $section + 1; $i -lt $Lines.Count; $i++) {
+        $line = $Lines[$i]
+        if($line -match '▶WINDOW◀') { break }
+        if($line -match 'Clear Bezels|Borrar Marcos') { break }
+        if($line -match '^\t\t\S') { break }  # next sub-header
+        if($line -match '^\t\S')   { break }  # top-level item
+        if(-not [string]::IsNullOrWhiteSpace($line)) { $lastContent = $i }
     }
     return ($lastContent + 1)
 }
+
 function Apply-MenuConf($Bezels) {
     if(-not (Test-Path -LiteralPath $script:MenuConfPath)){ throw (T 'MsgMenu') }
     Ensure-Dirs
@@ -394,6 +371,12 @@ function Apply-MenuConf($Bezels) {
     if(-not $hasBezelsHeader){ throw (T 'MsgSectionBezelsMissing') }
     $lines = Remove-PersonalBlock $lines
     $lines = Remove-ExistingBidLines $lines $Bezels
+
+    # Every BID line for a bezel in the JSON has been stripped, enabled or
+    # not. From this point on we only care about the enabled ones, since
+    # those are the ones that should end up in menu.conf.
+    $Bezels = @($Bezels | Where-Object { $_.enabled -ne $false })
+
     $personal = New-Object System.Collections.ArrayList
     foreach($gk in @('N64','GBA','GB','SNES','NES')) {
         $groupBezels = @($Bezels | Where-Object { $_.group -eq $gk })
@@ -404,7 +387,7 @@ function Apply-MenuConf($Bezels) {
             continue
         }
         $insert = @()
-        foreach($b in $groupBezels){ $insert += (Make-BezelLine $b) }
+        foreach($b in $groupBezels){ $insert += (Make-BezelLine $b 3) }
         $before = @(); $after = @()
         if($idx -gt 0){ $before = $lines[0..($idx-1)] }
         if($idx -lt $lines.Count){ $after = $lines[$idx..($lines.Count-1)] }
@@ -425,8 +408,8 @@ function Apply-MenuConf($Bezels) {
         for($i=0; $i -lt $lines.Count; $i++) { if($lines[$i] -match 'clear-bezel silent'){ $clearIdx = $i; break } }
         if($clearIdx -lt 0){ throw (T 'MsgClearLineMissing') }
         $block = @()
-        $block += "    PERSONAL	disabled=true"
-        foreach($b in $personal){ $block += (Make-BezelLine $b) }
+        $block += "`tPERSONAL`t`tdisabled=true"
+        foreach($b in $personal){ $block += (Make-BezelLine $b 2) }
         $block += ''
         $before = @(); $after = @()
         if($clearIdx -gt 0){ $before = $lines[0..($clearIdx-1)] }
@@ -785,9 +768,14 @@ $btnRestoreBase.Add_Click({
 $btnApply.Add_Click({
     try {
         $data = Load-Data
-        $enabled = @($data.bezels | Where-Object { $_.enabled -ne $false })
-        Apply-MenuConf @($enabled)
-        $msg = if (@($enabled).Count -gt 0) { T 'MsgApplied' } else { T 'MsgNoBezels' }
+        # Pass ALL bezels (enabled + disabled) to Apply-MenuConf. The
+        # function strips every BID line from menu.conf, then re-inserts
+        # only the enabled ones. This keeps menu.conf in sync with the
+        # JSON when the user disables a bezel: its line disappears from
+        # the menu, and re-enabling it brings the line back.
+        Apply-MenuConf @($data.bezels)
+        $enabledCount = @($data.bezels | Where-Object { $_.enabled -ne $false }).Count
+        $msg = if ($enabledCount -gt 0) { T 'MsgApplied' } else { T 'MsgNoBezels' }
         Set-Status $msg $script:SUCCESS
         [Windows.Forms.MessageBox]::Show($msg, $form.Text, [Windows.Forms.MessageBoxButtons]::OK, [Windows.Forms.MessageBoxIcon]::Information) | Out-Null
     } catch {

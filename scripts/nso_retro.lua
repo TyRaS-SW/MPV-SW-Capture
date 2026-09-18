@@ -6,14 +6,22 @@
 -- calculated based on the original video size, not the canvas.
 
 local mp = require "mp"
+local msg = require "mp.msg"
 
 -- -------------------------------------------------------------------------
--- Cargar osd_messages con dofile (usa la ruta del script actual)
+-- Load osd_messages with dofile (use path script)
 -- -------------------------------------------------------------------------
 local osd
+
+-- Returns the directory that contains this script, with a trailing
+-- separator and forward slashes. Accepts either separator style so the
+-- loader works regardless of how mpv reports the source path.
 local function get_script_path()
     local info = debug.getinfo(1, "S")
-    return info and info.source:match("@?(.*/)") or ""
+    if not info or not info.source then return "" end
+    local dir = info.source:match("@?(.*[/\\])")
+    if not dir then return "" end
+    return dir:gsub("\\", "/")
 end
 
 local script_dir = get_script_path()
@@ -29,36 +37,33 @@ local ok, err = pcall(function()
 end)
 
 if not ok then
-    -- Fallback: mensajes en inglés
-    osd = {
-        get = function(key)
-            local defaults = {
-                no_bezel = "Select a bezel first.",
-                fill_on  = "Fit Full 16:9 to Bezel: ON",
-                fill_off = "Fit Full 16:9 to Bezel: OFF",
-                reset    = "Bezel Fit: Reset",
-            }
-            return defaults[key] or key
-        end,
-        show = function(key, duration)
-            local text = osd.get(key)
-            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
-            if osd_duration_ms == 0 then return end
-            if duration == nil then duration = osd_duration_ms / 1000 end
-            mp.osd_message(text, duration)
-        end,
-        safe_osd_message = function(text, duration)
-            local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
-            if osd_duration_ms == 0 then return end
-            if duration == nil then duration = osd_duration_ms / 1000 end
-            mp.osd_message(text, duration)
-        end
+    -- Fallback: minimal OSD helpers. Keys mirror the ones actually used
+    -- below (nsoretro_*) so the fallback resolves them to English text
+    -- instead of leaking the raw key to the OSD.
+    local defaults = {
+        nsoretro_no_bezel = "Select a bezel first.",
+        nsoretro_fill_on  = "Fit Full 16:9 to Bezel: ON",
+        nsoretro_fill_off = "Fit Full 16:9 to Bezel: OFF",
+        nsoretro_reset    = "Bezel Fit: Reset",
     }
-    print("nso_retro: Using fallback messages (osd_messages.lua not loaded).")
-    print("Error: " .. tostring(err))
-    print("Looked for: " .. osd_path)
+
+    local function show_text(text, duration)
+        local ms = mp.get_property_number("osd-duration") or 1000
+        if ms == 0 then return end
+        if duration == nil then duration = ms / 1000 end
+        mp.osd_message(text, duration)
+    end
+
+    osd = {
+        get = function(key) return defaults[key] or key end,
+        show = function(key, duration) show_text(osd.get(key), duration) end,
+        safe_osd_message = show_text,
+    }
+
+    msg.warn("[nso_retro] Using fallback messages (osd_messages.lua not loaded): " .. tostring(err))
+    msg.warn("[nso_retro] Looked for: " .. osd_path)
 else
-    print("nso_retro: osd_messages.lua loaded successfully from: " .. osd_path)
+    msg.info("[nso_retro] osd_messages.lua loaded successfully from: " .. osd_path)
 end
 
 local temp_dir = os.getenv("TEMP") or os.getenv("TMP") or "/tmp"
@@ -304,12 +309,39 @@ local function scale_from_base_1080(px, py, pw, ph)
     x2 = math.max(x1 + 1, math.min(x2, vw))
     y2 = math.max(y1 + 1, math.min(y2, vh))
 
-    -- Keep video strictly inside bezel opening
-    if (x2 - x1) > 1 then
-        x2 = x2 - 1
+    -- At 1920x1080 the base coordinates are already integer, so the crop
+    -- matches the bezel opening exactly. At any other resolution the
+    -- opening scales to a fractional position and the upscaled bezel gets
+    -- an antialiased edge there. That edge is between 1 and 2 pixels wide
+    -- for every common resolution up to 4K (from the bicubic scaling plus
+    -- any antialias baked into the PNG itself), so a fixed 2-pixel
+    -- extension covers it on every side without a visible overlap.
+    local is_1080p = (vw == 1920 and vh == 1080)
+    if not is_1080p then
+        local ext = 2
+        x1 = math.max(0, x1 - ext)
+        y1 = math.max(0, y1 - ext)
+        x2 = math.min(vw, x2 + ext)
+        y2 = math.min(vh, y2 + ext)
     end
 
-    return x1, y1, x2 - x1, y2 - y1, vw, vh
+    -- Force even crop dimensions (and even origin when possible). USB
+    -- capture cards typically deliver YUV 4:2:0, where odd crop sizes or
+    -- odd offsets misalign the chroma planes and produce horizontal
+    -- aliasing that becomes visible as sawtooth edges on strong shapes
+    -- like the super curvature.
+    local w = x2 - x1
+    local h = y2 - y1
+    if w % 2 ~= 0 then
+        if x1 >= 1 then x1 = x1 - 1 else x2 = x2 + 1 end
+        w = w + 1
+    end
+    if h % 2 ~= 0 then
+        if y1 >= 1 then y1 = y1 - 1 else y2 = y2 + 1 end
+        h = h + 1
+    end
+
+    return x1, y1, w, h, vw, vh
 end
 
 -- -------------------------------------------------------------------------
@@ -350,9 +382,15 @@ local function generate_shader(px, py, pw, ph)
     local shield_path = get_shield_path()
     local vw, vh = get_video_size()
 
+    -- The shield box must match the crop region exactly. The crop width
+    -- (pw) already accounts for the "strictly inside bezel opening" inset
+    -- and the +1 extension applied at non-1080p resolutions, so no extra
+    -- -1 is needed here. Leaving a 1px gap causes the last column of the
+    -- video to skip the shape shader, which shows as a flat 1px duplicate
+    -- at the right edge of the bezel opening.
     local x  = px / vw
     local y  = py / vh
-    local w  = (pw - 1) / vw
+    local w  = pw / vw
     local h  = ph / vh
 
     local coords = {
@@ -368,7 +406,12 @@ local function generate_shader(px, py, pw, ph)
     )
 
     local f = io.open(shield_path, "w")
-    if f then f:write(code); f:close() end
+    if f then
+        f:write(code)
+        f:close()
+    else
+        msg.warn("[nso_retro] Could not write shield shader: " .. shield_path)
+    end
 end
 
 local function remove_protect_shader()
@@ -442,11 +485,19 @@ vf_list = remove_bezeltag(remove_all_crops(vf_list))
 -- Now compute inner window coordinates based on clean video
 local inner_x, inner_y, inner_w, inner_h, vw, vh = scale_from_base_1080(px, py, pw, ph)
 
--- Geometry-based right-edge inset:
-local right_base = px + pw
-local right_margin = 1920 - right_base
-if right_margin >= 280 and right_margin <= 320 and inner_w > 1 then
-    inner_w = inner_w - 1
+-- Geometry-based right-edge inset. This is a 1080p-only correction: at
+-- that resolution the bezel opening falls on integer coordinates and a
+-- handful of bezels need the video pulled 1 px away from the right edge.
+-- At other resolutions the opening scales to fractional coordinates and
+-- the bezel gets an antialiased edge there; the extension applied inside
+-- scale_from_base_1080 already covers that edge, so shrinking the video
+-- here would expose it again as a 1-pixel light line.
+if vw == 1920 and vh == 1080 then
+    local right_base = px + pw
+    local right_margin = 1920 - right_base
+    if right_margin >= 280 and right_margin <= 320 and inner_w > 1 then
+        inner_w = inner_w - 1
+    end
 end
 
 local serial = bezel_apply_serial + 1
@@ -674,7 +725,7 @@ end)
 end
 end)
 
-print("NSO Retro MPV (OLD resolution + ORIGIN silent OSD/shapes)")
+msg.info("[nso_retro] NSO Retro MPV (OLD resolution + ORIGIN silent OSD/shapes)")
 
 mp.set_property("user-data/active_bezel", "none")
 mp.set_property("user-data/crop-active", "")
