@@ -10,6 +10,8 @@ MPV is a very capable and fast video player when configured correctly. It also l
 
 There are other programs that let you capture video and do something similar to this project, but they tend to be more limited and do not allow the same level of customization that MPV-SW-Capture offers on top of MPV. On top of that, most tend to increase the lag, making the experience unplayable.
 
+> 💡 **Note:** Since v5.1.0, MPV-SW-Capture ships with its own native audio plugin (WASAPI), which means audio is captured in-process and can be used by OBS, Discord, and other tools without any external plugin.
+
 ---
 
 ## 🧩 Hardware & Capture Cards
@@ -59,6 +61,8 @@ That's all you need to do. And it's always recommended to have the newer version
 But if you notice some problems, you can try older versions. If that happens, please comment the problem in **[Issues](https://github.com/TyRaS-SW/MPV-SW-Capture/issues)**, to check and fix that.
 
 If you are talking about MPV-SW-Capture itself, the recommendation is just replace all the files.
+
+> 💡 **Note:** Starting with v5.1.0, some user preferences (Audio Boost, Audio Output Mode, Hover Volume Sidebar, and Auto ICC Profile) are saved automatically and persist across updates. You do not need to reconfigure them after replacing the files.
 
 ### 3. What does `1_INSTALLER_MSC_First-Usage.cmd` do?
 
@@ -160,6 +164,15 @@ It depends on which file is missing:
 
 > 💡 **Why keep the CMD around?** Even though you only need it for the first install, it's the only recovery path if `mpv.exe` is ever deleted. Leave it in the folder — it takes almost no space (3 KB).
 
+### 6. What new options were added to the Setup tool in v5.1.0?
+
+The Setup tool now includes two additional configuration options:
+
+- **AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT** — choose between **WASAPI** or **FFPLAY** as the default backend on launch.
+- **AUTOSTART WITH HOVER VOLUME SIDEBAR** — choose whether the Hover Volume Sidebar is active when MPV-SW-Capture starts.
+
+Both options are saved to their respective `.txt` files (`audio_mode.txt` and `hover_volume.txt`) and applied on the next launch.
+
 ---
 
 ## 🎨 Image, Shaders, Bezels, Crops & Shapes
@@ -218,17 +231,75 @@ If you don't have a bezel selected, you will see a message asking you to select 
 
 ---
 
+## 🔊 Audio Backends (WASAPI vs FFplay)
+
+### 1. What is the difference between WASAPI Audio Plugin and FFplay Low Latency?
+
+Both backends capture audio from your capture card, but they do it differently:
+
+**WASAPI Audio Plugin (default since v5.1.0):**
+- A native plugin loaded directly into MPV.
+- Handles both video and audio in the same process.
+- Lower CPU and RAM usage.
+- Capturable natively by OBS, Discord, and similar tools **without third-party plugins**.
+- Available on Windows 10 and 11 on most modern capture cards.
+
+**FFplay Low Latency (fallback):**
+- The classic split-process approach: MPV handles video, `ffplay` handles audio.
+- Both run silently and stay in sync.
+- Requires the `win-capture-audio` plugin for OBS to capture its audio.
+- Use this if your system does not support the WASAPI plugin, or if you prefer the older pipeline.
+
+### 2. Which one should I use?
+
+**Use WASAPI Audio Plugin (default)** unless you have a specific reason not to. It's faster, lighter, and works out of the box with OBS and Discord.
+
+**Switch to FFplay Low Latency** only if:
+- Your system does not support the WASAPI plugin.
+- You experience audio issues with WASAPI that you cannot resolve.
+- You already have a working setup with FFplay and don't want to change it.
+
+### 3. How do I switch between them?
+
+- **From the menu**: go to **AUDIO → AUDIO OUTPUT MODE** and select the backend you want.
+- **From the Setup tool**: use the **AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT** option.
+
+In both cases, you need to **restart MPV-SW-Capture** for the change to take effect.
+
+### 4. How do I know which mode is currently active?
+
+Open the menu and go to **AUDIO → AUDIO OUTPUT MODE**. The active mode is the one with the ✓ checkmark.
+
+You can also check the **header**: the audio line shows either "WASAPI AUDIO" or "FFPLAY AUDIO" depending on the active backend.
+
+---
+
 ## 🔊 Audio
 
-### 1. How can I change the volume of MPV-SW-Capture independently in Windows?
+### 1. What audio backends does MPV-SW-Capture support?
 
-You have 2 alternatives:
+Starting with v5.1.0, MPV-SW-Capture supports **two audio backends**, and you can choose the one that works best on your system:
 
-- **Official**: You can easily change audio inside MPV-SW-Capture, without needing to change the output/mixer panel.
-  Use the Mouse's Wheel (`UP` to increase, `DOWN` to decrease), the keyboard's arrow keys (`UP` to increase, `DOWN` to decrease, `M` to Mute/Unmute), and the submenu called `AUDIO` in the MENU to also change the audio.
-- **Manual** (not recommended): On Windows, click the sound icon in the system tray, open the output/mixer panel, find the `ffplay` entry and adjust its volume to the level you want. That will change the volume for MPV‑SW‑Capture specifically. Use this only if the official way fails.
+- **WASAPI Audio Plugin** (default) — a native plugin loaded directly into MPV. It handles both video and audio in the same process, is capturable by OBS, Discord and other tools **without third-party plugins**, and uses less CPU and RAM than the FFplay backend.
+- **FFplay Low Latency** (fallback) — the classic split-process approach: MPV handles video, `ffplay` handles audio. Use this if your system does not support the WASAPI plugin, or if you prefer the older pipeline.
 
-### 2. What is Audio Boost and when should I use it?
+You can switch between them at any time from **AUDIO → AUDIO OUTPUT MODE** in the menu, or from the Setup tool. The change requires restarting MPV-SW-Capture.
+
+### 2. How can I change the volume of MPV-SW-Capture independently in Windows?
+
+You have several alternatives:
+
+- **Inside MPV-SW-Capture (recommended)**:
+  - Use the **Mouse Wheel** (`UP` to increase, `DOWN` to decrease).
+  - Use the keyboard's **arrow keys** (`UP` to increase, `DOWN` to decrease).
+  - Press **`M`** to Mute/Unmute.
+  - Open the **`AUDIO`** section in the menu to access the Volume and Audio Boost sliders.
+- **Hover Volume Sidebar**: if enabled, move the cursor to the middle-left edge of the window and a floating audio rail appears with both sliders.
+- **Windows Volume Mixer**:
+  - **WASAPI mode**: MPV-SW-Capture appears in the mixer under its own icon. Adjust the volume there if needed.
+  - **FFplay mode**: look for the `ffplay` entry in the mixer and adjust its volume. Use this only as a fallback.
+
+### 3. What is Audio Boost and when should I use it?
 
 **Audio Boost** is an option that amplifies the capture card's audio **beyond the standard 100%**, up to **400% (×4)**.
 
@@ -236,11 +307,13 @@ It's ideal for users whose captured content has a very low volume and needs to b
 
 You can find it in the **Quick Options** and **AUDIO** sections, alongside the standard Volume slider.
 
-### 3. Does Audio Boost persist between sessions?
+### 4. Does Audio Boost persist between sessions?
 
-Yes. Your chosen value is saved to a `.txt` file and restored automatically. If you set it to 300% and close the program, it will still be 300% the next time you open MPV-SW-Capture.
+Yes. Your chosen value is saved to `data/menu/boost.txt` and restored automatically on launch. If you set it to 300% and close the program, it will still be 300% the next time you open MPV-SW-Capture.
 
-### 4. What is the effective gain indicator?
+The **Audio Output Mode** and the **Hover Volume Sidebar** state also persist between sessions.
+
+### 5. What is the effective gain indicator?
 
 A small readout below the audio sliders showing the combined **Volume × Boost** result. It changes colour based on clipping risk:
 
@@ -249,6 +322,21 @@ A small readout below the audio sliders showing the combined **Volume × Boost**
 - **Amber** (≥ 3.0x): high clipping risk.
 
 **Best practice:** leave Volume at 100% and raise Boost slowly until you hear the first distortion, then back off a bit. Raising Volume cannot undo clipping that already happened upstream.
+
+### 6. Where is the mute button?
+
+Two places, both doing the same thing:
+
+- **In the audio bar** (next to the Volume percentage).
+- **In the header** — the green audio icon is clickable and toggles mute/unmute. It mirrors the audio bar button.
+
+When muted, the icon changes and the volume label switches to **"MUTED"**.
+
+### 7. What is the "Hover Volume Sidebar" and how do I enable it?
+
+It's a floating audio rail that appears when you move the cursor to the middle-left edge of the window. It gives you quick access to Volume and Audio Boost without opening the full menu.
+
+To enable or disable it: go to **AUDIO → Hover Volume Sidebar**. The state is saved and restored across sessions. You can also set its default state from the **Setup** tool.
 
 ---
 
@@ -327,17 +415,24 @@ Additionally, these window modes are especially useful for streamers:
 
 ### 6. How can I change the volume of MPV‑SW‑Capture independently in Windows?
 
-See the **🔊 Audio** section above (question 1).
+See the **🔊 Audio** section above (question 2).
 
 ### 7. You say there are two programs, one for video and one for audio. What happens to audio if I close MPV‑SW‑Capture?
 
-If you close the MPV‑SW‑Capture window, the audio closes as well. Both parts are designed to work together, so when MPV‑SW‑Capture is closed, the audio process is also stopped and fully closed.
+> 💡 **Note:** Starting with v5.1.0, the default audio backend is **WASAPI Audio Plugin**, which runs entirely inside MPV — there is no separate audio process. The answer below applies to the **FFplay Low Latency** mode.
+
+In FFplay mode, if you close the MPV‑SW‑Capture window, the audio closes as well. Both parts are designed to work together, so when MPV‑SW‑Capture is closed, the audio process is also stopped and fully closed.
 
 ### 8. What happens if I use shaders/bezels/shapes/crops/any option, and I close the program?
 
-Most options are **not persisted** — they only stay until you close MPV-SW-Capture. If you open it again, everything will be at default.
+Most visual options (shaders, bezels, shapes, crops) are **not persisted** — they only stay until you close MPV-SW-Capture. If you reopen it, they will be at default.
 
-**The exception is Audio Boost.** Your chosen Boost value (from 100% to 400%) is saved to a `.txt` file and restored automatically on the next launch.
+**The following settings DO persist between sessions:**
+
+- **Audio Boost** — the percentage you selected.
+- **Audio Output Mode** — WASAPI or FFplay.
+- **Hover Volume Sidebar** — enabled or disabled.
+- **Change to Auto ICC Profile** — enabled or disabled.
 
 The other options that persist are the ones you can choose in the **Setup**, **Installer**, and **Tools**.
 
@@ -369,15 +464,22 @@ There are two ways:
 
 ### 11. What's new in the menu compared to previous versions?
 
-The old list-based menu was replaced with a graphical Smart-TV-style interface built on ASS (Advanced SubStation Alpha). It adds:
+The old list-based menu was replaced with a graphical Smart-TV-style interface built on ASS (Advanced SubStation Alpha). Since then, it has continued to evolve. Current features include:
 
 - Section-based navigation with a visual sidebar and badges.
 - Dedicated cards per option, with active-state indicators.
 - Draggable audio sliders with a live effective-gain readout.
 - **In-menu language switcher**: change the interface language on the fly.
-- **Header quick actions**: 4 clickable buttons — `TAKE SCREENSHOT`, `RECORD VIDEO`, the language badge (`EN`/`ES`/`JP`), and the close button (`X`).
+- **Header quick actions**: clickable buttons for `TAKE SCREENSHOT`, `RECORD VIDEO`, the language badge (`EN`/`ES`/`JP`), and the close button.
 - **Quick Options** section for fast access to common tasks.
 - **Restructured sections**: the old `OTHERS` section was split into two independent entries — **HELP** and **TOOLS**.
+- **Section descriptions**: every menu section now shows a short explanatory text at the bottom.
+- **Bezels restructured with tabs**: **All**, **NSO** (with sub-tabs per console: NES, SNES, GB, GBA, N64), and **PERSONAL** (auto-appears when you create non-NSO bezels).
+- **Custom icons** for most menu options, giving the interface a cleaner look.
+- **Audio Output Mode** selector (WASAPI / FFplay) in the **AUDIO** section.
+- **Hover Volume Sidebar** in the **AUDIO** section.
+- **Change to Auto ICC Profile** added to **Quick Options → SETTINGS**.
+- **Mute button** in the audio bar and clickable audio icon in the header.
 
 ### 12. Why does the menu sometimes close and reopen automatically?
 
@@ -412,6 +514,16 @@ You can trigger it from the footer of the sidebar, or from **Quick Options → C
 
 ### 🌐 Stream with OBS
 
+> **⚠️ IMPORTANT — read this first:**
+>
+> **The Stream Helper is only needed if you use the `FFplay Low Latency` audio mode.**
+>
+> If you are using the default **`WASAPI Audio Plugin`** mode, **you do NOT need the Stream Helper**. OBS, Discord, and other capture tools can capture MPV-SW-Capture's audio natively, without any third-party plugins.
+>
+> Use this tool only if:
+> - You have switched to **`FFplay Low Latency`** mode, **and**
+> - You want to stream or record MPV-SW-Capture through OBS with game audio.
+
 #### 1. What is the Stream Manager and what is it used for?
 
 The Stream Manager (MSCGUI) is a graphical tool from the `TOOLS_*.zip` package that helps you configure OBS Studio to capture MPV-SW-Capture. It automates the installation of the `win-capture-audio` plugin, sets up scene collections, adds the required sources (Window Capture + Audio Capture), and includes a Streamer Mode to hide OSD messages. It also lets you switch between OBS **Installed** and **Portable** modes.
@@ -427,7 +539,12 @@ When OBS is installed in a protected system folder like `C:\Program Files`, writ
 
 #### 4. How can I use MPV-SW-Capture with OBS more easily?
 
-The Stream Manager (from the `TOOLS_*.zip` package) automates the entire process. It installs the `win-capture-audio` plugin, creates a scene collection, or adds the required sources to an existing collection. For detailed step-by-step guides, see:
+It depends on your audio mode:
+
+- **WASAPI Audio Plugin (default)**: OBS captures MPV-SW-Capture's audio **natively**. Just add a **Window Capture** source pointing to `mpv.exe` — no plugins, no Stream Helper, no extra configuration needed.
+- **FFplay Low Latency**: use the **Stream Manager** (from the `TOOLS_*.zip` package). It automates the entire process: installs the `win-capture-audio` plugin, creates a scene collection, or adds the required sources to an existing collection.
+
+For detailed step-by-step guides, see:
 
 - [Advanced customization](https://tyras-sw.github.io/MPV-SW-Capture/#advanced)
 
@@ -593,3 +710,13 @@ You must close and reopen MPV-SW-Capture to see the changes.
 ### 4. I ran `MPV-SW-Capture_INSTALLER.vbs` and nothing happened. What's wrong?
 
 Most likely you're on a fresh install and `mpv.exe` doesn't exist yet. On a fresh install you must run **`1_INSTALLER_MSC_First-Usage.cmd`** first. See the **🛠️ Installation & Launchers** section for details.
+
+### 5. I switched to WASAPI mode but I don't hear any audio. What can I do?
+
+First, verify that you actually restarted MPV-SW-Capture after switching modes — the change only applies on the next launch.
+
+If after restarting you still have no audio:
+
+- Check that the correct audio device is selected in the **Setup** tool.
+- Verify that MPV-SW-Capture is not muted in the **Windows Volume Mixer**. In WASAPI mode, MPV-SW-Capture appears in the mixer under its own icon (not as `ffplay`).
+- If the issue persists, switch back to **FFplay Low Latency** mode from **AUDIO → AUDIO OUTPUT MODE**. Your system may not fully support the WASAPI plugin.
