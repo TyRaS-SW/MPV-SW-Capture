@@ -1118,7 +1118,7 @@ function Invoke-CleanInstall {
         New-Item -ItemType Directory -Path $oldDir -Force | Out-Null
 
         # 5. Move root -> OLDMSC (with minimal exclusions)
-        $keep = @('ffmpeg.exe','ffplay.exe','mpv.exe','_temp_installer')
+        $keep = @('ffmpeg.exe','ffplay.exe','mpv.exe','_temp_installer','_record','_screenshots')
         $items = Get-ChildItem -Path $script:SD -Force | Where-Object {
             $n = $_.Name
             if ($keep -contains $n) { return $false }
@@ -1786,12 +1786,12 @@ $card3.Controls.Add($chkCleanInstall)
 $script:chkCleanInstall = $chkCleanInstall
 
 # Extra Tools section
-$lExtraToolsTitle = New-Lbl (T 'ExtraToolsTitle') 14 136 400 14 $FontBold $script:ACCENT2
+$lExtraToolsTitle = New-Lbl (T 'ExtraToolsTitle') 14 130 400 14 $FontBold $script:ACCENT2
 $card3.Controls.Add($lExtraToolsTitle)
 
 $btnExtraInstall = New-Object System.Windows.Forms.Button
 $btnExtraInstall.Text = T 'ExtraToolsInstall'
-$btnExtraInstall.Location = [System.Drawing.Point]::new(14, 156)
+$btnExtraInstall.Location = [System.Drawing.Point]::new(14, 150)
 $btnExtraInstall.Size = [System.Drawing.Size]::new(200, 32)
 Style-Btn $btnExtraInstall $script:ACCENT2 $script:BG
 $card3.Controls.Add($btnExtraInstall)
@@ -1799,7 +1799,7 @@ $script:btnExtraInstall = $btnExtraInstall
 
 $chkExtraWithAll = New-Object System.Windows.Forms.CheckBox
 $chkExtraWithAll.Text      = T 'ExtraToolsCheckbox'
-$chkExtraWithAll.Location  = [System.Drawing.Point]::new(14, 191)
+$chkExtraWithAll.Location  = [System.Drawing.Point]::new(14, 183)
 $chkExtraWithAll.Size      = [System.Drawing.Size]::new(520, 22)
 $chkExtraWithAll.ForeColor = $script:TEXT
 $chkExtraWithAll.BackColor = [System.Drawing.Color]::Transparent
