@@ -1,5 +1,5 @@
-# Stream_MSCGUI.ps1 - By TyRaS-SW (Revised)
-# GUI Tool for OBS + win-capture-audio integration
+# FFPlayStream_MSCGUI.ps1 - By TyRaS-SW (Revised)
+# GUI Tool for OBS + win-capture-audio integration (FFPlay mode only)
 # EN/ES GUI - PowerShell 5+ (Windows 10/11)
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -74,7 +74,7 @@ $FontMono         = New-Object System.Drawing.Font("Consolas", 8, [System.Drawin
 # ============================================================
 $script:Lang = @{}
 $script:Lang["EN"] = @{
-    Title           = "MPV-SW-Capture - Stream Helper"
+    Title           = "MPV-SW-Capture - FFPlay Stream Helper"
     HeaderSub       = "OBS Streaming Setup  -  One-click integration for MPV-SW-Capture"
     HeaderNote      = "This tool downloads win-capture-audio and configures OBS automatically."
     LangLabel       = "GUI Language:"
@@ -135,7 +135,7 @@ $script:Lang["EN"] = @{
     StatusDone      = "Done!"
     StatusChecking  = "Checking..."
     StatusDownload  = "Downloading..."
-    LogReady        = "OBS Helper ready."
+    LogReady        = "FFPlay Stream Helper ready."
     LogDetecting    = "[OBS] Detecting installation..."
     LogFound        = "[OBS] Found at: {0}"
     LogFoundPortable = "[OBS] Found portable at: {0}"
@@ -167,14 +167,14 @@ $script:Lang["EN"] = @{
     LogAudioModeFfplay = "[Audio] Current audio mode: FFPLAY (compatible)."
     LogAudioModeWasapi = "[Audio] Current audio mode: WASAPI (NOT compatible with this tool)."
     ConfirmCloseOBS = "OBS Studio is currently running.`n`nPlease close OBS before continuing, as the configuration files need to be updated."
-    ConfirmTitle    = "MPV-SW-Capture Stream Manager"
+    ConfirmTitle    = "FFPlay Stream Helper"
     ConfirmUninstallPlugin = "Are you sure you want to uninstall the win-capture-audio plugin?`n`nThis will remove all plugin files from OBS."
     ConfirmRestore  = "Are you sure you want to restore OBS configuration from the selected backup?`n`nThis will overwrite all current scene collections and settings.`n`nIt's recommended to create a backup before restoring."
     MsgAdminRequired = "OBS is installed in a protected folder.{0}{0}To install the plugin, you need to run this program as Administrator.{0}{0}Please close and restart with Administrator rights."
     MsgAdminTitle = "Administrator Rights Required"
 }
 $script:Lang["ES"] = @{
-    Title           = "MPV-SW-Capture - Asistente de Stream"
+    Title           = "MPV-SW-Capture - FFPlay Stream Helper"
     HeaderSub       = "Configuracion para OBS  -  Integracion automatica para MPV-SW-Capture"
     HeaderNote      = "Esta herramienta descarga win-capture-audio y configura OBS automaticamente."
     LangLabel       = "Idioma del GUI:"
@@ -235,7 +235,7 @@ $script:Lang["ES"] = @{
     StatusDone      = "Completado!"
     StatusChecking  = "Verificando..."
     StatusDownload  = "Descargando..."
-    LogReady        = "OBS Helper listo."
+    LogReady        = "FFPlay Stream Helper listo."
     LogDetecting    = "[OBS] Detectando instalacion..."
     LogFound        = "[OBS] Encontrado en: {0}"
     LogFoundPortable = "[OBS] Encontrado portable en: {0}"
@@ -267,7 +267,7 @@ $script:Lang["ES"] = @{
     LogAudioModeFfplay = "[Audio] Modo de audio actual: FFPLAY (compatible)."
     LogAudioModeWasapi = "[Audio] Modo de audio actual: WASAPI (NO compatible con esta herramienta)."
     ConfirmCloseOBS = "OBS Studio se esta ejecutando.`n`nPor favor, cierra OBS antes de continuar, ya que los archivos de configuracion deben actualizarse."
-    ConfirmTitle    = "MPV-SW-Capture Stream Manager"
+    ConfirmTitle    = "FFPlay Stream Helper"
     ConfirmUninstallPlugin = "Esta seguro de desinstalar el plugin win-capture-audio?`n`nSe eliminaran todos los archivos del plugin de OBS."
     ConfirmRestore  = "Esta seguro de restaurar la configuracion de OBS desde el backup seleccionado?`n`nEsto sobrescribira todas las colecciones de escenas y configuraciones actuales.`n`nSe recomienda crear un backup antes de restaurar."
     MsgAdminRequired = "OBS esta instalado en una carpeta protegida.{0}{0}Para instalar el plugin, necesitas ejecutar este programa como Administrador.{0}{0}Por favor, cierra y reinicia con derechos de Administrador."
@@ -704,7 +704,7 @@ function Install-NewSceneCollection {
         if ($content) { Log-OK "[JSON] File size: $($content.Length) bytes" } else { Log-Error "[JSON] File appears empty after saving."; return $false }
         Ensure-GlobalIni -configPath $configPath -collectionName $collectionName
         Log-OK "[Scene] Scene collection installed successfully."
-        [System.Windows.Forms.MessageBox]::Show("Scene collection '$collectionName' installed successfully!`n`nIMPORTANT: To see this new collection in OBS, you must close and reopen OBS.`n`nThe Stream Manager will show it in the list immediately.", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        [System.Windows.Forms.MessageBox]::Show("Scene collection '$collectionName' installed successfully!`n`nIMPORTANT: To see this new collection in OBS, you must close and reopen OBS.`n`nThe FFPlay Stream Helper will show it in the list immediately.", "FFPlay Stream Helper", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         return $true
     } catch {
         Log-Error ([string]::Format((T "LogSceneErr"), $_.Exception.Message))
@@ -1072,7 +1072,7 @@ $row2Y = 300
 $cTopH = 265
 $cMidH = 400
 
-$script:IconPath = Join-Path $script:RootDir "data\icon\streammsc.ico"
+$script:IconPath = Join-Path $script:RootDir "data\icon\fshelpmsc.ico"
 $form=New-Object System.Windows.Forms.Form
 if (Test-Path $script:IconPath) { try { $form.Icon = New-Object System.Drawing.Icon($script:IconPath) } catch {} }
 $form.ShowInTaskbar = $true
@@ -1460,11 +1460,11 @@ $btnOBSOpen.Add_Click({
             Log-Info "[OBS] Opened OBS with WorkingDir: $workingDir"
         } catch {
             Log-Error "[OBS] Could not open OBS: $($_.Exception.Message)"
-            [System.Windows.Forms.MessageBox]::Show("Could not open OBS automatically.`n`nPlease open OBS manually from:`n$obsExe", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+            [System.Windows.Forms.MessageBox]::Show("Could not open OBS automatically.`n`nPlease open OBS manually from:`n$obsExe", "FFPlay Stream Helper", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
         }
     } else {
         Log-Error "[OBS] OBS executable was not found."
-        [System.Windows.Forms.MessageBox]::Show("OBS was not found. Please use 'Browse OBS Folder' to select the OBS installation folder.", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+        [System.Windows.Forms.MessageBox]::Show("OBS was not found. Please use 'Browse OBS Folder' to select the OBS installation folder.", "FFPlay Stream Helper", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
     }
 })
 
@@ -1520,7 +1520,7 @@ $btnPluginManual.Add_Click({
     try { Start-Process $url }
     catch {
         Log-Error "[Plugin] Could not open browser: $($_.Exception.Message)"
-        [System.Windows.Forms.MessageBox]::Show("Could not open browser.`n`nPlease visit: $url", "MPV-SW-Capture Stream Manager", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        [System.Windows.Forms.MessageBox]::Show("Could not open browser.`n`nPlease visit: $url", "FFPlay Stream Helper", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     }
 })
 

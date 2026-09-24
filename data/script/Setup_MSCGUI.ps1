@@ -178,14 +178,14 @@ function Set-HoverVolumeSetting([string]$value) {
 }
 
 # ============================================================
-#  MENU LANGUAGE (scripts\lang\OSDLang.dat + language_list.dat)
+#  MENU LANGUAGE (data/lang\OSDLang.dat + language_list.dat)
 #  - OSDLang.dat: the currently active language code (1 word).
 #  - language_list.dat: the list of available language codes.
 #  The overlay reads OSDLang.dat at runtime and translates
 #  menu.conf in memory. menu.conf itself is never modified.
 # ============================================================
 function Get-MenuLanguage {
-    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    $OSDLangFile = Join-Path $script:RootDir "data/lang\OSDLang.dat"
     if (Test-Path $OSDLangFile) {
         try {
             $content = [System.IO.File]::ReadAllText($OSDLangFile, [System.Text.Encoding]::UTF8)
@@ -197,14 +197,14 @@ function Get-MenuLanguage {
 }
 
 function Set-MenuLanguage([string]$lang) {
-    $OSDLangFile = Join-Path $script:RootDir "scripts\lang\OSDLang.dat"
+    $OSDLangFile = Join-Path $script:RootDir "data/lang\OSDLang.dat"
     $dir = Split-Path -Parent $OSDLangFile
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     [System.IO.File]::WriteAllText($OSDLangFile, $lang, [System.Text.Encoding]::UTF8)
 }
 
 function Get-AvailableMenuLanguages {
-    $listFile = Join-Path $script:RootDir "scripts\lang\language_list.dat"
+    $listFile = Join-Path $script:RootDir "data/lang\language_list.dat"
     $fallback = @("en", "es")
     if (-not (Test-Path $listFile)) { return $fallback }
     try {
@@ -332,6 +332,7 @@ $script:Lang["EN"] = @{
     S5AutoCheckTitle = "AUTO-CHECK FOR UPDATES ON STARTUP"
     S5AudioModeTitle = "AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT"
     S5HoverVolumeTitle = "AUTOSTART WITH HOVER VOLUME SIDEBAR"
+    S5PeriodTitle = "WASAPI PERIOD MODE"
     S5No        = "No"
     S5Yes       = "Yes"
     S5BorderOnly = "Only border"
@@ -340,7 +341,7 @@ $script:Lang["EN"] = @{
     StatusReady = "Ready. Scan devices then click Apply Setup."
     ApplyBtn    = "Apply Setup"
     ErrSelect   = "Select video and audio devices first!"
-    DoneMsg     = "Setup applied successfully!`n`nFiles updated:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n  - data\menu\audio_mode.txt`n  - data\menu\hover_volume.txt`n`nNote: menu.conf and the overlay language are now handled by scripts\lang\OSDLang.dat, and are NOT modified by Setup.`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
+    DoneMsg     = "Setup applied successfully!`n`nIf shortcut creation was enabled, shortcuts for MPV-SW-Capture were also created on the Desktop and in the root folder."
     DoneTitle   = "MPV-SW-Capture Setup"
     DoneStatus  = "Setup complete! All files updated."
     ErrStatus   = "Error: {0}"
@@ -389,8 +390,9 @@ $script:Lang["ES"] = @{
     S5OsdTitle  = "OCULTAR MENSAJES OSD AL INICIO (Modo Streamer)"
     S5BorderTitle = "BORDE VENTANA+BARRA DE TITULO AL INICIO"
     S5AutoCheckTitle = "VERIFICAR ACTUALIZACIONES AL INICIO"
-    S5AudioModeTitle = "INICIO AUTOMATICO CON LA SIGUIENTE SALIDA DE AUDIO"
+    S5AudioModeTitle = "INICIO AUTOMATICO CON ESTA SALIDA DE AUDIO"
     S5HoverVolumeTitle = "INICIO AUTOMATICO CON BARRA DE VOLUMEN FLOTANTE"
+    S5PeriodTitle = "MODO DE PERIODO WASAPI"
     S5No        = "No"
     S5Yes       = "Si"
     S5BorderOnly = "Solo borde"
@@ -399,7 +401,7 @@ $script:Lang["ES"] = @{
     StatusReady = "Listo. Busca dispositivos y luego haz clic en Aplicar."
     ApplyBtn    = "Aplicar"
     ErrSelect   = "Selecciona los dispositivos de video y audio primero!"
-    DoneMsg     = "Configuracion aplicada correctamente!`n`nArchivos actualizados:`n  - MPV-SW-Capture.bat`n  - scripts\usb3.lua`n  - mpv.conf`n  - scripts\autocompress.lua`n  - scripts\shader_init.lua`n  - scripts\record.lua`n  - data\menu\audio_mode.txt`n  - data\menu\hover_volume.txt`n`nNota: menu.conf y el idioma del overlay ahora se manejan desde scripts\lang\OSDLang.dat, y NO son modificados por el Setup.`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
+    DoneMsg     = "Configuracion aplicada correctamente!`n`nSi la opcion de acceso directo estaba activada, tambien se crearon accesos directos de MPV-SW-Capture en el Escritorio y en la carpeta raiz."
     DoneTitle   = "Configuracion MPV-SW-Capture"
     DoneStatus  = "Configuracion completa! Todos los archivos actualizados."
     ErrStatus   = "Error: {0}"
@@ -534,7 +536,7 @@ function New-CardXY(
 #  FORM & CARDS
 # ============================================================
 $formW   = 1140
-$formH   = 550
+$formH   = 620
 $headerH = 68
 
 $leftX   = 20
@@ -544,10 +546,10 @@ $rightX  = $leftX + $cardW + $colGap
 
 $row1Y   = 10
 $row2Y   = 170
-$row3Y   = 380
+$row3Y   = 440
 
 $cTopH    = 150
-$cMidH    = 200
+$cMidH    = 260
 $cBottomH = 92
 
 $form = New-Object System.Windows.Forms.Form
@@ -718,7 +720,17 @@ $rbHoverVolumeYes  = New-RB (T "S5Yes") 420 3 50
 $rbHoverVolumeNo.Checked = $true
 $pnlHoverVolume.Controls.AddRange(@($lHoverVolumeLabel, $rbHoverVolumeNo, $rbHoverVolumeYes))
 
-$card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck, $pnlAudioMode, $pnlHoverVolume))
+# >>> NEW: WASAPI period mode panel (below hover volume).
+$pnlPeriod = New-Pnl 14 196 520 50 $script:CARD
+$lPeriodLabel = New-Lbl (T "S5PeriodTitle") 0 2 520 16 $FontSmallBold $script:ACCENT3
+$rbPeriodMin  = New-RB "minimum"     4   24 100
+$rbPeriodFund = New-RB "fundamental" 110 24 120
+$rbPeriodDef  = New-RB "default"     240 24 90
+$rbPeriodMax  = New-RB "maximum"     340 24 100
+$rbPeriodMin.Checked = $true
+$pnlPeriod.Controls.AddRange(@($lPeriodLabel, $rbPeriodMin, $rbPeriodFund, $rbPeriodDef, $rbPeriodMax))
+
+$card5.Controls.AddRange(@($pnlSc, $pnlIcc, $pnlOsd, $pnlBorder, $pnlAutoCheck, $pnlAudioMode, $pnlHoverVolume, $pnlPeriod))
 
 # --- Card 6: Actions ---
 # ComboBox (left) + Button (right) for choosing the overlay language.
@@ -812,6 +824,7 @@ function Apply-Lang([string]$lang) {
     $lAutoCheckLabel.Text = T "S5AutoCheckTitle"
     $lAudioModeLabel.Text = T "S5AudioModeTitle"
     $lHoverVolumeLabel.Text = T "S5HoverVolumeTitle"
+    $lPeriodLabel.Text  = T "S5PeriodTitle"   # >>> NEW
     $rbScNo.Text        = T "S5No"
     $rbScYes.Text       = T "S5Yes"
     $rbIccNo.Text       = T "S5No"
@@ -825,7 +838,8 @@ function Apply-Lang([string]$lang) {
     $rbAutoCheckYes.Text = T "S5Yes"
     $rbHoverVolumeNo.Text = T "S5No"
     $rbHoverVolumeYes.Text = T "S5Yes"
-    # WASAPI / FFPLAY labels are the same in both languages.
+    # WASAPI / FFPLAY / minimum / fundamental / default / maximum are
+    # universal labels and stay the same in both languages.
 
     switch ($script:LastStatusState) {
         "ready"          { $lStatus.ForeColor = $script:MUTED;   $lStatus.Text = T "StatusReady" }
@@ -990,7 +1004,7 @@ $btnScan.Add_Click({
 # ============================================================
 #  MENU LANGUAGE BUTTON
 #  Writes the selected language from the ComboBox into
-#  scripts\lang\OSDLang.dat. The overlay reads it at runtime
+#  data/lang\OSDLang.dat. The overlay reads it at runtime
 #  and translates menu.conf in memory. menu.conf is NEVER modified.
 #  After changing, restart MPV (or send script-message reload-lang)
 #  so the overlay picks up the new language.
@@ -1190,6 +1204,30 @@ mp.register_script_message("toggle-osd", toggle_osd)
         $hoverValue = if ($rbHoverVolumeYes.Checked) { "yes" } else { "no" }
         Set-HoverVolumeSetting $hoverValue
 
+        # >>> NEW: WASAPI period mode (data\MPV-SW-Capture.bat) ---
+        # Writes the MSC_AUDIO_PERIOD value into the launcher. If the line
+        # does not exist yet, it is inserted right after the audio_device
+        # assignment so the user's .bat stays readable.
+        $periodValue = if     ($rbPeriodMin.Checked)  { "minimum" } `
+                  elseif ($rbPeriodFund.Checked) { "fundamental" } `
+                  elseif ($rbPeriodDef.Checked)  { "default" } `
+                  else                           { "maximum" }
+
+        $batPath = Join-Path $root "data\MPV-SW-Capture.bat"
+        if (Test-Path $batPath) {
+            $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
+            if ($batContent -match 'set "MSC_AUDIO_PERIOD=[^"]*"') {
+                $batContent = $batContent -replace 'set "MSC_AUDIO_PERIOD=[^"]*"', ('set "MSC_AUDIO_PERIOD=' + $periodValue + '"')
+            } else {
+                $insert = ':: --- WASAPI capture period (plugin audio mode only) ---' + "`r`n" +
+                          ':: Options: minimum | fundamental | default | maximum' + "`r`n" +
+                          ":: If removed or empty, the DLL falls back to 'minimum'." + "`r`n" +
+                          'set "MSC_AUDIO_PERIOD=' + $periodValue + '"'
+                $batContent = $batContent -replace '(?i)(SET "audio_device=[^"]*")', ('$1' + "`r`n`r`n" + $insert)
+            }
+            [System.IO.File]::WriteAllText($batPath, $batContent, [System.Text.Encoding]::UTF8)
+        }
+
         # --- Shortcuts ---
         if ($rbScYes.Checked) {
             $targetExe = Join-Path $root "mpv.exe"
@@ -1270,6 +1308,27 @@ if ((Get-HoverVolumeSetting) -eq "yes") {
     $rbHoverVolumeYes.Checked = $true
 } else {
     $rbHoverVolumeNo.Checked = $true
+}
+
+# >>> NEW: Load current WASAPI period mode from the launcher (default: minimum)
+$periodMode = "minimum"
+$batPath = Join-Path $script:RootDir "data\MPV-SW-Capture.bat"
+if (Test-Path $batPath) {
+    try {
+        $batContent = [System.IO.File]::ReadAllText($batPath, [System.Text.Encoding]::UTF8)
+        if ($batContent -match 'set "MSC_AUDIO_PERIOD=([^"]*)"') {
+            $candidate = $matches[1].Trim().ToLower()
+            if ($candidate -in @("minimum","fundamental","default","maximum")) {
+                $periodMode = $candidate
+            }
+        }
+    } catch {}
+}
+switch ($periodMode) {
+    "fundamental" { $rbPeriodFund.Checked = $true }
+    "default"     { $rbPeriodDef.Checked  = $true }
+    "maximum"     { $rbPeriodMax.Checked  = $true }
+    default       { $rbPeriodMin.Checked  = $true }
 }
 
 $savedLang = Load-GUILanguage

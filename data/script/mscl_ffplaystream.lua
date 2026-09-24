@@ -35,12 +35,12 @@ local function launch_stream_helper()
         return false
     end
 
-    local ps1_path = root .. "/data/script/Stream_MSCGUI.ps1"
+    local ps1_path = root .. "/data/script/FFPlayStream_MSCGUI.ps1"
     local file = io.open(ps1_path, "r")
 
     if not file then
         msg.error("[mscl_stream] Script not found: " .. ps1_path)
-        mp.osd_message("Stream Helper error: Stream_MSCGUI.ps1 not found", 5)
+        mp.osd_message("Stream Helper error: FFPlayStream_MSCGUI.ps1 not found", 5)
         return false
     end
 

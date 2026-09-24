@@ -14,7 +14,7 @@ local function root()
     return (mp.get_property("config-path") or "."):gsub("\\", "/")
 end
 
-local settings = dofile(root() .. "/scripts/modules/msc_settings.lua")
+local settings = dofile(root() .. "/data/modules/msc_settings.lua")
 
 -- ------------------------------------------------------------
 -- OSD helper (mirrors check_version.lua's loading pattern)
@@ -76,7 +76,7 @@ end
 local MM, MM_SORTED = {}, {}
 
 local function current_lang_code()
-    local f = io.open(root() .. "/scripts/lang/OSDLang.dat", "r")
+    local f = io.open(root() .. "/data/lang/OSDLang.dat", "r")
     if not f then return "en" end
     local s = (f:read("*a") or ""):gsub("^\239\187\191", ""):gsub("^%s+", ""):gsub("%s+$", "")
     f:close()
@@ -104,7 +104,7 @@ end
 
 local function reload_messages()
     local lang = current_lang_code()
-    local base = root() .. "/scripts/lang/"
+    local base = root() .. "/data/lang/"
     MM = load_kv(base .. "MENUMSG_" .. lang .. ".dat")
     local en = load_kv(base .. "MENUMSG_en.dat")
     for k, v in pairs(en) do if MM[k] == nil then MM[k] = v end end

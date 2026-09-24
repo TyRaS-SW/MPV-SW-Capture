@@ -59,9 +59,7 @@ echo.
 if exist "%SETUP_LINK%" (
     echo The initial installation is complete.
     echo.
-    echo Press any key to open MPV-SW-Capture_SETUP...
-    pause >nul
-
+    echo Now opening MPV-SW-Capture_SETUP...
     start "" "%SETUP_LINK%"
 ) else (
     echo MPV-SW-Capture_SETUP.lnk was not found.

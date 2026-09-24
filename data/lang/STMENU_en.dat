@@ -1,0 +1,107 @@
+# STMENU_en.dat - By TyRaS-SW - English strings for StreamMenu_MSC.ps1
+# Same key=value format as ASMENU_<lang>.dat.
+# Do not translate keys; only translate the right side of '='.
+
+# --- Header ---
+StreamMenuTitle=STREAM MENU
+StreamMenuSubtitle=External control for MPV-SW-Capture
+
+# --- Sliders ---
+Volume=VOLUME
+AudioBoost=AUDIO BOOST
+
+# --- Lock / OSD ---
+LockMenu=Lock Menu
+UnlockMenu=Unlock Menu
+HideOSD=Hide OSD Messages
+ShowOSD=Show OSD Messages
+
+# --- Action buttons ---
+Screenshot=Screenshot
+Record=Record
+InfoStream=Info Stream
+CleanALL=Clean ALL
+ShowMenu=Show Menu
+ReloadConfig=Reload Config
+
+# --- Open / Close ---
+OpenMPV=Open MPV-SW-Capture
+CloseMPV=Close MPV-SW-Capture
+
+# --- Toggles ---
+AutoICC=Auto ICC
+AutoICCOn=Auto ICC: ON
+Fullscreen=Fullscreen
+FullscreenOn=Fullscreen: ON
+OnTop=On Top
+OnTopOn=On Top: ON
+FitFull=Fit Fullscreen
+FitFullOn=Fit Fullscreen: ON
+FillScreen=Fill Screen
+FillScreenOn=Fill Screen ✓
+
+# --- Position + Shader + Shapes + Crops + Bezels ---
+WindowPosition=WINDOW POSITION
+Shader=SHADER
+Shapes=SHAPES
+Crops=CROPS
+Bezels=BEZELS
+Apply=Apply
+
+# --- Folder shortcuts + Tools ---
+OpenRecordings=Open Recordings
+OpenScreenshots=Open Screenshots
+CreateShortcut=Create Desktop Shortcut
+OpenTools=Open TOOLS
+
+# --- Status / log ---
+Connected=Connected
+Connecting=Connecting...
+Disconnected=Disconnected (waiting for mpv)
+MPVClosed=MPV closed
+NoShaderSelected=No shader selected
+NoShapeSelected=No shape selected
+NoCropSelected=No crop selected
+NoBezelSelected=No bezel selected
+AppliedShader=Applied shader
+AppliedShape=Applied shape
+AppliedCrop=Applied crop
+AppliedBezel=Applied bezel
+ConfigReloaded=Config reloaded
+CleanALLApplied=Clean ALL applied
+ScreenshotSaved=Screenshot saved
+RecordToggled=Record toggled
+ASSMenuToggled=ASS menu toggled
+InfoToggled=Info toggled
+LanguageChanged=Language changed
+OpenedRecordings=Opened recordings folder
+OpenedScreenshots=Opened screenshots folder
+RecordingsNotFound=Recordings folder not found
+ScreenshotsNotFound=Screenshots folder not found
+OpenedTools=Opened TOOLS folder
+ToolsNotFound=tools folder not found
+ShortcutCreated=Desktop shortcut created
+ShortcutFailed=Could not create shortcut
+ScriptNotFound=StreamMenu_MSC.ps1 not found
+LaunchedMPV=Launched MPV-SW-Capture
+LaunchedMPVExe=Launched mpv.exe
+MPVNotFound=mpv.exe not found
+
+# --- Window positions ---
+PosTopLeft=Position: Top Left
+PosTopCenter=Position: Top Center
+PosTopRight=Position: Top Right
+PosCenterLeft=Position: Center Left
+PosCenter=Position: Center
+PosCenterRight=Position: Center Right
+PosBottomLeft=Position: Bottom Left
+PosBottomCenter=Position: Bottom Center
+PosBottomRight=Position: Bottom Right
+FocusMPV=Focus MPV
+MPVFocused=MPV brought to front
+MPVFocusFailed=Could not focus MPV
+
+# --- Recording ---
+RecordingHintClose=Recording in progress. Press Record again to stop, then wait for processing to finish before closing.
+ProcessingHintClose=Processing recording. Please wait before closing.
+CannotCloseWhileRecording=Cannot close: recording or processing in progress.

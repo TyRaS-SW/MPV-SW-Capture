@@ -26,6 +26,10 @@ autocompress_merge_error=❌ Error while merging recording
 autocompress_recording_label=🔴 RECORDING
 autocompress_finishing_label=⏳ Finishing Recording Video, please wait!
 autocompress_done_label=✅ Finished!
+autocompress_quit_blocked=Recording in progress. Stop recording first.
+autocompress_emergency_save=Emergency save triggered. Merge will complete after close.
+autocompress_recovered=Recovered interrupted recording.
+autocompress_recover_failed=Could not recover recording. Files deleted.
 
 # ============================================================
 #  CHECK VERSION
@@ -58,7 +62,8 @@ motioninterp_off=Motion Interpolation: OFF
 # ============================================================
 toolslauncher_bezel_name=Bezel Manager
 toolslauncher_video_name=Video Manager
-toolslauncher_stream_name=Stream Helper
+toolslauncher_ffplaystream_name=FFPlay Stream Helper
+toolslauncher_streammenu_name=Stream Menu
 toolslauncher_install_name=Installer
 toolslauncher_setup_name=Setup
 toolslauncher_opening=Opening %s

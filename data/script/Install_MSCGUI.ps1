@@ -8,26 +8,6 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::SetCompatibleTextRenderingDefault($false)
 
 # ============================================================
-#  SHORTCUT CREATOR (Pure PowerShell, no C#)
-# ============================================================
-function New-Shortcut {
-    param([string]$lnkPath, [string]$targetPath, [string]$workingDir, [string]$iconPath, [int]$iconIndex = 0)
-    try {
-        $ws = New-Object -ComObject WScript.Shell
-        $sc = $ws.CreateShortcut($lnkPath)
-        $sc.TargetPath = $targetPath
-        $sc.WorkingDirectory = $workingDir
-        if ($iconPath) {
-            $sc.IconLocation = "$iconPath, $iconIndex"
-        }
-        $sc.Save()
-        return $true
-    } catch {
-        return $false
-    }
-}
-
-# ============================================================
 #  ROBUST PATH DETECTION
 # ============================================================
 function Get-ScriptDir {
@@ -38,6 +18,7 @@ function Get-ScriptDir {
 
 function Get-RootDir {
     $scriptDir = Get-ScriptDir
+    # If the script sits inside data\script\, walk two levels up to find root.
     if ((Split-Path $scriptDir -Leaf) -eq 'script' -and (Split-Path (Split-Path $scriptDir -Parent) -Leaf) -eq 'data') {
         $root = Split-Path -Parent (Split-Path -Parent $scriptDir)
         return $root
@@ -46,7 +27,6 @@ function Get-RootDir {
 }
 
 $script:RootDir = Get-RootDir
-$script:ScriptDir = Get-ScriptDir
 
 # ============================================================
 #  LANGUAGE PERSISTENCE
@@ -121,9 +101,7 @@ $FontBold         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawi
 $FontBtn          = New-Object System.Drawing.Font("Segoe UI", 10, [System.Drawing.FontStyle]::Bold)
 $FontSmall        = New-Object System.Drawing.Font("Segoe UI",  8, [System.Drawing.FontStyle]::Regular)
 $FontBtnSmall     = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Bold)
-$FontNote         = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Regular)
 $FontSectionTitle = New-Object System.Drawing.Font("Segoe UI",  9, [System.Drawing.FontStyle]::Bold)
-$FontLangBtn      = New-Object System.Drawing.Font("Segoe UI", 13, [System.Drawing.FontStyle]::Bold)
 $FontMono         = New-Object System.Drawing.Font("Consolas",  8, [System.Drawing.FontStyle]::Regular)
 
 # ============================================================
@@ -207,13 +185,14 @@ $script:Lang["EN"] = @{
     LogMySWNotFound   = "[MPV-SW]  No .zip asset found in release."
     Log7zError        = "[7zr]     Could not download 7zr.exe: {0}"
     LogApiError       = "GitHub API error for {0}: {1}"
+    LogForced         = "Force reinstall requested. Reinstalling all components."
     ResLatest         = "You have the latest version installed!"
     ResUpdate         = "You should update to the latest version."
     ResNewer          = "You have a newer version not available yet. You should not update."
     ResMissing        = "You do not have any version installed. You must install!"
     ResUnknown        = "Version not checked yet."
     SumUnknown        = "Update unknown"
-    LogRateLimit      = "GitHub API rate limit reached. Add scripts/.github-token.txt or set GITHUB_TOKEN."
+    LogRateLimit      = "GitHub API rate limit reached. Add data/.github-token.txt or set GITHUB_TOKEN."
     StatusRateLimit   = "API limit reached. Wait ~1 hour or use Manual Install."
     StatusRateLimitInline = "API limit reached. Wait ~1 hour or use MANUAL Install."
     SumLatest         = "OK Latest version installed"
@@ -231,8 +210,18 @@ $script:Lang["EN"] = @{
     ExtraToolsNotFound = "No TOOLS ZIP found in the latest release."
     ExtraToolsAlreadyInstalled = "Extra Tools are already installed."
     ExtraToolsLogInstall = "[ExtraTools] Installing..."
-    ExtraToolsLogDone = "[ExtraTools] Done."
     ExtraToolsLogError = "[ExtraTools] Error: {0}"
+    # --- Clean install ---
+    CleanInstallCheckbox   = "Clean install (move old files to OLDMSC)"
+    CleanInstallDoneTitle  = "Clean install completed"
+    CleanInstallDoneText   = "Clean install completed successfully.`r`n`r`nYour old files were backed up to:`r`n{0}`r`n`r`nPlease close and reopen the installer to use the new version."
+    CleanInstallLogMoved   = "[Clean] {0} items moved to {1}"
+    CleanInstallLogNothing = "[Clean] Nothing to move."
+    CleanInstallLogFailed  = "[Clean] Could not move {0}: {1}"
+    CleanInstallLogToolsBackup  = "[Clean] Backed up {0} tools config files."
+    CleanInstallLogToolsRestore = "[Clean] Restored {0} tools config files."
+    CleanInstallLogDone    = "[Clean] Clean install completed. Old files at: {0}"
+    CleanInstallLogError   = "[Clean] Error: {0}"
 }
 $script:Lang["ES"] = @{
     Title         = "MPV-SW-Capture - Instalador / Actualizador"
@@ -251,7 +240,6 @@ $script:Lang["ES"] = @{
     S1BtnInstall  = "Instalar / Actualizar"
     S1ModeStable  = "Estable"
     S1ModeDaily   = "Diario"
-    S1BtnManual   = "MANUAL"
     S2Title       = "INSTALAR O ACTUALIZAR mpv"
     S2Desc        = "Descarga el ultimo build de zhongfly/mpv-winbuild (GitHub)."
     S2Installed   = "Instalada:"
@@ -261,7 +249,6 @@ $script:Lang["ES"] = @{
     S2Checking    = "Verificando..."
     S2BtnCheck    = "Verificar"
     S2BtnInstall  = "Instalar / Actualizar"
-    S2BtnManual   = "MANUAL"
     S2VariantLbl  = "Variante:"
     S2V1          = "x86_64  (64-bit, todos CPUs)"
     S2V2          = "x86_64-v3  (64-bit, Intel Haswell 2013+/AMD Excavator+)"
@@ -275,7 +262,6 @@ $script:Lang["ES"] = @{
     S3Checking    = "Verificando..."
     S3BtnCheck    = "Verificar"
     S3BtnInstall  = "Instalar / Actualizar"
-    S3BtnManual   = "MANUAL"
     S4Title       = "VERSIONES INSTALADAS"
     S4Label       = "Versiones instaladas y estado de actualizacion:"
     ActCheckAll   = "Verificar Todo"
@@ -314,13 +300,14 @@ $script:Lang["ES"] = @{
     LogMySWNotFound   = "[MPV-SW]  No se encontro asset .zip en la release."
     Log7zError        = "[7zr]     No se pudo descargar 7zr.exe: {0}"
     LogApiError       = "Error de API de GitHub para {0}: {1}"
+    LogForced         = "Reinstalacion forzada solicitada. Reinstalando todos los componentes."
     ResLatest         = "Tienes la ultima version instalada!"
     ResUpdate         = "Deberias actualizar a la ultima version."
     ResNewer          = "Tienes una version mas nueva aun no disponible. No deberias actualizar."
     ResMissing        = "No tienes ninguna version instalada. Debes instalar!"
     ResUnknown        = "Version aun no verificada."
     SumUnknown        = "Actualizacion desconocida"
-    LogRateLimit      = "Se alcanzo el limite de GitHub API. Agrega scripts/.github-token.txt o define GITHUB_TOKEN."
+    LogRateLimit      = "Se alcanzo el limite de GitHub API. Agrega data/.github-token.txt o define GITHUB_TOKEN."
     StatusRateLimit   = "Limite API alcanzado. Espera ~1 hora o usa Manual Install."
     StatusRateLimitInline = "Limite API alcanzado. Espera ~1 hora o usa Instalacion MANUAL."
     SumLatest         = "OK Ultima version instalada"
@@ -338,8 +325,18 @@ $script:Lang["ES"] = @{
     ExtraToolsNotFound = "No se encontró ningún ZIP de TOOLS en la última release."
     ExtraToolsAlreadyInstalled = "Las Herramientas Adicionales ya están instaladas."
     ExtraToolsLogInstall = "[ExtraTools] Instalando..."
-    ExtraToolsLogDone = "[ExtraTools] Completado."
     ExtraToolsLogError = "[ExtraTools] Error: {0}"
+    # --- Clean install ---
+    CleanInstallCheckbox   = "Instalacion limpia (mover archivos viejos a OLDMSC)"
+    CleanInstallDoneTitle  = "Instalacion limpia completada"
+    CleanInstallDoneText   = "Instalacion limpia completada correctamente.`r`n`r`nTus archivos viejos fueron respaldados en:`r`n{0}`r`n`r`nCerra y reabri el instalador para usar la version nueva."
+    CleanInstallLogMoved   = "[Clean] {0} elementos movidos a {1}"
+    CleanInstallLogNothing = "[Clean] Nada para mover."
+    CleanInstallLogFailed  = "[Clean] No se pudo mover {0}: {1}"
+    CleanInstallLogToolsBackup  = "[Clean] {0} archivos de configuracion de tools respaldados."
+    CleanInstallLogToolsRestore = "[Clean] {0} archivos de configuracion de tools restaurados."
+    CleanInstallLogDone    = "[Clean] Instalacion limpia completada. Archivos viejos en: {0}"
+    CleanInstallLogError   = "[Clean] Error: {0}"
 }
 
 $script:CurrentLang = "EN"
@@ -348,32 +345,32 @@ function T { param([string]$key) return $script:Lang[$script:CurrentLang][$key] 
 # ============================================================
 #  PATHS & APIS
 # ============================================================
-$script:SD = $script:RootDir
-$script:ToolsDir = Join-Path $script:SD "tools"
-$script:TempDir     = Join-Path $script:RootDir "_temp_installer"
-$script:VersionFile = Join-Path $script:RootDir "scripts\.installed-versions.json"
-$script:GitHubTokenFile = Join-Path $script:RootDir "scripts\.github-token.txt"
+$script:SD               = $script:RootDir
+$script:TempDir          = Join-Path $script:RootDir "_temp_installer"
+$script:VersionFile      = Join-Path $script:RootDir "data\.installed-versions.json"
+$script:GitHubTokenFile  = Join-Path $script:RootDir "data\.github-token.txt"
 
 $FFmpegApiUrl       = "https://api.github.com/repos/GyanD/codexffmpeg/releases?per_page=10"
 $FFmpegStableApiUrl = "https://api.github.com/repos/GyanD/codexffmpeg/releases/latest"
-$MpvApiUrl    = "https://api.github.com/repos/zhongfly/mpv-winbuild/releases/latest"
-$MyRepoApiUrl = "https://api.github.com/repos/TyRaS-SW/MPV-SW-Capture/releases/latest"
-$FFmpegLatestPage = "https://github.com/GyanD/codexffmpeg/releases/latest"
+$MpvApiUrl          = "https://api.github.com/repos/zhongfly/mpv-winbuild/releases/latest"
+$MyRepoApiUrl       = "https://api.github.com/repos/TyRaS-SW/MPV-SW-Capture/releases/latest"
+$FFmpegLatestPage   = "https://github.com/GyanD/codexffmpeg/releases/latest"
 $FFmpegReleasesPage = "https://github.com/GyanD/codexffmpeg/releases"
-$MpvLatestPage    = "https://github.com/zhongfly/mpv-winbuild/releases/latest"
-$MyLatestPage     = "https://github.com/TyRaS-SW/MPV-SW-Capture/releases/latest"
+$MpvLatestPage      = "https://github.com/zhongfly/mpv-winbuild/releases/latest"
+$MyLatestPage       = "https://github.com/TyRaS-SW/MPV-SW-Capture/releases/latest"
 
-$script:CacheFFVersion = $null
-$script:CacheFFUrl = $null
-$script:CacheFFMode = $null
-$script:CacheMpvRelease = $null
-$script:CacheMyRelease = $null
-$script:CheckedFFAvailable = $null
+$script:CacheFFVersion      = $null
+$script:CacheFFUrl          = $null
+$script:CacheFFMode         = $null
+$script:CacheMpvRelease     = $null
+$script:CacheMyRelease      = $null
+$script:CheckedFFAvailable  = $null
 $script:CheckedMpvAvailable = $null
-$script:CheckedMyAvailable = $null
-$script:GitHubRateLimited = $false
+$script:CheckedMyAvailable  = $null
+$script:GitHubRateLimited   = $false
 $script:ExtraToolsZipPattern = "*TOOLS*.zip"
-$script:Cached7zrExe = $null
+$script:Cached7zrExe        = $null
+$script:CleanInstallDone    = $null
 
 function Get-GitHubToken {
     if ($env:GITHUB_TOKEN) { return $env:GITHUB_TOKEN.Trim() }
@@ -491,13 +488,14 @@ function New-CardXY([System.Windows.Forms.Control]$parent,
 #  VERSION FILE HELPERS
 # ============================================================
 function Get-InstalledVersions {
-    $scriptsDir = Join-Path $script:SD "scripts"
-    if (-not (Test-Path $scriptsDir)) { New-Item -ItemType Directory -Path $scriptsDir | Out-Null }
+    $dataDir = Join-Path $script:SD "data"
+    if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir | Out-Null }
     if (Test-Path $script:VersionFile) {
         try { return Get-Content $script:VersionFile -Raw -Encoding UTF8 | ConvertFrom-Json } catch {}
     }
     return [PSCustomObject]@{ ffmpeg=""; mpv=""; mpvVariant=""; mpvsw=""; tools="" }
 }
+
 function Save-InstalledVersions {
     param(
         [string]$ffmpeg,
@@ -522,12 +520,14 @@ function Save-InstalledVersions {
     if ($PSBoundParameters.ContainsKey('tools')) {
         $e | Add-Member -Force -NotePropertyName tools -NotePropertyValue $tools
     }
-    $sd = Join-Path $script:SD "scripts"
+    $sd = Join-Path $script:SD "data"
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
     $e | ConvertTo-Json | Set-Content $script:VersionFile -Encoding UTF8
 }
 
 function Get-MpvSwOfflineVersion {
+    # The current MPV-SW-Capture version is stored as a comment near the
+    # top of mpv.conf, e.g. "# v5.2.0".
     $conf = Join-Path $script:SD 'mpv.conf'
     if (-not (Test-Path $conf)) { return $null }
     try {
@@ -557,11 +557,8 @@ function Get-FFmpegOfflineVersion {
 function Sync-FFmpegVersionFromOffline {
     $offline = Get-FFmpegOfflineVersion
     if (-not $offline) { return $false }
+    if ($offline -eq '__present__') { return $false }
     $json = Get-InstalledVersions
-    if ($offline -eq '__present__') {
-        if ($json.ffmpeg -and $json.ffmpeg -ne '') { return $false }
-        return $false
-    }
     $offlineCanon = Get-FFmpegDisplayVersion $offline
     if (-not $offlineCanon) { $offlineCanon = $offline }
     if ($json.ffmpeg -eq $offlineCanon) { return $false }
@@ -584,11 +581,8 @@ function Get-MpvOfflineVersion {
 function Sync-MpvExeVersionFromOffline {
     $offline = Get-MpvOfflineVersion
     if (-not $offline) { return $false }
+    if ($offline -eq '__present__') { return $false }
     $json = Get-InstalledVersions
-    if ($offline -eq '__present__') {
-        if ($json.mpv -and $json.mpv -ne '') { return $false }
-        return $false
-    }
     if ($json.mpv -eq $offline) { return $false }
     if ($json.mpv -and $json.mpv -ne '') { return $false }
     Save-InstalledVersions -ffmpeg $json.ffmpeg -mpv $offline -mpvVariant $json.mpvVariant -mpvsw $json.mpvsw
@@ -608,7 +602,7 @@ function Sync-OfflineInstalledVersions {
     $changed = $false
     if (Sync-FFmpegVersionFromOffline) { $changed = $true }
     if (Sync-MpvExeVersionFromOffline) { $changed = $true }
-    if (Sync-MpvSwVersionFromOffline) { $changed = $true }
+    if (Sync-MpvSwVersionFromOffline)  { $changed = $true }
     return $changed
 }
 
@@ -628,7 +622,7 @@ function Rewrite-MpvJsonToOnlineTag([string]$onlineTag) {
     if (-not $current) { return $false }
     if ($current -eq $onlineTag) { return $false }
 
-    $localHash = Get-MpvHashFragment $current
+    $localHash  = Get-MpvHashFragment $current
     $remoteHash = Get-MpvHashFragment $onlineTag
     if (-not $localHash -or -not $remoteHash) {
         Log-Warn ('[mpv] Hash missing. local=' + $current + ' | online=' + $onlineTag)
@@ -640,13 +634,13 @@ function Rewrite-MpvJsonToOnlineTag([string]$onlineTag) {
     }
 
     $obj = [PSCustomObject]@{
-        ffmpeg = $json.ffmpeg
-        mpv = $onlineTag
+        ffmpeg     = $json.ffmpeg
+        mpv        = $onlineTag
         mpvVariant = $(if ($json.mpvVariant) { $json.mpvVariant } else { 'x86_64' })
-        mpvsw = $json.mpvsw
-        tools = $(if ($json.tools) { $json.tools } else { '' })
+        mpvsw      = $json.mpvsw
+        tools      = $(if ($json.tools) { $json.tools } else { '' })
     }
-    $sd = Join-Path $script:SD 'scripts'
+    $sd = Join-Path $script:SD 'data'
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
     $obj | ConvertTo-Json -Depth 4 | Set-Content $script:VersionFile -Encoding UTF8 -Force
     Log-OK ('[mpv] JSON canonized to online tag: ' + $onlineTag)
@@ -679,7 +673,7 @@ function Rewrite-FFmpegJsonToOnlineTag([string]$onlineTag) {
         mpvsw      = $json.mpvsw
         tools      = $(if ($json.tools) { $json.tools } else { '' })
     }
-    $sd = Join-Path $script:SD 'scripts'
+    $sd = Join-Path $script:SD 'data'
     if (-not (Test-Path $sd)) { New-Item -ItemType Directory -Path $sd | Out-Null }
     $obj | ConvertTo-Json -Depth 4 | Set-Content $script:VersionFile -Encoding UTF8 -Force
     Log-OK ('[ffmpeg] JSON canonized to online tag: ' + $onlineTag)
@@ -720,6 +714,7 @@ function Log-Info([string]$m)  { Append-Log $m $script:TEXT }
 function Log-OK([string]$m)    { Append-Log $m $script:SUCCESS }
 function Log-Warn([string]$m)  { Append-Log $m $script:NOTE_C }
 function Log-Error([string]$m) { Append-Log $m $script:ERROR_C }
+
 function Set-Status([string]$msg,[System.Drawing.Color]$color) {
     if ($script:GitHubRateLimited -and $msg -ne (T 'StatusRateLimitInline')) {
         $script:lStatus.Text = (T 'StatusRateLimitInline')
@@ -736,23 +731,15 @@ function Set-BlockedStatus {
     $script:lStatus.ForeColor = $script:NOTE_C
     [System.Windows.Forms.Application]::DoEvents()
 }
-
 function Set-ApiStatus([string]$msg,[System.Drawing.Color]$color) {
-    if ($script:lApiStatus -ne $null) {
-        $script:lApiStatus.Text = $msg
-        $script:lApiStatus.ForeColor = $color
-        $script:lApiStatus.Refresh()
-    }
     if ($msg) {
-        $script:LastApiStatusText = $msg
         $script:lStatus.Text = $msg
         $script:lStatus.ForeColor = $color
         $script:lStatus.Refresh()
-    } else {
-        $script:LastApiStatusText = ''
     }
     [System.Windows.Forms.Application]::DoEvents()
 }
+
 function Open-Url([string]$url) {
     try {
         Start-Process $url | Out-Null
@@ -770,39 +757,6 @@ function Open-Url([string]$url) {
     return $false
 }
 
-function Get-DirectFinalUrl([string]$url) {
-    try {
-        $req = [System.Net.HttpWebRequest]::Create($url)
-        $req.Method = 'HEAD'
-        $req.AllowAutoRedirect = $false
-        $req.UserAgent = 'MPV-SW-Installer/1.0'
-        $resp = $req.GetResponse()
-        try {
-            if (($resp.StatusCode.value__ -ge 300) -and ($resp.StatusCode.value__ -lt 400)) {
-                return $resp.Headers['Location']
-            }
-        } finally {
-            $resp.Close()
-        }
-    } catch {
-        try {
-            return $_.Exception.Response.Headers['Location']
-        } catch {}
-    }
-    return $null
-}
-
-function Get-GitHubRelease([string]$url) {
-    try {
-        $script:GitHubRateLimited = $false
-        return Invoke-RestMethod -Uri $url -Headers (Get-GitHubHeaders) -UseBasicParsing
-    } catch {
-        $msg = $_.Exception.Message
-        if ($msg -match 'rate limit' -or $msg -match '403') { $script:GitHubRateLimited = $true }
-        return $null
-    }
-}
-
 function Invoke-GitHubJson([string]$url) {
     try {
         $req = [System.Net.HttpWebRequest]::Create($url)
@@ -811,8 +765,9 @@ function Invoke-GitHubJson([string]$url) {
         $req.Accept = 'application/vnd.github+json'
         $req.Timeout = 15000
         $req.ReadWriteTimeout = 15000
-        foreach ($k in (Get-GitHubHeaders).Keys) {
-            if ($k -eq 'Authorization') { $req.Headers[$k] = (Get-GitHubHeaders)[$k] }
+        $headers = Get-GitHubHeaders
+        if ($headers.ContainsKey('Authorization')) {
+            $req.Headers['Authorization'] = $headers['Authorization']
         }
         $resp = $req.GetResponse()
         try {
@@ -834,13 +789,19 @@ function Invoke-GitHubJson([string]$url) {
 function Get-FFmpegLatest {
     $mode = Get-FFmpegMode
     if ($script:CacheFFVersion -and $script:CacheFFUrl -and $script:CacheFFMode -eq $mode) {
-        $a = [PSCustomObject]@{ name = [System.IO.Path]::GetFileName($script:CacheFFUrl); browser_download_url = $script:CacheFFUrl }
+        $a = [PSCustomObject]@{
+            name = [System.IO.Path]::GetFileName($script:CacheFFUrl)
+            browser_download_url = $script:CacheFFUrl
+        }
         return $script:CacheFFVersion, $a
     }
+
     if ($mode -eq 'stable') {
         $rel = Invoke-GitHubJson $FFmpegStableApiUrl
         if (-not $rel -or -not $rel.assets) { return $null, $null }
-        $asset = $rel.assets | Where-Object { $_.name -match '^ffmpeg-.*essentials_build\.7z$' -and $_.name -notmatch 'git' } | Select-Object -First 1
+        $asset = $rel.assets | Where-Object {
+            $_.name -match '^ffmpeg-.*essentials_build\.7z$' -and $_.name -notmatch 'git'
+        } | Select-Object -First 1
         if ($asset) {
             $script:CacheFFVersion = $rel.tag_name
             $script:CacheFFUrl     = $asset.browser_download_url
@@ -848,21 +809,23 @@ function Get-FFmpegLatest {
             return $rel.tag_name, $asset
         }
         return $null, $null
-    } else {
-        $releases = Invoke-GitHubJson $FFmpegApiUrl
-        if (-not $releases) { return $null, $null }
-        foreach ($rel in $releases) {
-            if (-not $rel.assets) { continue }
-            $asset = $rel.assets | Where-Object { $_.name -match '^ffmpeg-.*git-.*essentials_build\.7z$' } | Select-Object -First 1
-            if ($asset) {
-                $script:CacheFFVersion = $rel.tag_name
-                $script:CacheFFUrl     = $asset.browser_download_url
-                $script:CacheFFMode    = $mode
-                return $rel.tag_name, $asset
-            }
-        }
-        return $null, $null
     }
+
+    $releases = Invoke-GitHubJson $FFmpegApiUrl
+    if (-not $releases) { return $null, $null }
+    foreach ($rel in $releases) {
+        if (-not $rel.assets) { continue }
+        $asset = $rel.assets | Where-Object {
+            $_.name -match '^ffmpeg-.*git-.*essentials_build\.7z$'
+        } | Select-Object -First 1
+        if ($asset) {
+            $script:CacheFFVersion = $rel.tag_name
+            $script:CacheFFUrl     = $asset.browser_download_url
+            $script:CacheFFMode    = $mode
+            return $rel.tag_name, $asset
+        }
+    }
+    return $null, $null
 }
 
 function Get-MpvLatestRelease {
@@ -913,7 +876,9 @@ function Update-MpvAvailableForSelection {
     }
     if ($script:lMpv_Result) {
         $iv = (Get-InstalledVersions).mpv
-        $script:lMpv_Result.Text = $(if ($script:CheckedMpvAvailable) { (Get-ResultIcon $iv $script:CheckedMpvAvailable) } else { '-' }) + ' ' + (T 'S2Result') + '  ' + $(if ($script:CheckedMpvAvailable) { (Get-ResultMessage $iv $script:CheckedMpvAvailable) } else { (T 'ResUnknown') })
+        $script:lMpv_Result.Text = $(if ($script:CheckedMpvAvailable) { (Get-ResultIcon $iv $script:CheckedMpvAvailable) } else { '-' }) +
+            ' ' + (T 'S2Result') + '  ' +
+            $(if ($script:CheckedMpvAvailable) { (Get-ResultMessage $iv $script:CheckedMpvAvailable) } else { (T 'ResUnknown') })
     }
     Refresh-SummaryCard
 }
@@ -926,11 +891,11 @@ function Get-MyLatestRelease {
 }
 
 function Clear-RemoteCache {
-    $script:CacheFFVersion = $null
-    $script:CacheFFUrl = $null
-    $script:CacheFFMode = $null
+    $script:CacheFFVersion  = $null
+    $script:CacheFFUrl      = $null
+    $script:CacheFFMode     = $null
     $script:CacheMpvRelease = $null
-    $script:CacheMyRelease = $null
+    $script:CacheMyRelease  = $null
 }
 
 function Get-SelectedMpvVariant {
@@ -940,12 +905,8 @@ function Get-SelectedMpvVariant {
 }
 
 # ============================================================
-#  EXTRACTION FUNCTIONS (using tar.exe)
+#  EXTRACTION FUNCTIONS (tar.exe with 7zr fallback)
 # ============================================================
-# Locates (or downloads and caches) 7zr.exe, the official standalone
-# extractor from 7-Zip. Only used when tar.exe fails, since 7zr fully
-# supports the LZMA2 variants that some builds (like recent mpv-winbuild
-# releases) use but bsdtar does not.
 function Get-7zrExe {
     if ($script:Cached7zrExe -and (Test-Path -LiteralPath $script:Cached7zrExe)) {
         return $script:Cached7zrExe
@@ -1065,12 +1026,164 @@ function Download-File([string]$url,[string]$out,[string]$logKey) {
 }
 
 # ============================================================
+#  CLEAN INSTALL
+# ============================================================
+# Copies the staging tree into the root dir, preserving relative paths.
+# Extracted from the original Do-InstallMySW loop so both the clean
+# install path and the normal path can reuse it.
+function Copy-StagingToRoot([string]$SourceRoot) {
+    $files = Get-ChildItem -Path $SourceRoot -Recurse -File
+    if (-not $files -or $files.Count -eq 0) {
+        Log-Error ([string]::Format((T 'LogMySWError'),'ZIP extracted no files'))
+        return $false
+    }
+    try {
+        foreach ($f in $files) {
+            $rel = $f.FullName.Substring($SourceRoot.Length).TrimStart('\','/')
+            if ([string]::IsNullOrWhiteSpace($rel)) { continue }
+            $dest = Join-Path $script:SD $rel
+            $destDir = Split-Path -Parent $dest
+            if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+            Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction Stop
+        }
+        return $true
+    } catch {
+        Log-Error ([string]::Format((T 'LogMySWError'),$_.Exception.Message))
+        return $false
+    }
+}
+
+# Performs a staged clean install with a fixed-name OLDMSC folder:
+#   1. Backs up tools\*.json (user configs) to _temp_installer\_tools_backup
+#   2. Writes the merged .installed-versions.json into the STAGING tree
+#      under data\ (so the running session never needs to write it after
+#      the swap)
+#   3. Deletes any previous OLDMSC folder and creates a fresh one
+#   4. Moves root -> OLDMSC (excluding the 3 exes, _temp_installer,
+#      and any pre-existing OLDMSC* folder)
+#   5. Copies staging -> root
+#   6. Restores tools\*.json from the backup
+# Returns the OLDMSC path on success, $null on failure.
+function Invoke-CleanInstall {
+    param(
+        [string]$StagingRoot,
+        [string]$NewVersion
+    )
+    try {
+        # 1. Snapshot current JSON before touching anything
+        $oldJson = Get-InstalledVersions
+
+        # 2. Back up tools\*.json (user configs) to _temp_installer\_tools_backup
+        $toolsDir         = Join-Path $script:SD 'tools'
+        $toolsBackup      = Join-Path $script:TempDir '_tools_backup'
+        $toolsBackupCount = 0
+        if (Test-Path $toolsDir) {
+            if (Test-Path $toolsBackup) { Remove-Item -Recurse -Force $toolsBackup -ErrorAction SilentlyContinue }
+            New-Item -ItemType Directory -Path $toolsBackup -Force | Out-Null
+            $jsonFiles = Get-ChildItem -Path $toolsDir -Recurse -Filter '*.json' -File
+            foreach ($jf in $jsonFiles) {
+                $rel = $jf.FullName.Substring($toolsDir.Length).TrimStart('\','/')
+                $dest = Join-Path $toolsBackup $rel
+                $destDir = Split-Path -Parent $dest
+                if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+                Copy-Item -LiteralPath $jf.FullName -Destination $dest -Force
+                $toolsBackupCount++
+            }
+            if ($toolsBackupCount -gt 0) {
+                Log-Info ([string]::Format((T 'CleanInstallLogToolsBackup'), $toolsBackupCount))
+            }
+        }
+
+        # 3. Write merged JSON into staging (before the move)
+        $merged = [PSCustomObject]@{
+            ffmpeg     = $oldJson.ffmpeg
+            mpv        = $oldJson.mpv
+            mpvVariant = $(if ($oldJson.mpvVariant) { $oldJson.mpvVariant } else { '' })
+            mpvsw      = $NewVersion
+            tools      = $(if ($oldJson.tools) { $oldJson.tools } else { '' })
+        }
+        $stagingData = Join-Path $StagingRoot 'data'
+        if (-not (Test-Path $stagingData)) {
+            New-Item -ItemType Directory -Path $stagingData -Force | Out-Null
+        }
+        $merged | ConvertTo-Json -Depth 4 |
+            Set-Content (Join-Path $stagingData '.installed-versions.json') -Encoding UTF8 -Force
+
+        # 4. Prepare OLDMSC (fixed name). Wipe the previous one so it always
+        #    holds exactly the state that existed before this clean install.
+        $oldDir = Join-Path $script:SD 'OLDMSC'
+        if (Test-Path $oldDir) {
+            Remove-Item -LiteralPath $oldDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        New-Item -ItemType Directory -Path $oldDir -Force | Out-Null
+
+        # 5. Move root -> OLDMSC (with minimal exclusions)
+        $keep = @('ffmpeg.exe','ffplay.exe','mpv.exe','_temp_installer')
+        $items = Get-ChildItem -Path $script:SD -Force | Where-Object {
+            $n = $_.Name
+            if ($keep -contains $n) { return $false }
+            if ($n -like 'OLDMSC*') { return $false }
+            return $true
+        }
+        $moved = 0
+        foreach ($it in $items) {
+            try {
+                Move-Item -LiteralPath $it.FullName -Destination $oldDir -Force -ErrorAction Stop
+                $moved++
+            } catch {
+                Log-Warn ([string]::Format((T 'CleanInstallLogFailed'), $it.Name, $_.Exception.Message))
+            }
+        }
+        if ($moved -eq 0) {
+            Log-Info (T 'CleanInstallLogNothing')
+        } else {
+            Log-OK ([string]::Format((T 'CleanInstallLogMoved'), $moved, 'OLDMSC'))
+        }
+
+        # 6. Copy staging -> root
+        if (-not (Copy-StagingToRoot $StagingRoot)) {
+            Log-Error ([string]::Format((T 'CleanInstallLogError'), 'copy from staging failed'))
+            return $null
+        }
+
+        # 7. Restore tools\*.json
+        if ($toolsBackupCount -gt 0 -and (Test-Path $toolsBackup)) {
+            $restored = 0
+            $newToolsDir = Join-Path $script:SD 'tools'
+            if (-not (Test-Path $newToolsDir)) {
+                New-Item -ItemType Directory -Path $newToolsDir -Force | Out-Null
+            }
+            $backupFiles = Get-ChildItem -Path $toolsBackup -Recurse -File
+            foreach ($bf in $backupFiles) {
+                $rel = $bf.FullName.Substring($toolsBackup.Length).TrimStart('\','/')
+                $dest = Join-Path $newToolsDir $rel
+                $destDir = Split-Path -Parent $dest
+                if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+                try {
+                    Copy-Item -LiteralPath $bf.FullName -Destination $dest -Force -ErrorAction Stop
+                    $restored++
+                } catch {
+                    Log-Warn ("[Clean] Could not restore {0}: {1}" -f $rel, $_.Exception.Message)
+                }
+            }
+            Log-OK ([string]::Format((T 'CleanInstallLogToolsRestore'), $restored))
+        }
+
+        Log-OK ([string]::Format((T 'CleanInstallLogDone'), 'OLDMSC'))
+        return $oldDir
+    } catch {
+        Log-Error ([string]::Format((T 'CleanInstallLogError'), $_.Exception.Message))
+        return $null
+    }
+}
+
+# ============================================================
 #  INSTALLATION FUNCTIONS
 # ============================================================
 function Do-InstallFFmpeg([bool]$force) {
     Log-Info (T 'LogCheckingFF')
-    $installed=(Get-InstalledVersions).ffmpeg
-    $remoteVer,$asset=Get-FFmpegLatest
+    $installed = (Get-InstalledVersions).ffmpeg
+    $remoteVer, $asset = Get-FFmpegLatest
     if (-not $asset -or -not $remoteVer) {
         if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
         Log-Error (T 'LogFFNotFound')
@@ -1079,24 +1192,24 @@ function Do-InstallFFmpeg([bool]$force) {
     $state = Get-VersionState $installed $remoteVer
     if (-not $force -and $installed -and ($state -eq 'latest' -or $state -eq 'newer')) {
         Log-OK ([string]::Format((T 'LogFFUpToDate'),$installed))
-        $script:CheckedFFAvailable=$remoteVer
+        $script:CheckedFFAvailable = $remoteVer
         Refresh-VersionLabels
         return $true
     }
     Ensure-TempDir
-    $archPath=Join-Path $script:TempDir $asset.name
-    $extPath=Join-Path $script:TempDir 'ffmpeg_extracted'
+    $archPath = Join-Path $script:TempDir $asset.name
+    $extPath  = Join-Path $script:TempDir 'ffmpeg_extracted'
     if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
     if (-not (Download-File $asset.browser_download_url $archPath 'LogFFDownload')) { return $false }
     Log-Info (T 'LogFFExtracting')
     if (Expand-Archive7z $archPath $extPath) {
-        $fe=Get-ChildItem -Path $extPath -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
-        $fp=Get-ChildItem -Path $extPath -Recurse -Filter 'ffplay.exe' | Select-Object -First 1
+        $fe = Get-ChildItem -Path $extPath -Recurse -Filter 'ffmpeg.exe' | Select-Object -First 1
+        $fp = Get-ChildItem -Path $extPath -Recurse -Filter 'ffplay.exe' | Select-Object -First 1
         if ($fe -and $fp) {
             Copy-Item $fe.FullName -Destination (Join-Path $script:SD 'ffmpeg.exe') -Force
             Copy-Item $fp.FullName -Destination (Join-Path $script:SD 'ffplay.exe') -Force
             Save-InstalledVersions -ffmpeg $remoteVer
-            $script:CheckedFFAvailable=$remoteVer
+            $script:CheckedFFAvailable = $remoteVer
             Log-OK ([string]::Format((T 'LogFFDone'),$remoteVer))
             Refresh-VersionLabels
             return $true
@@ -1110,8 +1223,8 @@ function Do-InstallFFmpeg([bool]$force) {
 
 function Do-InstallMPV([string]$variant,[bool]$force) {
     Log-Info (T 'LogCheckingMpv')
-    $installed=(Get-InstalledVersions).mpv
-    $r=Get-MpvLatestRelease
+    $installed = (Get-InstalledVersions).mpv
+    $r = Get-MpvLatestRelease
     if (-not $r) {
         if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
         Log-Error ([string]::Format((T 'LogApiError'),'mpv','latest release unavailable'))
@@ -1125,18 +1238,18 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
     $state = Get-VersionState $installed $remoteVer
     if (-not $force -and $installed -and ($state -eq 'latest' -or $state -eq 'newer')) {
         Log-OK ([string]::Format((T 'LogMpvUpToDate'),$installed))
-        $script:CheckedMpvAvailable=$remoteVer
+        $script:CheckedMpvAvailable = $remoteVer
         Refresh-VersionLabels
         return $true
     }
     Ensure-TempDir
-    $archPath=Join-Path $script:TempDir $asset.name
-    $extPath=Join-Path $script:TempDir 'mpv_extracted'
+    $archPath = Join-Path $script:TempDir $asset.name
+    $extPath  = Join-Path $script:TempDir 'mpv_extracted'
     if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
     if (-not (Download-File $asset.browser_download_url $archPath 'LogMpvDownload')) { return $false }
     Log-Info (T 'LogMpvExtracting')
     if (Expand-Archive7z $archPath $extPath) {
-        $exe=Get-ChildItem -Path $extPath -Recurse -File | Where-Object { $_.Name -ieq 'mpv.exe' } | Select-Object -First 1
+        $exe = Get-ChildItem -Path $extPath -Recurse -File | Where-Object { $_.Name -ieq 'mpv.exe' } | Select-Object -First 1
         if (-not $exe) {
             $candidateDir = Get-ChildItem -Path $extPath -Recurse -Directory | Where-Object { $_.Name -match '^mpv($|[\-_])' } | Select-Object -First 1
             if ($candidateDir) {
@@ -1150,7 +1263,7 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
         }
         Copy-Item $exe.FullName -Destination (Join-Path $script:SD 'mpv.exe') -Force
         Save-InstalledVersions -mpv $remoteVer -mpvVariant $variant
-        $script:CheckedMpvAvailable=$remoteVer
+        $script:CheckedMpvAvailable = $remoteVer
         Log-OK ([string]::Format((T 'LogMpvDone'),$remoteVer,$variant))
         Refresh-VersionLabels
         return $true
@@ -1162,18 +1275,18 @@ function Do-InstallMPV([string]$variant,[bool]$force) {
 function Do-InstallMySW([bool]$force) {
     Log-Info (T 'LogCheckingMySW')
     [void](Sync-MpvSwVersionFromOffline)
-    $installed=(Get-InstalledVersions).mpvsw
-    $r=Get-MyLatestRelease
+    $installed = (Get-InstalledVersions).mpvsw
+    $r = Get-MyLatestRelease
     if (-not $r) {
         if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit') }
         Log-Error ([string]::Format((T 'LogApiError'),'MPV-SW-Capture','latest release unavailable'))
         return $false
     }
-    $remoteVer=$r.tag_name
+    $remoteVer = $r.tag_name
     $state = Get-VersionState $installed $remoteVer
     if (-not $force -and $installed -and ($state -eq 'latest' -or $state -eq 'newer')) {
         Log-OK ([string]::Format((T 'LogMySWUpToDate'),$installed))
-        $script:CheckedMyAvailable=$remoteVer
+        $script:CheckedMyAvailable = $remoteVer
         Refresh-VersionLabels
         return $true
     }
@@ -1183,16 +1296,17 @@ function Do-InstallMySW([bool]$force) {
         return $false
     }
     Ensure-TempDir
-    $zipPath=Join-Path $script:TempDir $asset.name
-    $extPath=Join-Path $script:TempDir 'mpvsw_extracted'
+    $zipPath = Join-Path $script:TempDir $asset.name
+    $extPath = Join-Path $script:TempDir 'mpvsw_extracted'
     if (Test-Path $extPath) { Remove-Item -Recurse -Force $extPath -ErrorAction SilentlyContinue }
     if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
     Log-Info (T 'LogMySWExtracting')
     if (Expand-ArchiveZip $zipPath $extPath) {
-        $items = Get-ChildItem -Path $extPath -Force
+        # Detect whether the ZIP wraps its payload in a single root folder
+        $items       = Get-ChildItem -Path $extPath -Force
         $directories = $items | Where-Object { $_.PSIsContainer }
-        $files = $items | Where-Object { -not $_.PSIsContainer }
-        $sourceRoot = $extPath
+        $files       = $items | Where-Object { -not $_.PSIsContainer }
+        $sourceRoot  = $extPath
         if ($directories.Count -eq 1 -and $files.Count -eq 0) {
             $sourceRoot = $directories[0].FullName
             Log-Info "[Extract] ZIP contains a root folder: $($directories[0].Name). Extracting its contents."
@@ -1200,26 +1314,22 @@ function Do-InstallMySW([bool]$force) {
             Log-Info "[Extract] ZIP contains files directly in root. Extracting from root."
         }
 
-        $files = Get-ChildItem -Path $sourceRoot -Recurse -File
-        if (-not $files -or $files.Count -eq 0) {
-            Log-Error ([string]::Format((T 'LogMySWError'),'ZIP extracted no files'))
-            return $false
-        }
-        try {
-            foreach ($f in $files) {
-                $rel = $f.FullName.Substring($sourceRoot.Length).TrimStart('\','/')
-                if ([string]::IsNullOrWhiteSpace($rel)) { continue }
-                $dest = Join-Path $script:SD $rel
-                $destDir = Split-Path -Parent $dest
-                if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
-                Copy-Item -Path $f.FullName -Destination $dest -Force -ErrorAction Stop
+        # --- Clean install branch ---
+        $cleanWanted = $script:chkCleanInstall -and $script:chkCleanInstall.Checked -and $installed
+        if ($cleanWanted -and ($state -eq 'outdated' -or $force)) {
+            Log-Info "[Clean] Clean install requested. Starting staged swap."
+            $oldDir = Invoke-CleanInstall -StagingRoot $sourceRoot -NewVersion $remoteVer
+            if ($oldDir) {
+                $script:CheckedMyAvailable = $remoteVer
+                $script:CleanInstallDone   = $oldDir
+                return $true
             }
-        } catch {
-            Log-Error ([string]::Format((T 'LogMySWError'),$_.Exception.Message))
-            return $false
+            Log-Warn "[Clean] Clean install failed. Falling back to normal install."
         }
+
+        if (-not (Copy-StagingToRoot $sourceRoot)) { return $false }
         Save-InstalledVersions -mpvsw $remoteVer
-        $script:CheckedMyAvailable=$remoteVer
+        $script:CheckedMyAvailable = $remoteVer
         Log-OK ([string]::Format((T 'LogMySWDone'),$remoteVer))
         Refresh-VersionLabels
         return $true
@@ -1254,8 +1364,6 @@ function Do-InstallExtraTools([bool]$force) {
         $remoteVer = $Matches[1]
     }
 
-    # Skip if the same version is already recorded in .installed-versions.json
-    # (unless the caller explicitly forces a reinstall).
     $json = Get-InstalledVersions
     $installedVer = $json.tools
     if (-not $force -and $installedVer -and $installedVer -eq $remoteVer) {
@@ -1270,11 +1378,10 @@ function Do-InstallExtraTools([bool]$force) {
     if (-not (Download-File $asset.browser_download_url $zipPath 'LogMySWDownload')) { return $false }
     Log-Info (T 'LogMySWExtracting')
     if (Expand-ArchiveZip $zipPath $extPath) {
-        # Detect root folder
-        $items = Get-ChildItem -Path $extPath -Force
+        $items       = Get-ChildItem -Path $extPath -Force
         $directories = $items | Where-Object { $_.PSIsContainer }
-        $files = $items | Where-Object { -not $_.PSIsContainer }
-        $sourceRoot = $extPath
+        $files       = $items | Where-Object { -not $_.PSIsContainer }
+        $sourceRoot  = $extPath
         if ($directories.Count -eq 1 -and $files.Count -eq 0) {
             $sourceRoot = $directories[0].FullName
             Log-Info "[Extract] Extra Tools ZIP contains a root folder: $($directories[0].Name). Extracting its contents."
@@ -1294,7 +1401,7 @@ function Do-InstallExtraTools([bool]$force) {
             if ([string]::IsNullOrWhiteSpace($relPath)) { continue }
 
             $destFile = Join-Path $script:SD $relPath
-            $destDir = Split-Path -Parent $destFile
+            $destDir  = Split-Path -Parent $destFile
             if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
             Copy-Item -Path $f.FullName -Destination $destFile -Force
             $copied++
@@ -1304,10 +1411,9 @@ function Do-InstallExtraTools([bool]$force) {
             Save-InstalledVersions -tools $remoteVer
             Log-OK (T 'ExtraToolsInstalled')
             return $true
-        } else {
-            Log-Warn "[ExtraTools] No files were copied."
-            return $false
         }
+        Log-Warn "[ExtraTools] No files were copied."
+        return $false
     }
     Log-Error ([string]::Format((T 'ExtraToolsLogError'), 'Extraction failed'))
     return $false
@@ -1349,15 +1455,6 @@ function Get-ResultMessage([string]$installed,[string]$available) {
         'outdated' { return T 'ResUpdate' }
         'newer'    { return T 'ResNewer' }
         default    { return T 'ResMissing' }
-    }
-}
-
-function Get-ResultColor([string]$installed,[string]$available) {
-    switch (Get-VersionState $installed $available) {
-        'latest'   { return $script:SUCCESS }
-        'outdated' { return $script:NOTE_C }
-        'newer'    { return $script:ACCENT3 }
-        default    { return $script:ERROR_C }
     }
 }
 
@@ -1417,7 +1514,7 @@ function Refresh-SummaryCard {
                 "latest"   { $icon = T "IconLatest";  $lineColor = $script:SUCCESS; $msg = T "SumLatest" }
                 "outdated" { $icon = T "IconUpdate";  $lineColor = $script:NOTE_C;   $msg = T "SumOutdated" }
                 "newer"    { $icon = T "IconNewer";   $lineColor = $script:ACCENT3; $msg = T "SumNewer" }
-                default     { $icon = T "IconMissing"; $lineColor = $script:ERROR_C;  $msg = T "SumMissing" }
+                default    { $icon = T "IconMissing"; $lineColor = $script:ERROR_C;  $msg = T "SumMissing" }
             }
         }
 
@@ -1450,7 +1547,8 @@ function Refresh-SummaryCard {
 
 function Refresh-VersionLabels {
     [void](Sync-OfflineInstalledVersions)
-    $v=Get-InstalledVersions; $none=T "S1None"
+    $v    = Get-InstalledVersions
+    $none = T "S1None"
     $myOff = Get-MpvSwOfflineVersion
 
     $ffRaw      = if ($v.ffmpeg) { Get-FFmpegDisplayVersion $v.ffmpeg } else { $none }
@@ -1468,9 +1566,15 @@ function Refresh-VersionLabels {
     $script:lMpv_Avail.Text  = (T "S2Available") + "  " + $(if ($script:CheckedMpvAvailable) { $script:CheckedMpvAvailable } else { '?' })
     $script:lMySW_Avail.Text = (T "S3Available") + "  " + $(if ($script:CheckedMyAvailable) { $script:CheckedMyAvailable } else { '?' })
 
-    $script:lFF_Result.Text   = $(if ($script:CheckedFFAvailable) { (Get-ResultIcon $v.ffmpeg $script:CheckedFFAvailable) } else { '-' }) + ' ' + (T "S1Result") + '  ' + $(if ($script:CheckedFFAvailable) { (Get-ResultMessage $v.ffmpeg $script:CheckedFFAvailable) } else { (T 'ResUnknown') })
-    $script:lMpv_Result.Text  = $(if ($script:CheckedMpvAvailable) { (Get-ResultIcon $v.mpv $script:CheckedMpvAvailable) } else { '-' }) + ' ' + (T "S2Result") + '  ' + $(if ($script:CheckedMpvAvailable) { (Get-ResultMessage $v.mpv $script:CheckedMpvAvailable) } else { (T 'ResUnknown') })
-    $script:lMySW_Result.Text = $(if ($script:CheckedMyAvailable) { (Get-ResultIcon $v.mpvsw $script:CheckedMyAvailable) } else { '-' }) + ' ' + (T "S3Result") + '  ' + $(if ($script:CheckedMyAvailable) { (Get-ResultMessage $v.mpvsw $script:CheckedMyAvailable) } else { (T 'ResUnknown') })
+    $script:lFF_Result.Text = $(if ($script:CheckedFFAvailable) { (Get-ResultIcon $v.ffmpeg $script:CheckedFFAvailable) } else { '-' }) +
+        ' ' + (T "S1Result") + '  ' +
+        $(if ($script:CheckedFFAvailable) { (Get-ResultMessage $v.ffmpeg $script:CheckedFFAvailable) } else { (T 'ResUnknown') })
+    $script:lMpv_Result.Text = $(if ($script:CheckedMpvAvailable) { (Get-ResultIcon $v.mpv $script:CheckedMpvAvailable) } else { '-' }) +
+        ' ' + (T "S2Result") + '  ' +
+        $(if ($script:CheckedMpvAvailable) { (Get-ResultMessage $v.mpv $script:CheckedMpvAvailable) } else { (T 'ResUnknown') })
+    $script:lMySW_Result.Text = $(if ($script:CheckedMyAvailable) { (Get-ResultIcon $v.mpvsw $script:CheckedMyAvailable) } else { '-' }) +
+        ' ' + (T "S3Result") + '  ' +
+        $(if ($script:CheckedMyAvailable) { (Get-ResultMessage $v.mpvsw $script:CheckedMyAvailable) } else { (T 'ResUnknown') })
 
     $script:lFF_Result.ForeColor   = $script:TEXT
     $script:lMpv_Result.ForeColor  = $script:TEXT
@@ -1485,6 +1589,13 @@ function Refresh-VersionLabels {
     $myState = Get-VersionState $v.mpvsw $script:CheckedMyAvailable
     if ($script:btnMySW_I) { $script:btnMySW_I.Enabled = (-not ($myState -eq 'latest' -or $myState -eq 'newer')) }
 
+    # Clean install checkbox is only meaningful if something is already installed.
+    if ($script:chkCleanInstall) {
+        $hasInstalled = [bool](Get-InstalledVersions).mpvsw
+        $script:chkCleanInstall.Enabled = $hasInstalled
+        if (-not $hasInstalled) { $script:chkCleanInstall.Checked = $false }
+    }
+
     Refresh-SummaryCard
 }
 
@@ -1496,243 +1607,272 @@ function Refresh-InstalledNow {
 }
 
 function Run-WithLock([scriptblock]$action) {
-    foreach ($b in @($script:btnCheckAll,$script:btnUpdateAll,$script:btnForce,
-                     $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I,
-                     $script:btnExtraInstall)) { $b.Enabled=$false }
-    try { & $action } finally {
+    $btns = @($script:btnCheckAll,$script:btnUpdateAll,$script:btnForce,
+              $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I,$script:btnExtraInstall)
+    foreach ($b in $btns) { $b.Enabled = $false }
+    try {
+        & $action
+    } finally {
         Remove-TempDir
-        foreach ($b in @($script:btnCheckAll,$script:btnUpdateAll,$script:btnForce,
-                         $script:btnFF_I,$script:btnMpv_I,$script:btnMySW_I,
-                         $script:btnExtraInstall)) { $b.Enabled=$true }
+        foreach ($b in $btns) { $b.Enabled = $true }
     }
 }
 
 # ============================================================
 #  FORM
 # ============================================================
-$formW=1140; $formH=550; $headerH=68
-$leftX=20; $cardW=550; $colGap=16; $rightX=$leftX+$cardW+$colGap
-$row1Y=10; $row2Y=190; $row3Y=385
-$cTopH=170; $cMidH=185; $cBotH=85
+$formW  = 1140; $formH  = 570; $headerH = 68
+$leftX  = 20;   $cardW  = 550; $colGap  = 16; $rightX = $leftX + $cardW + $colGap
+$row1Y  = 10;   $row2Y  = 190; $row3Y   = 405
+$cTopH  = 170;  $cMidH  = 205; $cBotH   = 85
 
-$form=New-Object System.Windows.Forms.Form
-try { $appIcon = Get-AppIcon; if($appIcon){ $form.Icon = $appIcon } } catch {}
-$form.ShowInTaskbar = $true
-$form.Text = T 'Title'
-$form.ClientSize=[System.Drawing.Size]::new($formW,$formH)
-$form.MinimumSize=$form.Size
-$form.BackColor=$script:BG; $form.ForeColor=$script:TEXT
-$form.FormBorderStyle='FixedSingle'; $form.MaximizeBox=$false
-$form.StartPosition='CenterScreen'; $form.Font=$FontSub
+$form = New-Object System.Windows.Forms.Form
+try { $appIcon = Get-AppIcon; if ($appIcon) { $form.Icon = $appIcon } } catch {}
+$form.ShowInTaskbar    = $true
+$form.Text             = T 'Title'
+$form.ClientSize       = [System.Drawing.Size]::new($formW,$formH)
+$form.MinimumSize      = $form.Size
+$form.BackColor        = $script:BG
+$form.ForeColor        = $script:TEXT
+$form.FormBorderStyle  = 'FixedSingle'
+$form.MaximizeBox      = $false
+$form.StartPosition    = 'CenterScreen'
+$form.Font             = $FontSub
 
 # --- Header ---
-$pHeader=New-Pnl 0 0 $formW $headerH $script:SURFACE
-$lAppTitle  =New-Lbl "MPV-SW-Capture" 20 2 420 36 $FontTitle $script:ACCENT
-$lAppSub    =New-Lbl (T "HeaderSub")  22 36 520 18 $FontSub $script:MUTED
-$lHeaderNote=New-Lbl (T "HeaderNote") 560 38 560 18 $FontSmall $script:ACCENT3
-$lLangLbl   =New-Lbl (T "LangLabel")  930 10 90 18 $FontSmall $script:MUTED
-$btnEN=New-Object System.Windows.Forms.Button
-$btnEN.Text="EN"; $btnEN.Location=[System.Drawing.Point]::new(1038,6)
-$btnEN.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnEN $true
-$btnES=New-Object System.Windows.Forms.Button
-$btnES.Text="ES"; $btnES.Location=[System.Drawing.Point]::new(1086,6)
-$btnES.Size=[System.Drawing.Size]::new(44,26); Style-LangBtn $btnES $false
+$pHeader     = New-Pnl 0 0 $formW $headerH $script:SURFACE
+$lAppTitle   = New-Lbl "MPV-SW-Capture" 20 2 420 36 $FontTitle $script:ACCENT
+$lAppSub     = New-Lbl (T "HeaderSub")  22 36 520 18 $FontSub $script:MUTED
+$lHeaderNote = New-Lbl (T "HeaderNote") 560 38 560 18 $FontSmall $script:ACCENT3
+$lLangLbl    = New-Lbl (T "LangLabel")  930 10 90 18 $FontSmall $script:MUTED
+
+$btnEN = New-Object System.Windows.Forms.Button
+$btnEN.Text = "EN"; $btnEN.Location = [System.Drawing.Point]::new(1038,6)
+$btnEN.Size = [System.Drawing.Size]::new(44,26); Style-LangBtn $btnEN $true
+
+$btnES = New-Object System.Windows.Forms.Button
+$btnES.Text = "ES"; $btnES.Location = [System.Drawing.Point]::new(1086,6)
+$btnES.Size = [System.Drawing.Size]::new(44,26); Style-LangBtn $btnES $false
+
 $pHeader.Controls.AddRange(@($lAppTitle,$lAppSub,$lLangLbl,$btnEN,$btnES,$lHeaderNote))
 $form.Controls.Add($pHeader)
 
-$pMain=New-Pnl 0 $headerH $formW ($formH-$headerH) $script:BG
+$pMain = New-Pnl 0 $headerH $formW ($formH-$headerH) $script:BG
 $form.Controls.Add($pMain)
 
-# --- CARD 1 ---
-$card1=New-CardXY $pMain $leftX $row1Y $cardW $cTopH "S1Title"; $card1.Tag="S1"
-$lFF_Desc=New-Lbl (T "S1Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
+# --- CARD 1: ffmpeg + ffplay ---
+$card1 = New-CardXY $pMain $leftX $row1Y $cardW $cTopH "S1Title"; $card1.Tag = "S1"
+$lFF_Desc = New-Lbl (T "S1Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
 $card1.Controls.Add($lFF_Desc)
-$lFF_Inst=New-Lbl "" 14 52 ($cardW-204) 18 $FontBold $script:NOTE_C; $card1.Controls.Add($lFF_Inst)
-$script:lFF_Inst=$lFF_Inst
-$lFF_Avail=New-Lbl "" 14 72 340 18 $FontSmall $script:MUTED; $card1.Controls.Add($lFF_Avail)
-$script:lFF_Avail=$lFF_Avail
-$lFF_Result=New-Lbl "" 14 150 515 26 $FontBold $script:TEXT; $card1.Controls.Add($lFF_Result)
-$script:lFF_Result=$lFF_Result
+$lFF_Inst = New-Lbl "" 14 52 ($cardW-204) 18 $FontBold $script:NOTE_C; $card1.Controls.Add($lFF_Inst)
+$script:lFF_Inst = $lFF_Inst
+$lFF_Avail = New-Lbl "" 14 72 340 18 $FontSmall $script:MUTED; $card1.Controls.Add($lFF_Avail)
+$script:lFF_Avail = $lFF_Avail
+$lFF_Result = New-Lbl "" 14 150 515 26 $FontBold $script:TEXT; $card1.Controls.Add($lFF_Result)
+$script:lFF_Result = $lFF_Result
 
-$btnFF_C=New-Object System.Windows.Forms.Button
-$btnFF_C.Text=T "S1BtnCheck"; $btnFF_C.Location=[System.Drawing.Point]::new(438,30)
-$btnFF_C.Size=[System.Drawing.Size]::new(94,28)
+$btnFF_C = New-Object System.Windows.Forms.Button
+$btnFF_C.Text = T "S1BtnCheck"; $btnFF_C.Location = [System.Drawing.Point]::new(438,30)
+$btnFF_C.Size = [System.Drawing.Size]::new(94,28)
 Style-Btn $btnFF_C $script:SURFACE $script:ACCENT
-$btnFF_C.FlatAppearance.BorderSize=1; $btnFF_C.FlatAppearance.BorderColor=$script:ACCENT
+$btnFF_C.FlatAppearance.BorderSize = 1; $btnFF_C.FlatAppearance.BorderColor = $script:ACCENT
 $card1.Controls.Add($btnFF_C)
 
-$btnFF_I=New-Object System.Windows.Forms.Button
-$btnFF_I.Text=T "S1BtnInstall"; $btnFF_I.Location=[System.Drawing.Point]::new(360,60)
-$btnFF_I.Size=[System.Drawing.Size]::new(172,32); Style-Btn $btnFF_I $script:ACCENT $script:BG
-$card1.Controls.Add($btnFF_I); $script:btnFF_I=$btnFF_I
+$btnFF_I = New-Object System.Windows.Forms.Button
+$btnFF_I.Text = T "S1BtnInstall"; $btnFF_I.Location = [System.Drawing.Point]::new(360,60)
+$btnFF_I.Size = [System.Drawing.Size]::new(172,32); Style-Btn $btnFF_I $script:ACCENT $script:BG
+$card1.Controls.Add($btnFF_I); $script:btnFF_I = $btnFF_I
 
-$btnFF_M=New-Object System.Windows.Forms.Button
-$btnFF_M.Text=T "S1BtnManual"; $btnFF_M.Location=[System.Drawing.Point]::new(438,95)
-$btnFF_M.Size=[System.Drawing.Size]::new(94,28)
+$btnFF_M = New-Object System.Windows.Forms.Button
+$btnFF_M.Text = "MANUAL"; $btnFF_M.Location = [System.Drawing.Point]::new(438,95)
+$btnFF_M.Size = [System.Drawing.Size]::new(94,28)
 Style-ManualBtn $btnFF_M
 Set-ManualButtonVisibleText $btnFF_M "MANUAL"
-$card1.Controls.Add($btnFF_M); $script:btnFF_M=$btnFF_M
+$card1.Controls.Add($btnFF_M); $script:btnFF_M = $btnFF_M
 
-$lFFMode=New-Lbl "Version:" 14 126 70 16 $FontBold $script:MUTED
-$card1.Controls.Add($lFFMode); $script:lFFMode=$lFFMode
-$rbFFStable=New-RB "Stable" 90 126 110
-$rbFFDaily=New-RB "Daily" 200 126 110
-$rbFFStable.ForeColor=$script:TEXT; $rbFFDaily.ForeColor=$script:TEXT
-$rbFFStable.Font=$FontBold; $rbFFDaily.Font=$FontBold
-$rbFFStable.Checked=$true
+$lFFMode = New-Lbl "Version:" 14 126 70 16 $FontBold $script:MUTED
+$card1.Controls.Add($lFFMode)
+
+$rbFFStable = New-RB "Stable"  90 126 110
+$rbFFDaily  = New-RB "Daily"  200 126 110
+$rbFFStable.ForeColor = $script:TEXT; $rbFFDaily.ForeColor = $script:TEXT
+$rbFFStable.Font = $FontBold;         $rbFFDaily.Font = $FontBold
+$rbFFStable.Checked = $true
 $card1.Controls.AddRange(@($rbFFStable,$rbFFDaily))
-$script:rbFFStable=$rbFFStable; $script:rbFFDaily=$rbFFDaily
+$script:rbFFStable = $rbFFStable; $script:rbFFDaily = $rbFFDaily
 
-# --- CARD 2 ---
-$card2=New-CardXY $pMain $rightX $row1Y $cardW $cTopH "S2Title"; $card2.Tag="S2"
-$lMpv_Desc=New-Lbl (T "S2Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
+# --- CARD 2: mpv ---
+$card2 = New-CardXY $pMain $rightX $row1Y $cardW $cTopH "S2Title"; $card2.Tag = "S2"
+$lMpv_Desc = New-Lbl (T "S2Desc") 14 30 ($cardW-148) 16 $FontSmall $script:MUTED
 $card2.Controls.Add($lMpv_Desc)
-$lMpv_Inst=New-Lbl "" 14 52 ($cardW-204) 18 $FontBold $script:NOTE_C; $card2.Controls.Add($lMpv_Inst)
-$script:lMpv_Inst=$lMpv_Inst
-$lMpv_Avail=New-Lbl "" 14 72 340 18 $FontSmall $script:MUTED; $card2.Controls.Add($lMpv_Avail)
-$script:lMpv_Avail=$lMpv_Avail
-$lMpv_Result=New-Lbl "" 14 150 515 26 $FontBold $script:TEXT; $card2.Controls.Add($lMpv_Result)
-$script:lMpv_Result=$lMpv_Result
+$lMpv_Inst = New-Lbl "" 14 52 ($cardW-204) 18 $FontBold $script:NOTE_C; $card2.Controls.Add($lMpv_Inst)
+$script:lMpv_Inst = $lMpv_Inst
+$lMpv_Avail = New-Lbl "" 14 72 340 18 $FontSmall $script:MUTED; $card2.Controls.Add($lMpv_Avail)
+$script:lMpv_Avail = $lMpv_Avail
+$lMpv_Result = New-Lbl "" 14 150 515 26 $FontBold $script:TEXT; $card2.Controls.Add($lMpv_Result)
+$script:lMpv_Result = $lMpv_Result
 
-$btnMpv_C=New-Object System.Windows.Forms.Button
-$btnMpv_C.Text=T "S2BtnCheck"; $btnMpv_C.Location=[System.Drawing.Point]::new(438,30)
-$btnMpv_C.Size=[System.Drawing.Size]::new(94,28)
+$btnMpv_C = New-Object System.Windows.Forms.Button
+$btnMpv_C.Text = T "S2BtnCheck"; $btnMpv_C.Location = [System.Drawing.Point]::new(438,30)
+$btnMpv_C.Size = [System.Drawing.Size]::new(94,28)
 Style-Btn $btnMpv_C $script:SURFACE $script:ACCENT
-$btnMpv_C.FlatAppearance.BorderSize=1; $btnMpv_C.FlatAppearance.BorderColor=$script:ACCENT
+$btnMpv_C.FlatAppearance.BorderSize = 1; $btnMpv_C.FlatAppearance.BorderColor = $script:ACCENT
 $card2.Controls.Add($btnMpv_C)
 
-$btnMpv_I=New-Object System.Windows.Forms.Button
-$btnMpv_I.Text=T "S2BtnInstall"; $btnMpv_I.Location=[System.Drawing.Point]::new(360,60)
-$btnMpv_I.Size=[System.Drawing.Size]::new(172,32); Style-Btn $btnMpv_I $script:ACCENT $script:BG
-$card2.Controls.Add($btnMpv_I); $script:btnMpv_I=$btnMpv_I
+$btnMpv_I = New-Object System.Windows.Forms.Button
+$btnMpv_I.Text = T "S2BtnInstall"; $btnMpv_I.Location = [System.Drawing.Point]::new(360,60)
+$btnMpv_I.Size = [System.Drawing.Size]::new(172,32); Style-Btn $btnMpv_I $script:ACCENT $script:BG
+$card2.Controls.Add($btnMpv_I); $script:btnMpv_I = $btnMpv_I
 
-$btnMpv_M=New-Object System.Windows.Forms.Button
-$btnMpv_M.Text=T "S2BtnManual"; $btnMpv_M.Location=[System.Drawing.Point]::new(438,95)
-$btnMpv_M.Size=[System.Drawing.Size]::new(94,28)
+$btnMpv_M = New-Object System.Windows.Forms.Button
+$btnMpv_M.Text = "MANUAL"; $btnMpv_M.Location = [System.Drawing.Point]::new(438,95)
+$btnMpv_M.Size = [System.Drawing.Size]::new(94,28)
 Style-ManualBtn $btnMpv_M
 Set-ManualButtonVisibleText $btnMpv_M "MANUAL"
-$card2.Controls.Add($btnMpv_M); $script:btnMpv_M=$btnMpv_M
+$card2.Controls.Add($btnMpv_M); $script:btnMpv_M = $btnMpv_M
 
-$lVarLbl=New-Lbl (T "S2VariantLbl") 14 90 80 16 $FontBold $script:MUTED
+$lVarLbl = New-Lbl (T "S2VariantLbl") 14 90 80 16 $FontBold $script:MUTED
 $card2.Controls.Add($lVarLbl)
-$rbV1=New-RB (T "S2V1") 14 105 190
-$rbV2=New-RB (T "S2V2") 190 124 360
-$rbV3=New-RB (T "S2V3") 14 124 150
-$rbV1.Checked=$true
-$_sv=(Get-InstalledVersions).mpvVariant
-if ($_sv -eq "x86_64-v3") { $rbV1.Checked=$false; $rbV2.Checked=$true }
-elseif ($_sv -eq "aarch64") { $rbV1.Checked=$false; $rbV3.Checked=$true }
+$rbV1 = New-RB (T "S2V1") 14 105 190
+$rbV2 = New-RB (T "S2V2") 190 124 360
+$rbV3 = New-RB (T "S2V3") 14 124 150
+$rbV1.Checked = $true
+$_sv = (Get-InstalledVersions).mpvVariant
+if ($_sv -eq "x86_64-v3") { $rbV1.Checked = $false; $rbV2.Checked = $true }
+elseif ($_sv -eq "aarch64") { $rbV1.Checked = $false; $rbV3.Checked = $true }
 $card2.Controls.AddRange(@($rbV1,$rbV2,$rbV3))
-$script:rbV1=$rbV1; $script:rbV2=$rbV2; $script:rbV3=$rbV3
+$script:rbV1 = $rbV1; $script:rbV2 = $rbV2; $script:rbV3 = $rbV3
 
-# --- CARD 3 (MPV-SW-Capture + Extra Tools) ---
-$card3=New-CardXY $pMain $leftX $row2Y $cardW $cMidH "S3Title"; $card3.Tag="S3"
-$lMySW_Desc=New-Lbl (T "S3Desc") 14 30 ($cardW-248) 16 $FontSmall $script:MUTED
+# --- CARD 3: MPV-SW-Capture + Clean Install + Extra Tools ---
+$card3 = New-CardXY $pMain $leftX $row2Y $cardW $cMidH "S3Title"; $card3.Tag = "S3"
+$lMySW_Desc = New-Lbl (T "S3Desc") 14 30 ($cardW-248) 16 $FontSmall $script:MUTED
 $card3.Controls.Add($lMySW_Desc)
-$lMySW_Inst=New-Lbl "" 14 52 ($cardW-234) 14 $FontBold $script:NOTE_C; $card3.Controls.Add($lMySW_Inst)
-$script:lMySW_Inst=$lMySW_Inst
-$lMySW_Avail=New-Lbl "" 14 70 340 14 $FontSmall $script:MUTED; $card3.Controls.Add($lMySW_Avail)
-$script:lMySW_Avail=$lMySW_Avail
-$lMySW_Result=New-Lbl "" 14 88 315 14 $FontBold $script:TEXT; $card3.Controls.Add($lMySW_Result)
-$script:lMySW_Result=$lMySW_Result
+$lMySW_Inst = New-Lbl "" 14 52 ($cardW-234) 14 $FontBold $script:NOTE_C; $card3.Controls.Add($lMySW_Inst)
+$script:lMySW_Inst = $lMySW_Inst
+$lMySW_Avail = New-Lbl "" 14 70 340 14 $FontSmall $script:MUTED; $card3.Controls.Add($lMySW_Avail)
+$script:lMySW_Avail = $lMySW_Avail
+$lMySW_Result = New-Lbl "" 14 88 315 14 $FontBold $script:TEXT; $card3.Controls.Add($lMySW_Result)
+$script:lMySW_Result = $lMySW_Result
 
-$btnMySW_C=New-Object System.Windows.Forms.Button
-$btnMySW_C.Text=T "S3BtnCheck"; $btnMySW_C.Location=[System.Drawing.Point]::new(438,30)
-$btnMySW_C.Size=[System.Drawing.Size]::new(94,28)
+$btnMySW_C = New-Object System.Windows.Forms.Button
+$btnMySW_C.Text = T "S3BtnCheck"; $btnMySW_C.Location = [System.Drawing.Point]::new(438,30)
+$btnMySW_C.Size = [System.Drawing.Size]::new(94,28)
 Style-Btn $btnMySW_C $script:SURFACE $script:ACCENT
-$btnMySW_C.FlatAppearance.BorderSize=1; $btnMySW_C.FlatAppearance.BorderColor=$script:ACCENT
+$btnMySW_C.FlatAppearance.BorderSize = 1; $btnMySW_C.FlatAppearance.BorderColor = $script:ACCENT
 $card3.Controls.Add($btnMySW_C)
 
-$btnMySW_I=New-Object System.Windows.Forms.Button
-$btnMySW_I.Text=T "S3BtnInstall"; $btnMySW_I.Location=[System.Drawing.Point]::new(360,60)
-$btnMySW_I.Size=[System.Drawing.Size]::new(172,32); Style-Btn $btnMySW_I $script:ACCENT $script:BG
-$card3.Controls.Add($btnMySW_I); $script:btnMySW_I=$btnMySW_I
+$btnMySW_I = New-Object System.Windows.Forms.Button
+$btnMySW_I.Text = T "S3BtnInstall"; $btnMySW_I.Location = [System.Drawing.Point]::new(360,60)
+$btnMySW_I.Size = [System.Drawing.Size]::new(172,32); Style-Btn $btnMySW_I $script:ACCENT $script:BG
+$card3.Controls.Add($btnMySW_I); $script:btnMySW_I = $btnMySW_I
 
-$btnMySW_M=New-Object System.Windows.Forms.Button
-$btnMySW_M.Text=T "S3BtnManual"; $btnMySW_M.Location=[System.Drawing.Point]::new(438,94)
-$btnMySW_M.Size=[System.Drawing.Size]::new(94,28)
+$btnMySW_M = New-Object System.Windows.Forms.Button
+$btnMySW_M.Text = "MANUAL"; $btnMySW_M.Location = [System.Drawing.Point]::new(438,94)
+$btnMySW_M.Size = [System.Drawing.Size]::new(94,28)
 Style-ManualBtn $btnMySW_M
 Set-ManualButtonVisibleText $btnMySW_M "MANUAL"
-$card3.Controls.Add($btnMySW_M); $script:btnMySW_M=$btnMySW_M
+$card3.Controls.Add($btnMySW_M); $script:btnMySW_M = $btnMySW_M
 
-# --- Extra Tools Section (solo instalación, sin desinstalación) ---
-$lExtraToolsTitle = New-Lbl (T 'ExtraToolsTitle') 14 108 400 14 $FontBold $script:ACCENT2
+# Clean install checkbox (below Result, above Extra Tools)
+$chkCleanInstall = New-Object System.Windows.Forms.CheckBox
+$chkCleanInstall.Text      = T 'CleanInstallCheckbox'
+$chkCleanInstall.Location  = [System.Drawing.Point]::new(14, 108)
+$chkCleanInstall.Size      = [System.Drawing.Size]::new(520, 22)
+$chkCleanInstall.ForeColor = $script:TEXT
+$chkCleanInstall.BackColor = [System.Drawing.Color]::Transparent
+$chkCleanInstall.Font      = $FontBold
+$chkCleanInstall.Checked   = $true
+$card3.Controls.Add($chkCleanInstall)
+$script:chkCleanInstall = $chkCleanInstall
+
+# Extra Tools section
+$lExtraToolsTitle = New-Lbl (T 'ExtraToolsTitle') 14 136 400 14 $FontBold $script:ACCENT2
 $card3.Controls.Add($lExtraToolsTitle)
 
 $btnExtraInstall = New-Object System.Windows.Forms.Button
 $btnExtraInstall.Text = T 'ExtraToolsInstall'
-$btnExtraInstall.Location = [System.Drawing.Point]::new(14, 128)
+$btnExtraInstall.Location = [System.Drawing.Point]::new(14, 156)
 $btnExtraInstall.Size = [System.Drawing.Size]::new(200, 32)
 Style-Btn $btnExtraInstall $script:ACCENT2 $script:BG
 $card3.Controls.Add($btnExtraInstall)
 $script:btnExtraInstall = $btnExtraInstall
 
 $chkExtraWithAll = New-Object System.Windows.Forms.CheckBox
-$chkExtraWithAll.Text = T 'ExtraToolsCheckbox'
-$chkExtraWithAll.Location = [System.Drawing.Point]::new(14, 163)
-$chkExtraWithAll.Size = [System.Drawing.Size]::new(520, 22)
+$chkExtraWithAll.Text      = T 'ExtraToolsCheckbox'
+$chkExtraWithAll.Location  = [System.Drawing.Point]::new(14, 191)
+$chkExtraWithAll.Size      = [System.Drawing.Size]::new(520, 22)
 $chkExtraWithAll.ForeColor = $script:TEXT
 $chkExtraWithAll.BackColor = [System.Drawing.Color]::Transparent
-$chkExtraWithAll.Checked = $true
+$chkExtraWithAll.Checked   = $true
 $card3.Controls.Add($chkExtraWithAll)
 $script:chkExtraWithAll = $chkExtraWithAll
 
-# --- CARD 4 (Installed versions + LOG) ---
-$card4=New-CardXY $pMain $rightX $row2Y $cardW $cMidH "S4Title"; $card4.Tag="S4"
-$lS4Lbl=New-Lbl (T "S4Label") 14 30 ($cardW-28) 16 $FontSmall $script:MUTED
+# --- CARD 4: Installed versions + log ---
+$card4 = New-CardXY $pMain $rightX $row2Y $cardW $cMidH "S4Title"; $card4.Tag = "S4"
+$lS4Lbl = New-Lbl (T "S4Label") 14 30 ($cardW-28) 16 $FontSmall $script:MUTED
 $card4.Controls.Add($lS4Lbl)
-$lS4Body=New-Object System.Windows.Forms.RichTextBox
-$lS4Body.Location=[System.Drawing.Point]::new(14,46)
-$lS4Body.Size=[System.Drawing.Size]::new($cardW-28,80)
-$lS4Body.Font=$FontMono; $lS4Body.ForeColor=$script:ACCENT
-$lS4Body.BackColor=[System.Drawing.Color]::FromArgb(38,35,26); $lS4Body.BorderStyle='None'; $lS4Body.ReadOnly=$true; $lS4Body.ScrollBars='None'; $lS4Body.AutoSize=$false
-$card4.Controls.Add($lS4Body); $script:lS4Body=$lS4Body
 
-$lLogLbl=New-Lbl "LOG" 14 126 40 14 $FontBold $script:MUTED
+$lS4Body = New-Object System.Windows.Forms.RichTextBox
+$lS4Body.Location   = [System.Drawing.Point]::new(14,46)
+$lS4Body.Size       = [System.Drawing.Size]::new($cardW-28,100)
+$lS4Body.Font       = $FontMono
+$lS4Body.ForeColor  = $script:ACCENT
+$lS4Body.BackColor  = [System.Drawing.Color]::FromArgb(38,35,26)
+$lS4Body.BorderStyle = 'None'; $lS4Body.ReadOnly = $true
+$lS4Body.ScrollBars = 'None';  $lS4Body.AutoSize = $false
+$card4.Controls.Add($lS4Body); $script:lS4Body = $lS4Body
+
+$lLogLbl = New-Lbl "LOG" 14 146 40 14 $FontBold $script:MUTED
 $card4.Controls.Add($lLogLbl)
-$logBox=New-Object System.Windows.Forms.RichTextBox
-$logBox.Location=[System.Drawing.Point]::new(14,142)
-$logBox.Size=[System.Drawing.Size]::new($cardW-28,40)
-$logBox.BackColor=[System.Drawing.Color]::FromArgb(22,20,15)
-$logBox.ForeColor=$script:TEXT; $logBox.Font=$FontMono
-$logBox.BorderStyle='None'; $logBox.ReadOnly=$true; $logBox.ScrollBars='Vertical'
-$card4.Controls.Add($logBox); $script:LogBox=$logBox
 
-# --- CARD 5 (Actions) ---
-$card5=New-CardXY $pMain $leftX $row3Y $cardW $cBotH "ActionsTitle"; $card5.Tag="ACT"
+$logBox = New-Object System.Windows.Forms.RichTextBox
+$logBox.Location   = [System.Drawing.Point]::new(14,162)
+$logBox.Size       = [System.Drawing.Size]::new($cardW-28,38)
+$logBox.BackColor  = [System.Drawing.Color]::FromArgb(22,20,15)
+$logBox.ForeColor  = $script:TEXT
+$logBox.Font       = $FontMono
+$logBox.BorderStyle = 'None'; $logBox.ReadOnly = $true; $logBox.ScrollBars = 'Vertical'
+$card4.Controls.Add($logBox); $script:LogBox = $logBox
 
-$btnCheckAll=New-Object System.Windows.Forms.Button
-$btnCheckAll.Text=T "ActCheckAll"; $btnCheckAll.Location=[System.Drawing.Point]::new(14,34)
-$btnCheckAll.Size=[System.Drawing.Size]::new(148,32)
+# --- CARD 5: Actions ---
+$card5 = New-CardXY $pMain $leftX $row3Y $cardW $cBotH "ActionsTitle"; $card5.Tag = "ACT"
+
+$btnCheckAll = New-Object System.Windows.Forms.Button
+$btnCheckAll.Text = T "ActCheckAll"; $btnCheckAll.Location = [System.Drawing.Point]::new(14,34)
+$btnCheckAll.Size = [System.Drawing.Size]::new(148,32)
 Style-Btn $btnCheckAll $script:SURFACE $script:ACCENT
-$btnCheckAll.FlatAppearance.BorderSize=1; $btnCheckAll.FlatAppearance.BorderColor=$script:ACCENT
-$card5.Controls.Add($btnCheckAll); $script:btnCheckAll=$btnCheckAll
+$btnCheckAll.FlatAppearance.BorderSize = 1; $btnCheckAll.FlatAppearance.BorderColor = $script:ACCENT
+$card5.Controls.Add($btnCheckAll); $script:btnCheckAll = $btnCheckAll
 
-$btnUpdateAll=New-Object System.Windows.Forms.Button
-$btnUpdateAll.Text=T "ActUpdateAll"; $btnUpdateAll.Location=[System.Drawing.Point]::new(172,34)
-$btnUpdateAll.Size=[System.Drawing.Size]::new(190,32); Style-Btn $btnUpdateAll $script:ACCENT2 $script:BG
-$card5.Controls.Add($btnUpdateAll); $script:btnUpdateAll=$btnUpdateAll
+$btnUpdateAll = New-Object System.Windows.Forms.Button
+$btnUpdateAll.Text = T "ActUpdateAll"; $btnUpdateAll.Location = [System.Drawing.Point]::new(172,34)
+$btnUpdateAll.Size = [System.Drawing.Size]::new(190,32); Style-Btn $btnUpdateAll $script:ACCENT2 $script:BG
+$card5.Controls.Add($btnUpdateAll); $script:btnUpdateAll = $btnUpdateAll
 
-$btnForce=New-Object System.Windows.Forms.Button
-$btnForce.Text=T "ActForce"; $btnForce.Location=[System.Drawing.Point]::new(372,34)
-$btnForce.Size=[System.Drawing.Size]::new(162,32)
+$btnForce = New-Object System.Windows.Forms.Button
+$btnForce.Text = T "ActForce"; $btnForce.Location = [System.Drawing.Point]::new(372,34)
+$btnForce.Size = [System.Drawing.Size]::new(162,32)
 Style-Btn $btnForce $script:SURFACE $script:ERROR_C
-$btnForce.FlatAppearance.BorderSize=1; $btnForce.FlatAppearance.BorderColor=$script:ERROR_C
-$card5.Controls.Add($btnForce); $script:btnForce=$btnForce
+$btnForce.FlatAppearance.BorderSize = 1; $btnForce.FlatAppearance.BorderColor = $script:ERROR_C
+$card5.Controls.Add($btnForce); $script:btnForce = $btnForce
 
-# --- CARD 6 (Status) ---
-$card6=New-CardXY $pMain $rightX $row3Y $cardW $cBotH "ActionsTitle"; $card6.Tag="ACT6"
-$lStatusLbl=New-Lbl (T "StatusLbl") 14 28 60 14 $FontSmall $script:MUTED; $card6.Controls.Add($lStatusLbl); $script:lStatusLbl=$lStatusLbl
-$lStatus=New-Object System.Windows.Forms.Label
-$lStatus.Location=[System.Drawing.Point]::new(14,45)
-$lStatus.Size=[System.Drawing.Size]::new($cardW-28,36)
-$lStatus.Font=$FontSub; $lStatus.ForeColor=$script:MUTED
-$lStatus.BackColor=[System.Drawing.Color]::Transparent
-$lStatus.Text=T "StatusReady"; $lStatus.AutoSize=$false
-$card6.Controls.Add($lStatus); $script:lStatus=$lStatus
+# --- CARD 6: Status ---
+$card6 = New-CardXY $pMain $rightX $row3Y $cardW $cBotH "ActionsTitle"; $card6.Tag = "ACT6"
+$lStatusLbl = New-Lbl (T "StatusLbl") 14 28 60 14 $FontSmall $script:MUTED
+$card6.Controls.Add($lStatusLbl); $script:lStatusLbl = $lStatusLbl
+
+$lStatus = New-Object System.Windows.Forms.Label
+$lStatus.Location  = [System.Drawing.Point]::new(14,45)
+$lStatus.Size      = [System.Drawing.Size]::new($cardW-28,36)
+$lStatus.Font      = $FontSub
+$lStatus.ForeColor = $script:MUTED
+$lStatus.BackColor = [System.Drawing.Color]::Transparent
+$lStatus.Text      = T "StatusReady"
+$lStatus.AutoSize  = $false
+$card6.Controls.Add($lStatus); $script:lStatus = $lStatus
 
 # ============================================================
-#  BUTTON EVENTS (con sync offline)
+#  BUTTON EVENTS
 # ============================================================
 $btnFF_C.Add_Click({
     [void](Sync-OfflineInstalledVersions)
@@ -1743,27 +1883,36 @@ $btnFF_C.Add_Click({
         [System.Windows.Forms.Application]::DoEvents()
         return
     }
-    $script:lFF_Avail.Text=T "S1Checking"; [System.Windows.Forms.Application]::DoEvents()
-    $ver,$a=Get-FFmpegLatest
+    $script:lFF_Avail.Text = T "S1Checking"; [System.Windows.Forms.Application]::DoEvents()
+    $ver,$a = Get-FFmpegLatest
     if ($a -and $ver) {
-        $script:CheckedFFAvailable=$ver
-        $script:lFF_Avail.Text=(T "S1Available")+"  "+$ver; $script:lFF_Avail.ForeColor=$script:SUCCESS
+        $script:CheckedFFAvailable = $ver
+        $script:lFF_Avail.Text = (T "S1Available") + "  " + $ver
+        $script:lFF_Avail.ForeColor = $script:SUCCESS
         $didCanon = Rewrite-FFmpegJsonToOnlineTag $ver
-        $iv=(Get-InstalledVersions).ffmpeg
-        $ivDisplay = Get-FFmpegDisplayVersion $iv
+        $iv = (Get-InstalledVersions).ffmpeg
+        $ivDisplay  = Get-FFmpegDisplayVersion $iv
         $verDisplay = Get-FFmpegDisplayVersion $ver
         if ($didCanon -or ($ivDisplay -and $verDisplay -and $ivDisplay -eq $verDisplay)) {
-            $script:lFF_Result.Text=(T "IconLatest")+" "+(T "S1Result")+"  "+(T "ResLatest")
-            $script:lFF_Result.ForeColor=$script:TEXT
-            Refresh-VersionLabels
-            Refresh-SummaryCard
+            $script:lFF_Result.Text = (T "IconLatest") + " " + (T "S1Result") + "  " + (T "ResLatest")
         } else {
-            $script:lFF_Result.Text=(Get-ResultIcon $iv $ver)+" "+(T "S1Result")+"  "+(Get-ResultMessage $iv $ver)
-            $script:lFF_Result.ForeColor=$script:TEXT
-            Refresh-SummaryCard
+            $script:lFF_Result.Text = (Get-ResultIcon $iv $ver) + " " + (T "S1Result") + "  " + (Get-ResultMessage $iv $ver)
+        }
+        $script:lFF_Result.ForeColor = $script:TEXT
+        Refresh-VersionLabels
+        Refresh-SummaryCard
+    } else {
+        $script:lFF_Avail.Text = (T "S1Available") + "  ?"
+        $script:lFF_Avail.ForeColor = $script:ERROR_C
+        if ($script:GitHubRateLimited) {
+            Log-Warn (T 'LogRateLimit'); Set-BlockedStatus
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) {
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } else {
+            Set-ApiStatus '' $script:MUTED
         }
     }
-    else { $script:lFF_Avail.Text=(T "S1Available")+"  ?"; $script:lFF_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
 })
 
 $btnMpv_C.Add_Click({
@@ -1777,24 +1926,23 @@ $btnMpv_C.Add_Click({
         $script:lMpv_Avail.Text = (T "S2Available") + "  " + $r.tag_name
         $script:lMpv_Avail.ForeColor = $script:SUCCESS
         $iv = (Get-InstalledVersions).mpv
+        $ivHash = Get-MpvHashFragment $iv
+        $rHash  = Get-MpvHashFragment $r.tag_name
         if ($didCanon) {
             $script:lMpv_Result.Text = (T "IconLatest") + " " + (T "S2Result") + "  " + (T "ResLatest")
-            $script:lMpv_Result.ForeColor = $script:TEXT
-        } elseif ((Get-MpvHashFragment $iv) -and (Get-MpvHashFragment $r.tag_name) -and (((Get-MpvHashFragment $iv).StartsWith((Get-MpvHashFragment $r.tag_name))) -or ((Get-MpvHashFragment $r.tag_name).StartsWith((Get-MpvHashFragment $iv))))) {
+        } elseif ($ivHash -and $rHash -and ($ivHash.StartsWith($rHash) -or $rHash.StartsWith($ivHash))) {
             $script:lMpv_Result.Text = (T "IconLatest") + " " + (T "S2Result") + "  " + (T "ResLatest")
-            $script:lMpv_Result.ForeColor = $script:TEXT
         } else {
             $script:lMpv_Result.Text = (Get-ResultIcon $iv $r.tag_name) + " " + (T "S2Result") + "  " + (Get-ResultMessage $iv $r.tag_name)
-            $script:lMpv_Result.ForeColor = $script:TEXT
         }
+        $script:lMpv_Result.ForeColor = $script:TEXT
         Refresh-VersionLabels
         Refresh-SummaryCard
     } else {
         $script:lMpv_Avail.Text = (T "S2Available") + "  ?"
         $script:lMpv_Avail.ForeColor = $script:ERROR_C
         if ($script:GitHubRateLimited) {
-            Log-Warn (T 'LogRateLimit')
-            Set-BlockedStatus
+            Log-Warn (T 'LogRateLimit'); Set-BlockedStatus
             Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
         } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) {
             Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
@@ -1807,15 +1955,43 @@ $btnMpv_C.Add_Click({
 
 $btnMySW_C.Add_Click({
     [void](Sync-OfflineInstalledVersions)
-    $script:lMySW_Avail.Text=T "S3Checking"; [System.Windows.Forms.Application]::DoEvents()
-    $r=Get-MyLatestRelease
-    if ($r) { $script:CheckedMyAvailable=$r.tag_name; $script:lMySW_Avail.Text=(T "S3Available")+"  "+$r.tag_name; $script:lMySW_Avail.ForeColor=$script:SUCCESS; $iv=(Get-InstalledVersions).mpvsw; $script:lMySW_Result.Text=(Get-ResultIcon $iv $r.tag_name)+" "+(T "S3Result")+"  "+(Get-ResultMessage $iv $r.tag_name); $script:lMySW_Result.ForeColor=$script:TEXT; Refresh-SummaryCard }
-    else { $script:lMySW_Avail.Text=(T "S3Available")+"  ?"; $script:lMySW_Avail.ForeColor=$script:ERROR_C; if ($script:GitHubRateLimited) { Log-Warn (T 'LogRateLimit'); Set-BlockedStatus; Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) { Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED } }
+    $script:lMySW_Avail.Text = T "S3Checking"; [System.Windows.Forms.Application]::DoEvents()
+    $r = Get-MyLatestRelease
+    if ($r) {
+        $script:CheckedMyAvailable = $r.tag_name
+        $script:lMySW_Avail.Text = (T "S3Available") + "  " + $r.tag_name
+        $script:lMySW_Avail.ForeColor = $script:SUCCESS
+        $iv = (Get-InstalledVersions).mpvsw
+        $script:lMySW_Result.Text = (Get-ResultIcon $iv $r.tag_name) + " " + (T "S3Result") + "  " + (Get-ResultMessage $iv $r.tag_name)
+        $script:lMySW_Result.ForeColor = $script:TEXT
+        Refresh-SummaryCard
+    } else {
+        $script:lMySW_Avail.Text = (T "S3Available") + "  ?"
+        $script:lMySW_Avail.ForeColor = $script:ERROR_C
+        if ($script:GitHubRateLimited) {
+            Log-Warn (T 'LogRateLimit'); Set-BlockedStatus
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } elseif (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$')) {
+            Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+        } else {
+            Set-ApiStatus '' $script:MUTED
+        }
+    }
 })
 
-$btnFF_M.Add_Click({ $u = $(if ((Get-FFmpegMode) -eq 'stable') { $FFmpegLatestPage } else { $FFmpegReleasesPage }); Log-Info ('[manual] Opening: ' + $u); if (-not (Open-Url $u)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
-$btnMpv_M.Add_Click({ Log-Info ('[manual] Opening: ' + $MpvLatestPage); if (-not (Open-Url $MpvLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
-$btnMySW_M.Add_Click({ Log-Info ('[manual] Opening: ' + $MyLatestPage); if (-not (Open-Url $MyLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' } })
+$btnFF_M.Add_Click({
+    $u = $(if ((Get-FFmpegMode) -eq 'stable') { $FFmpegLatestPage } else { $FFmpegReleasesPage })
+    Log-Info ('[manual] Opening: ' + $u)
+    if (-not (Open-Url $u)) { Log-Warn '[manual] Browser could not be opened automatically.' }
+})
+$btnMpv_M.Add_Click({
+    Log-Info ('[manual] Opening: ' + $MpvLatestPage)
+    if (-not (Open-Url $MpvLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' }
+})
+$btnMySW_M.Add_Click({
+    Log-Info ('[manual] Opening: ' + $MyLatestPage)
+    if (-not (Open-Url $MyLatestPage)) { Log-Warn '[manual] Browser could not be opened automatically.' }
+})
 
 $btnFF_I.Add_Click({
     Run-WithLock {
@@ -1827,7 +2003,7 @@ $btnFF_I.Add_Click({
     }
 })
 $btnMpv_I.Add_Click({
-    $v=Get-SelectedMpvVariant
+    $v = Get-SelectedMpvVariant
     Run-WithLock {
         Set-Status (T "StatusDownloading") $script:NOTE_C
         Do-InstallMPV $v $false
@@ -1835,10 +2011,20 @@ $btnMpv_I.Add_Click({
         Set-Status (T "StatusDone") $script:SUCCESS
     }
 })
+
+# Individual MPV-SW install: short-circuit normal refresh if clean install ran.
 $btnMySW_I.Add_Click({
+    $script:CleanInstallDone = $null
     Run-WithLock {
         Set-Status (T "StatusDownloading") $script:NOTE_C
         Do-InstallMySW $false
+        if ($script:CleanInstallDone) {
+            $msg = [string]::Format((T 'CleanInstallDoneText'),
+                                    (Split-Path $script:CleanInstallDone -Leaf))
+            [System.Windows.Forms.MessageBox]::Show($msg, (T 'CleanInstallDoneTitle'),
+                'OK', 'Information') | Out-Null
+            return
+        }
         if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
         Set-Status (T "StatusDone") $script:SUCCESS
     }
@@ -1857,41 +2043,68 @@ $btnCheckAll.Add_Click({
     [void](Sync-OfflineInstalledVersions)
     Clear-RemoteCache
     Set-Status (T "StatusChecking") $script:NOTE_C; [System.Windows.Forms.Application]::DoEvents()
-    $ver,$a=Get-FFmpegLatest
-    if ($a -and $ver) { $script:CheckedFFAvailable=$ver; $script:lFF_Avail.Text=(T "S1Available")+"  "+$ver; $script:lFF_Avail.ForeColor=$script:SUCCESS; $iv=(Get-InstalledVersions).ffmpeg; $script:lFF_Result.Text=(Get-ResultIcon $iv $ver)+" "+(T "S1Result")+"  "+(Get-ResultMessage $iv $ver) }
-    else { $script:lFF_Avail.Text=(T "S1Available")+"  ?"; $script:lFF_Avail.ForeColor=$script:ERROR_C }
-    $r2=Get-MpvLatestRelease
+
+    $ver,$a = Get-FFmpegLatest
+    if ($a -and $ver) {
+        $script:CheckedFFAvailable = $ver
+        $script:lFF_Avail.Text = (T "S1Available") + "  " + $ver
+        $script:lFF_Avail.ForeColor = $script:SUCCESS
+        $iv = (Get-InstalledVersions).ffmpeg
+        $script:lFF_Result.Text = (Get-ResultIcon $iv $ver) + " " + (T "S1Result") + "  " + (Get-ResultMessage $iv $ver)
+    } else {
+        $script:lFF_Avail.Text = (T "S1Available") + "  ?"
+        $script:lFF_Avail.ForeColor = $script:ERROR_C
+    }
+
+    $r2 = Get-MpvLatestRelease
     if ($r2) {
         $variant = Get-SelectedMpvVariant
         $variantVer, $variantAsset = Get-MpvVersionForVariant $variant
-        $script:CheckedMpvAvailable=$(if ($variantVer) { $variantVer } else { $r2.tag_name })
+        $script:CheckedMpvAvailable = $(if ($variantVer) { $variantVer } else { $r2.tag_name })
         $didCanon = Rewrite-MpvJsonToOnlineTag $script:CheckedMpvAvailable
-        $script:lMpv_Avail.Text=(T "S2Available")+"  "+$script:CheckedMpvAvailable
-        $script:lMpv_Avail.ForeColor=$script:SUCCESS
-        $iv=(Get-InstalledVersions).mpv
-        if ($didCanon) {
-            $script:lMpv_Result.Text=(T "IconLatest")+" "+(T "S2Result")+"  "+(T "ResLatest")
-            Refresh-VersionLabels
-            Refresh-SummaryCard
-        } elseif ((Get-MpvHashFragment $iv) -and (Get-MpvHashFragment $script:CheckedMpvAvailable) -and (((Get-MpvHashFragment $iv).StartsWith((Get-MpvHashFragment $script:CheckedMpvAvailable))) -or ((Get-MpvHashFragment $script:CheckedMpvAvailable).StartsWith((Get-MpvHashFragment $iv))))) {
-            $script:lMpv_Result.Text=(T "IconLatest")+" "+(T "S2Result")+"  "+(T "ResLatest")
+        $script:lMpv_Avail.Text = (T "S2Available") + "  " + $script:CheckedMpvAvailable
+        $script:lMpv_Avail.ForeColor = $script:SUCCESS
+        $iv = (Get-InstalledVersions).mpv
+        $ivHash = Get-MpvHashFragment $iv
+        $rHash  = Get-MpvHashFragment $script:CheckedMpvAvailable
+        if ($didCanon -or ($ivHash -and $rHash -and ($ivHash.StartsWith($rHash) -or $rHash.StartsWith($ivHash)))) {
+            $script:lMpv_Result.Text = (T "IconLatest") + " " + (T "S2Result") + "  " + (T "ResLatest")
             Refresh-VersionLabels
             Refresh-SummaryCard
         } else {
-            $script:lMpv_Result.Text=(Get-ResultIcon $iv $script:CheckedMpvAvailable)+" "+(T "S2Result")+"  "+(Get-ResultMessage $iv $script:CheckedMpvAvailable)
+            $script:lMpv_Result.Text = (Get-ResultIcon $iv $script:CheckedMpvAvailable) + " " + (T "S2Result") + "  " + (Get-ResultMessage $iv $script:CheckedMpvAvailable)
         }
+    } else {
+        $script:lMpv_Avail.Text = (T "S2Available") + "  ?"
+        $script:lMpv_Avail.ForeColor = $script:ERROR_C
     }
-    else { $script:lMpv_Avail.Text=(T "S2Available")+"  ?"; $script:lMpv_Avail.ForeColor=$script:ERROR_C }
-    $r3=Get-MyLatestRelease
-    if ($r3) { $script:CheckedMyAvailable=$r3.tag_name; $script:lMySW_Avail.Text=(T "S3Available")+"  "+$r3.tag_name; $script:lMySW_Avail.ForeColor=$script:SUCCESS; $iv=(Get-InstalledVersions).mpvsw; $script:lMySW_Result.Text=(Get-ResultIcon $iv $r3.tag_name)+" "+(T "S3Result")+"  "+(Get-ResultMessage $iv $r3.tag_name) }
-    else { $script:lMySW_Avail.Text=(T "S3Available")+"  ?"; $script:lMySW_Avail.ForeColor=$script:ERROR_C }
+
+    $r3 = Get-MyLatestRelease
+    if ($r3) {
+        $script:CheckedMyAvailable = $r3.tag_name
+        $script:lMySW_Avail.Text = (T "S3Available") + "  " + $r3.tag_name
+        $script:lMySW_Avail.ForeColor = $script:SUCCESS
+        $iv = (Get-InstalledVersions).mpvsw
+        $script:lMySW_Result.Text = (Get-ResultIcon $iv $r3.tag_name) + " " + (T "S3Result") + "  " + (Get-ResultMessage $iv $r3.tag_name)
+    } else {
+        $script:lMySW_Avail.Text = (T "S3Available") + "  ?"
+        $script:lMySW_Avail.ForeColor = $script:ERROR_C
+    }
+
     Refresh-SummaryCard
-    if ($script:GitHubRateLimited -or (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$'))) { Log-Warn (T 'LogRateLimit'); Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C } else { Set-ApiStatus '' $script:MUTED }
+    if ($script:GitHubRateLimited -or (($script:lFF_Avail.Text -match '\?$') -and ($script:lMpv_Avail.Text -match '\?$') -and ($script:lMySW_Avail.Text -match '\?$'))) {
+        Log-Warn (T 'LogRateLimit')
+        Set-ApiStatus (T 'StatusRateLimit') $script:NOTE_C
+    } else {
+        Set-ApiStatus '' $script:MUTED
+    }
     Set-Status (T "StatusReady") $script:MUTED
 })
 
+# Install ALL: skip the normal refresh if a clean install ran.
 $btnUpdateAll.Add_Click({
-    $v=Get-SelectedMpvVariant
+    $v = Get-SelectedMpvVariant
+    $script:CleanInstallDone = $null
     Run-WithLock {
         Set-Status (T "StatusDownloading") $script:NOTE_C
         Do-InstallFFmpeg $false
@@ -1900,6 +2113,13 @@ $btnUpdateAll.Add_Click({
         if ($script:chkExtraWithAll.Checked) {
             Do-InstallExtraTools $false
         }
+        if ($script:CleanInstallDone) {
+            $msg = [string]::Format((T 'CleanInstallDoneText'),
+                                    (Split-Path $script:CleanInstallDone -Leaf))
+            [System.Windows.Forms.MessageBox]::Show($msg, (T 'CleanInstallDoneTitle'),
+                'OK', 'Information') | Out-Null
+            return
+        }
         Refresh-InstalledNow
         if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
         Log-OK (T "LogAllDone")
@@ -1907,13 +2127,20 @@ $btnUpdateAll.Add_Click({
     }
 })
 
+# Force reinstall ALL: same clean install handling.
 $btnForce.Add_Click({
-    $resp = [System.Windows.Forms.MessageBox]::Show((T 'ForceConfirmText'), (T 'ForceConfirmTitle'), [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    $resp = [System.Windows.Forms.MessageBox]::Show(
+        (T 'ForceConfirmText'), (T 'ForceConfirmTitle'),
+        [System.Windows.Forms.MessageBoxButtons]::YesNo,
+        [System.Windows.Forms.MessageBoxIcon]::Warning)
     if ($resp -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+
     if (Test-Path $script:VersionFile) { Remove-Item $script:VersionFile -Force }
-    $v=Get-SelectedMpvVariant
+    $v = Get-SelectedMpvVariant
     Refresh-VersionLabels
     Log-Warn (T 'LogForced')
+
+    $script:CleanInstallDone = $null
     Run-WithLock {
         Set-Status (T "StatusDownloading") $script:NOTE_C
         Do-InstallFFmpeg $true
@@ -1921,6 +2148,13 @@ $btnForce.Add_Click({
         Do-InstallMySW $true
         if ($script:chkExtraWithAll.Checked) {
             Do-InstallExtraTools $true
+        }
+        if ($script:CleanInstallDone) {
+            $msg = [string]::Format((T 'CleanInstallDoneText'),
+                                    (Split-Path $script:CleanInstallDone -Leaf))
+            [System.Windows.Forms.MessageBox]::Show($msg, (T 'CleanInstallDoneTitle'),
+                'OK', 'Information') | Out-Null
+            return
         }
         Refresh-InstalledNow
         if ($script:GitHubRateLimited) { Set-ApiStatus (T 'StatusRateLimitInline') $script:NOTE_C }
@@ -1933,45 +2167,54 @@ $btnForce.Add_Click({
 #  LANGUAGE TOGGLE
 # ============================================================
 function Apply-Lang([string]$lang) {
-    $script:CurrentLang=$lang
+    $script:CurrentLang = $lang
     Style-LangBtn $btnEN ($lang -eq "EN")
     Style-LangBtn $btnES ($lang -eq "ES")
 
-    $form.Text = T 'Title'
-    $lAppSub.Text=T "HeaderSub"; $lLangLbl.Text=T "LangLabel"; $lHeaderNote.Text=T "HeaderNote"
+    $form.Text  = T 'Title'
+    $lAppSub.Text = T "HeaderSub"
+    $lLangLbl.Text = T "LangLabel"
+    $lHeaderNote.Text = T "HeaderNote"
 
     foreach ($card in @($card1,$card2,$card3,$card4,$card5,$card6)) {
-        $tL=$card.Controls | Where-Object {
+        $tL = $card.Controls | Where-Object {
             ($_ -is [System.Windows.Forms.Label]) -and $_.Font.Bold -and ($_.Font.Size -eq $FontSectionTitle.Size)
         } | Select-Object -First 1
         if ($tL) {
             switch ($card.Tag) {
-                "S1"   { $tL.Text=T "S1Title" }
-                "S2"   { $tL.Text=T "S2Title" }
-                "S3"   { $tL.Text=T "S3Title" }
-                "S4"   { $tL.Text=T "S4Title" }
-                "ACT"  { $tL.Text=T "ActionsTitle" }
-                "ACT6" { $tL.Text=T "ActionsTitle" }
+                "S1"   { $tL.Text = T "S1Title" }
+                "S2"   { $tL.Text = T "S2Title" }
+                "S3"   { $tL.Text = T "S3Title" }
+                "S4"   { $tL.Text = T "S4Title" }
+                "ACT"  { $tL.Text = T "ActionsTitle" }
+                "ACT6" { $tL.Text = T "ActionsTitle" }
             }
         }
     }
 
-    $lFF_Desc.Text=T "S1Desc"; $lMpv_Desc.Text=T "S2Desc"; $lMySW_Desc.Text=T "S3Desc"
-    $lVarLbl.Text=T "S2VariantLbl"
-    $rbV1.Text=T "S2V1"; $rbV2.Text=T "S2V2"; $rbV3.Text=T "S2V3"
-    $lS4Lbl.Text=T "S4Label"
-    $btnFF_C.Text=T "S1BtnCheck"; $btnFF_I.Text=T "S1BtnInstall"
-    $btnMpv_C.Text=T "S2BtnCheck"; $btnMpv_I.Text=T "S2BtnInstall"
-    $btnMySW_C.Text=T "S3BtnCheck"; $btnMySW_I.Text=T "S3BtnInstall"
-    $btnCheckAll.Text=T "ActCheckAll"; $btnUpdateAll.Text=T "ActUpdateAll"; $btnForce.Text=T "ActForce"
+    $lFF_Desc.Text  = T "S1Desc"
+    $lMpv_Desc.Text = T "S2Desc"
+    $lMySW_Desc.Text = T "S3Desc"
+    $lVarLbl.Text   = T "S2VariantLbl"
+    $rbV1.Text = T "S2V1"; $rbV2.Text = T "S2V2"; $rbV3.Text = T "S2V3"
+    $lS4Lbl.Text = T "S4Label"
+
+    $btnFF_C.Text   = T "S1BtnCheck";   $btnFF_I.Text   = T "S1BtnInstall"
+    $btnMpv_C.Text  = T "S2BtnCheck";   $btnMpv_I.Text  = T "S2BtnInstall"
+    $btnMySW_C.Text = T "S3BtnCheck";   $btnMySW_I.Text = T "S3BtnInstall"
+    $btnCheckAll.Text  = T "ActCheckAll"
+    $btnUpdateAll.Text = T "ActUpdateAll"
+    $btnForce.Text     = T "ActForce"
     $script:rbFFStable.Text = T "S1ModeStable"
     $script:rbFFDaily.Text  = T "S1ModeDaily"
     if ($script:lStatusLbl) { $script:lStatusLbl.Text = T "StatusLbl" }
 
     $lExtraToolsTitle.Text = T 'ExtraToolsTitle'
-    $btnExtraInstall.Text = T 'ExtraToolsInstall'
-    $chkExtraWithAll.Text = T 'ExtraToolsCheckbox'
+    $btnExtraInstall.Text  = T 'ExtraToolsInstall'
+    $chkExtraWithAll.Text  = T 'ExtraToolsCheckbox'
+    if ($script:chkCleanInstall) { $script:chkCleanInstall.Text = T 'CleanInstallCheckbox' }
 
+    # Translate the status line if it currently holds a known-status message.
     $knownStatusKeys = @('StatusReady','StatusChecking','StatusDownloading','StatusDone','StatusUpToDate')
     $otherLang = if ($lang -eq 'EN') { 'ES' } else { 'EN' }
     $matched = $false
@@ -1987,25 +2230,24 @@ function Apply-Lang([string]$lang) {
         $script:lStatus.Text = T 'StatusReady'
         $script:lStatus.ForeColor = $script:MUTED
     }
+
     if (-not $script:LogBox.TextLength) {
         Log-Info (T 'LogReady')
     }
-    Refresh-VersionLabels; $form.Refresh()
+    Refresh-VersionLabels
+    $form.Refresh()
 }
 
-$btnEN.Add_Click({
-    Apply-Lang "EN"
-    Save-GUILanguage "EN"
-})
-$btnES.Add_Click({
-    Apply-Lang "ES"
-    Save-GUILanguage "ES"
-})
+$btnEN.Add_Click({ Apply-Lang "EN"; Save-GUILanguage "EN" })
+$btnES.Add_Click({ Apply-Lang "ES"; Save-GUILanguage "ES" })
 
 $rbV1.Add_CheckedChanged({ if ($rbV1.Checked) { Update-MpvAvailableForSelection } })
 $rbV2.Add_CheckedChanged({ if ($rbV2.Checked) { Update-MpvAvailableForSelection } })
 $rbV3.Add_CheckedChanged({ if ($rbV3.Checked) { Update-MpvAvailableForSelection } })
 
+# ============================================================
+#  BOOTSTRAP
+# ============================================================
 [void](Sync-OfflineInstalledVersions)
 $savedLang = Load-GUILanguage
 Apply-Lang $savedLang

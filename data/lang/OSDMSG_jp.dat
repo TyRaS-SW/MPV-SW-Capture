@@ -26,6 +26,10 @@ autocompress_merge_error=❌ 録画の結合中にエラーが発生しました
 autocompress_recording_label=🔴 録画中
 autocompress_finishing_label=⏳ 録画を終了しています。お待ちください!
 autocompress_done_label=✅ 完了しました!
+autocompress_quit_blocked=録画中です。先に録画を停止してください。
+autocompress_emergency_save=緊急保存を実行しました。マージは終了後に完了します。
+autocompress_recovered=中断された録画を復元しました。
+autocompress_recover_failed=録画を復元できませんでした。ファイルは削除されました。
 
 # ============================================================
 #  CHECK VERSION
@@ -58,7 +62,8 @@ motioninterp_off=モーション補間: OFF
 # ============================================================
 toolslauncher_bezel_name=ベゼルマネージャー
 toolslauncher_video_name=ビデオマネージャー
-toolslauncher_stream_name=ストリームヘルパー
+toolslauncher_ffplaystream_name=FFPlay ストリームヘルパー
+toolslauncher_streammenu_name=ストリームメニュー
 toolslauncher_install_name=インストーラー
 toolslauncher_setup_name=セットアップ
 toolslauncher_opening=%s を開いています

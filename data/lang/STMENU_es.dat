@@ -1,0 +1,106 @@
+# STMENU_es.dat - By TyRaS-SW - Spanish strings for StreamMenu_MSC.ps1
+# Same key=value format as ASMENU_<lang>.dat.
+# Do not translate keys; only translate the right side of '='.
+
+# --- Header ---
+StreamMenuTitle=MENÚ DE STREAM
+StreamMenuSubtitle=Control externo para MPV-SW-Capture
+
+# --- Sliders ---
+Volume=VOLUMEN
+AudioBoost=AMPLIFICACIÓN DE AUDIO
+
+# --- Lock / OSD ---
+LockMenu=Bloquear Menú
+UnlockMenu=Desbloquear Menú
+HideOSD=Ocultar Mensajes OSD
+ShowOSD=Mostrar Mensajes OSD
+
+# --- Action buttons ---
+Screenshot=Captura
+Record=Grabar
+InfoStream=Información del Stream
+CleanALL=Limpiar TODO
+ShowMenu=Mostrar Menú
+
+# --- Open / Close ---
+OpenMPV=Abrir MPV-SW-Capture
+CloseMPV=Cerrar MPV-SW-Capture
+
+# --- Toggles ---
+AutoICC=Auto ICC
+AutoICCOn=Auto ICC: SÍ
+Fullscreen=Pantalla Completa
+FullscreenOn=Pant. Completa: SÍ
+OnTop=Siempre Arriba
+OnTopOn=Siempre Arriba: SÍ
+FitFull=Ajustar P. Completa
+FitFullOn=Ajustar: SÍ
+FillScreen=Rellenar Pantalla
+FillScreenOn=Rellenar Pantalla ✓
+
+# --- Position + Shader + Shapes + Crops + Bezels ---
+WindowPosition=POSICIÓN DE VENTANA
+Shader=SHADER
+Shapes=FORMAS
+Crops=RECORTES
+Bezels=MARCOS
+Apply=Aplicar
+
+# --- Folder shortcuts + Tools ---
+OpenRecordings=Abrir Grabaciones
+OpenScreenshots=Abrir Capturas
+CreateShortcut=Crear Acceso Directo
+OpenTools=Abrir HERRAMIENTAS
+
+# --- Status / log ---
+Connected=Conectado
+Connecting=Conectando...
+Disconnected=Desconectado (esperando mpv)
+MPVClosed=MPV cerrado
+NoShaderSelected=Ningún shader seleccionado
+NoShapeSelected=Ninguna forma seleccionada
+NoCropSelected=Ningún recorte seleccionado
+NoBezelSelected=Ningún marco seleccionado
+AppliedShader=Shader aplicado
+AppliedShape=Forma aplicada
+AppliedCrop=Recorte aplicado
+AppliedBezel=Marco aplicado
+ConfigReloaded=Config recargada
+CleanALLApplied=Limpiar TODO aplicado
+ScreenshotSaved=Captura guardada
+RecordToggled=Grabación alternada
+ASSMenuToggled=Menú ASS alternado
+InfoToggled=Info alternada
+LanguageChanged=Idioma cambiado
+OpenedRecordings=Carpeta de grabaciones abierta
+OpenedScreenshots=Carpeta de capturas abierta
+RecordingsNotFound=Carpeta de grabaciones no encontrada
+ScreenshotsNotFound=Carpeta de capturas no encontrada
+OpenedTools=Carpeta HERRAMIENTAS abierta
+ToolsNotFound=Carpeta tools no encontrada
+ShortcutCreated=Acceso directo creado en el Escritorio
+ShortcutFailed=No se pudo crear el acceso directo
+ScriptNotFound=No se encontró StreamMenu_MSC.ps1
+LaunchedMPV=MPV-SW-Capture iniciado
+LaunchedMPVExe=mpv.exe iniciado
+MPVNotFound=mpv.exe no encontrado
+
+# --- Window positions ---
+PosTopLeft=Posición: Arriba izquierda
+PosTopCenter=Posición: Arriba centro
+PosTopRight=Posición: Arriba derecha
+PosCenterLeft=Posición: Centro izquierda
+PosCenter=Posición: Centro
+PosCenterRight=Posición: Centro derecha
+PosBottomLeft=Posición: Abajo izquierda
+PosBottomCenter=Posición: Abajo centro
+PosBottomRight=Posición: Abajo derecha
+FocusMPV=Enfocar MPV
+MPVFocused=MPV traído al frente
+MPVFocusFailed=No se pudo enfocar MPV
+
+# --- Recording ---
+RecordingHintClose=Grabación en curso. Presiona Grabar de nuevo para detener, luego espera a que termine el procesamiento antes de cerrar.
+ProcessingHintClose=Procesando grabación. Espera antes de cerrar.
+CannotCloseWhileRecording=No se puede cerrar: grabación o procesamiento en curso.

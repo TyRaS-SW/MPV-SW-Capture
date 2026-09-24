@@ -1,4 +1,3 @@
-local current_lang = "en"
 -- check_version.lua - For MPV-SW-Capture - By TyRaS-SW
 -- Check for latest MSC version. Reads script-opts from command line or mpv.conf.
 

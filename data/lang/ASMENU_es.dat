@@ -22,6 +22,7 @@ Open MPV-SW-Capture Website=Abrir el Sitio Web de MPV-SW-Capture
 MPV-SW-Capture Discord=Discord de MPV-SW-Capture
 Hide OSD Messages=Ocultar Mensajes OSD
 Info Stream=Info del Stream
+Keep Menu Open=Mantener Menú Abierto
 Help=Ayuda
 SETTINGS=AJUSTES
 Switch Language=Cambiar Idioma
@@ -31,7 +32,7 @@ Close MPV-SW-Capture=Cerrar MPV-SW-Capture
 # --- Etiquetas de estado + ICC ---
 ON=SÍ
 OFF=NO
-Change to Auto ICC Profile=Cambiar a Perfil ICC Automático
+Change to Auto ICC Profile=Cambiar a Auto Perfil ICC
 
 # --- 2. Volumen / Audio (etiquetas base) ----------------------------------
 Volume=Volumen
@@ -89,7 +90,7 @@ DESC_WINDOW_ROTATION=ROTACIÓN|Rota la imagen 90 grados o activa el Modo Espejo.
 DESC_WINDOW_OTHER_OPTIONS=OTRAS OPCIONES|Muestra u oculta el borde, la barra de título, o quita ambos a la vez.
 DESC_WINDOW_WINDOW_EXTRAS=EXTRAS DE VENTANA|Mantén la ventana siempre visible o estira la relación de aspecto.
 DESC_AUDIO_ALL=TODO|Acciones rápidas de volumen: +10%, -10%, silenciar, o fijar en 100% / 50%.
-DESC_AUDIO_AUDIO_BOOST=AMPLIFICACIÓN DE AUDIO|Amplifica el audio de captura por encima de 100% (hasta 400%) para contenido de volumen bajo.
+DESC_AUDIO_AUDIO_BOOST=AMPLIFICACIÓN DE AUDIO|Amplifica el audio por encima de 100% (hasta 400%) para contenido de volumen bajo.
 DESC_AUDIO_AUDIO_OUTPUT_MODE=MODO DE SALIDA|Elige qué motor de audio maneja el stream de captura.
 
 # --- 6. Ayudas de teclado / mouse -----------------------------------------

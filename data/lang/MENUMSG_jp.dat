@@ -159,7 +159,8 @@ Audio plugin:=オーディオプラグイン:
 TOOLS=ツール
 Open Bezel Manager=ベゼルマネージャーを開く
 Open Video Manager=ビデオマネージャーを開く
-Open Stream Helper=ストリームヘルパーを開く
+Open FFPlay Stream Helper=FFPlay ストリームヘルパーを開く
+Open Stream Menu=ストリームメニューを開く
 
 # ============================================================
 #  OTHERS - INSTALLERS

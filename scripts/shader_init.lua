@@ -1,4 +1,3 @@
-local current_lang = "en"
 -- shader_init.lua by TyRaS-SW - Initialization of shader and OSD control
 
 local mp = require "mp"

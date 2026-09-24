@@ -1,45 +1,44 @@
--- osd_messages.lua
+-- osd_messages.lua - By TyRaS-SW
 -- Universal OSD messages for MPV scripts
--- Language code read from lang/OSDLang.dat
--- Messages loaded from lang/OSDMSG_<lang>.dat (fallback to en)
+-- Language code read from data/lang/OSDLang.dat
+-- Messages loaded from data/lang/OSDMSG_<lang>.dat (fallback to en)
 
 local mp = require "mp"
 
 -- -------------------------------------------------------------------------
--- Obtener directorio del script actual
+-- Resolve the project root from mpv's config-path (which the launcher
+-- sets to the project folder via --config-dir). This is the same
+-- approach used by msc_overlay.lua and audio_mode.lua. It avoids
+-- depending on where this script physically lives, so moving the
+-- script around doesn't break the path to data/lang/.
 -- -------------------------------------------------------------------------
-local function get_script_dir()
-    local info = debug.getinfo(1, "S")
-    local path = info and info.source:match("^@?(.*)$") or ""
-    local dir = path:match("^(.*)[/\\][^/\\]+$") or ""
-    if dir ~= "" then
-        if not dir:match("[/\\]$") then
-            dir = dir .. "/"
-        end
-    end
-    return dir
+local function get_root_dir()
+    local root = mp.get_property("config-path") or "."
+    root = root:gsub("\\", "/")
+    if not root:match("/$") then root = root .. "/" end
+    return root
 end
 
-local script_dir = get_script_dir()
-local lang_dir = script_dir .. "lang/"
+local root_dir  = get_root_dir()
+local lang_dir  = root_dir .. "data/lang/"
 local lang_file = lang_dir .. "OSDLang.dat"
 
 -- -------------------------------------------------------------------------
--- Leer idioma desde OSDLang.dat (fallback "en")
+-- Read language from OSDLang.dat (fallback "en")
 -- -------------------------------------------------------------------------
 local function read_lang_from_file()
     local f = io.open(lang_file, "r")
     if not f then return "en" end
     local content = f:read("*all")
     f:close()
-    -- Eliminar BOM (EF BB BF) si existe, luego espacios y saltos de línea
+    -- Strip UTF-8 BOM (EF BB BF) if present, then whitespace and newlines
     content = content:gsub("^\xef\xbb\xbf", ""):gsub("%s+", "")
     if content == "" then return "en" end
     return content
 end
 
 -- -------------------------------------------------------------------------
--- Cargar mensajes desde el archivo OSDMSG_<lang>.dat
+-- Load messages from OSDMSG_<lang>.dat
 -- -------------------------------------------------------------------------
 local function load_messages(lang)
     local msg_file = lang_dir .. "OSDMSG_" .. lang .. ".dat"
@@ -57,7 +56,7 @@ local function load_messages(lang)
     return msgs
 end
 
--- Carga inicial: leer idioma y cargar mensajes (con fallback a "en")
+-- Initial load: read language and load messages (with fallback to "en")
 local current_lang = read_lang_from_file()
 local messages = load_messages(current_lang)
 if not next(messages) then
@@ -68,14 +67,14 @@ if not next(messages) then
 end
 
 -- -------------------------------------------------------------------------
--- Obtener mensaje por clave
+-- Get message by key
 -- -------------------------------------------------------------------------
 function get(key)
     return messages[key] or key
 end
 
 -- -------------------------------------------------------------------------
--- Mostrar mensaje OSD con respeto a osd-duration
+-- Show OSD message respecting osd-duration
 -- -------------------------------------------------------------------------
 function show(key, duration)
     local text = get(key)
@@ -86,7 +85,7 @@ function show(key, duration)
 end
 
 -- -------------------------------------------------------------------------
--- Función directa para mostrar texto sin clave
+-- Direct function to show raw text without a key
 -- -------------------------------------------------------------------------
 function safe_osd_message(text, duration)
     local osd_duration_ms = mp.get_property_number("osd-duration") or 1000
@@ -96,14 +95,14 @@ function safe_osd_message(text, duration)
 end
 
 -- -------------------------------------------------------------------------
--- Función para que otros scripts puedan obtener el idioma actual
+-- Allow other scripts to query the current language
 -- -------------------------------------------------------------------------
 function get_lang()
     return current_lang
 end
 
 -- -------------------------------------------------------------------------
--- Recargar idioma y mensajes (llamado desde el overlay al cambiar idioma)
+-- Reload language and messages (called by the overlay on language change)
 -- -------------------------------------------------------------------------
 local function reload_messages()
     current_lang = read_lang_from_file()
@@ -116,11 +115,11 @@ local function reload_messages()
     end
 end
 
--- Escuchar el aviso del overlay
+-- Listen for the overlay notification
 mp.register_script_message("reload-osd-messages", reload_messages)
 
 -- -------------------------------------------------------------------------
--- Exportar
+-- Export
 -- -------------------------------------------------------------------------
 return {
     get = get,

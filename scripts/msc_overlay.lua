@@ -3,7 +3,7 @@
 -- Based on an initial alpha design concept by supremeuefn.
 -- Localization via OSDLang.dat + ASMENU_<lang>.dat + MENUMSG_<lang>.dat
 -- menu.conf is read as-is; labels translated in memory.
--- Root sections loaded from scripts/sections.dat (fallback to defaults).
+-- Root sections loaded from data/sections.dat (fallback to defaults).
 
 local mp = require "mp"
 local msg = require "mp.msg"
@@ -56,6 +56,7 @@ local edge_ov = mp.create_osd_overlay("ass-events")
 
 local sx, sy = 1, 1
 local hide_timer = nil
+local render_gate_open = true   -- throttle for hover-driven renders
 
 -- Edge slider state (left-side hover rail).
 local edge_visible, edge_drag, edge_bound = false, false, false
@@ -69,6 +70,8 @@ local edge_render, edge_set_from_y, inside, pos
 local audio_refreshed = false
 local boost_debounce = nil      -- timer for debounced boost send
 local volume_debounce = nil     -- timer for debounced volume send
+local audio_last_ffplay_refresh = 0
+local AUDIO_REFRESH_CACHE = 2.0   -- seconds
 
 -- ------------------------------------------------------------
 -- Helpers
@@ -87,7 +90,7 @@ local function getroot()
     return root
 end
 
-local settings = dofile(getroot() .. "/scripts/modules/msc_settings.lua")
+local settings = dofile(getroot() .. "/data/modules/msc_settings.lua")
 local function load_edge_enabled()
     local value = settings.read("hover_volume.txt")
     if value == nil then return true end
@@ -95,6 +98,34 @@ local function load_edge_enabled()
 end
 local edge_enabled = load_edge_enabled()
 mp.set_property_bool("user-data/hover-volume", edge_enabled)
+mp.set_property_bool("user-data/menu_locked", false)
+
+-- >>> NEW: Persisted flag that disables the 3-second auto-hide cycle
+-- after applying a shader/shape/crop/bezel. Read once at startup,
+-- written whenever the user toggles it from the Quick section.
+local function load_auto_hide_disabled()
+    local value = settings.read("auto_hide_disabled.txt")
+    if value == nil then return false end
+    return value:match("^%s*(.-)%s*$") == "yes"
+end
+local auto_hide_disabled = load_auto_hide_disabled()
+mp.set_property_bool("user-data/auto_hide_disabled", auto_hide_disabled)
+
+-- >>> NEW: Toggle for the auto-hide behavior. Persists the choice to
+-- data/menu/auto_hide_disabled.txt, updates user-data so the card's
+-- check reflects the current state, and returns the new value.
+-- Defined before build_quick_section() so the Quick card can reference it.
+local function toggle_auto_hide_disabled()
+    auto_hide_disabled = not auto_hide_disabled
+    local ok, err = settings.write(
+        "auto_hide_disabled.txt",
+        auto_hide_disabled and "yes\n" or "no\n")
+    if not ok then
+        msg.error("Cannot save auto_hide_disabled setting: " .. tostring(err))
+        return
+    end
+    mp.set_property_bool("user-data/auto_hide_disabled", auto_hide_disabled)
+end
 
 -- ------------------------------------------------------------
 -- Auto ICC Profile persistence
@@ -141,22 +172,14 @@ end
 -- keyof() reduces a string to its alphanumeric-and-space lowercase form,
 -- so "Vol +10%" and "VOL +10%" both map to the same dictionary key.
 local function keyof(s)
-    local out = {}
-    s = s or ""
-    for i = 1, #s do
-        local b = s:byte(i)
-        if (b >= 65 and b <= 90) or (b >= 97 and b <= 122) or (b >= 48 and b <= 57) or b == 32 then
-            out[#out + 1] = string.char(b)
-        end
-    end
-    return table.concat(out):gsub("^%s+", ""):gsub("%s+$", ""):lower()
+    return ((s or ""):gsub("[^%w ]", ""):gsub("^%s+", ""):gsub("%s+$", ""):lower())
 end
 
 local AS, MM, MM_SORTED = {}, {}, {}
 local T_cache = {}
 
 local function current_lang_code()
-    local f = io.open(getroot() .. "/scripts/lang/OSDLang.dat", "r")
+    local f = io.open(getroot() .. "/data/lang/OSDLang.dat", "r")
     if not f then return "en" end
     local s = (f:read("*a") or "")
     s = s:gsub("^\239\187\191", "")
@@ -187,7 +210,7 @@ end
 
 local function rebuild_dicts()
     local lang = current_lang_code()
-    local base = getroot() .. "/scripts/lang/"
+    local base = getroot() .. "/data/lang/"
 
     AS = load_kv(base .. "ASMENU_" .. lang .. ".dat")
     local as_en = load_kv(base .. "ASMENU_en.dat")
@@ -235,13 +258,13 @@ end
 rebuild_dicts()
 
 -- ------------------------------------------------------------
--- Available languages (read from scripts/lang/language_list.dat)
+-- Available languages (read from data/lang/language_list.dat)
 -- ------------------------------------------------------------
 local AVAILABLE_LANGS = {}
 
 local function load_languages()
     local defaults = { "en", "es" }
-    local f = io.open(getroot() .. "/scripts/lang/language_list.dat", "r")
+    local f = io.open(getroot() .. "/data/lang/language_list.dat", "r")
     if not f then
         msg.warn("MSC overlay: language_list.dat not found, using defaults")
         return defaults
@@ -337,7 +360,8 @@ end
 
 -- `attempt` is internal: when the first call comes back empty (ffplay not
 -- running yet), retry every 500ms up to 8 times (4 seconds total).
-local function audio_refresh(attempt)
+-- `force` skips the ffplay cache (used by the reload button and by show()).
+local function audio_refresh(attempt, force)
     -- Native refresh renders synchronously. Mark it before rendering so the
     -- Audio/Quick page cannot re-enter this function through render().
     audio_refreshed = true
@@ -368,12 +392,27 @@ local function audio_refresh(attempt)
         return
     end
 
+    -- FFplay mode: each refresh spawns two PowerShell processes. If we
+    -- refreshed within the cache window and the caller did not force it,
+    -- reuse the cached values and skip the round-trip. The retry loop
+    -- (attempt > 1) always bypasses the cache.
+    if not force and attempt == 1 then
+        local now = mp.get_time()
+        if now - audio_last_ffplay_refresh < AUDIO_REFRESH_CACHE then
+            audio.pending = false
+            if visible then render() end
+            if edge_visible then edge_render() end
+            return
+        end
+        audio_last_ffplay_refresh = now
+    end
+
     ps("data/ffplayvol.ps1", { "get", "ffplay" }, function(ok, r)
         if current_version ~= audio.version then return end
         local n = ok and r and num(r.stdout)
         if not n and attempt < 8 and (visible or edge_visible) then
             mp.add_timeout(0.5, function()
-                if visible or edge_visible then audio_refresh(attempt + 1) end
+                if visible or edge_visible then audio_refresh(attempt + 1, force) end
             end)
             return
         end
@@ -554,7 +593,7 @@ local function item(body, indent)
 end
 
 -- ------------------------------------------------------------
--- Root sections (externalized to scripts/sections.dat)
+-- Root sections (externalized to data/sections.dat)
 -- ------------------------------------------------------------
 local ROOTS = {}
 
@@ -564,7 +603,7 @@ local function load_roots()
         window = "grid", capture = "grid", ["video options"] = "grid",
         audio = "grid", others = "grid",
     }
-    local f = io.open(getroot() .. "/scripts/sections.dat", "r")
+    local f = io.open(getroot() .. "/data/sections.dat", "r")
     if not f then
         msg.warn("MSC overlay: sections.dat not found, using defaults")
         return defaults
@@ -678,13 +717,6 @@ local function is_close_after_command(c)
     return false
 end
 
--- Commands that change the audio boost value. After running one, hide the
--- menu and auto-reopen it so the slider reflects the new value.
-local function is_boost_command(c)
-    if not c then return false end
-    return c:find("ffplayboost", 1, true) ~= nil
-end
-
 local function card(x, state)
     if x.disabled or not x.command then return nil end
     local property, expected = checked(x.check)
@@ -713,7 +745,6 @@ local function card(x, state)
         check_expected = expected,
         run = cmd(x.command),
         close_after = is_close_after_command(x.command),
-        is_boost = is_boost_command(x.command),
     }
 end
 
@@ -986,6 +1017,18 @@ local function build_quick_section()
                                          "-> " .. target:upper(), false,
                                          "\u{1F310}")           -- 🌐 globe
                     end)(),
+                    -- >>> NEW: Toggle to disable the 3-second auto-hide
+                    -- cycle after applying a shader/shape/crop/bezel.
+                    -- State is persisted to data/menu/auto_hide_disabled.txt
+                    -- and mirrored to user-data/auto_hide_disabled.
+                    quickcard("Keep Menu Open",
+                              toggle_auto_hide_disabled,
+                              function()
+                                  return mp.get_property_bool("user-data/auto_hide_disabled", false)
+                                      and T("ON") or T("OFF")
+                              end,
+                              false,
+                              "\u{1F4CC}"),              -- 📌 pushpin
                 },
             },
         },
@@ -1099,7 +1142,7 @@ end
 -- references toggle_language at construction time.
 -- ------------------------------------------------------------
 local function set_language_and_reload(new_lang)
-    local path = getroot() .. "/scripts/lang/OSDLang.dat"
+    local path = getroot() .. "/data/lang/OSDLang.dat"
     local f = io.open(path, "w")
     if not f then
         msg.warn("MSC overlay: cannot write " .. path)
@@ -1154,9 +1197,19 @@ local function schedule_show(delay)
     end)
 end
 
-local function trigger_auto_hide(force)
+-- Auto-hide only triggers for the visual-tuning sections (SHADERS, SHAPES,
+-- CROPS, BEZELS). Audio and other sections stay open because there is
+-- nothing to preview on the video: hiding the menu would only cost the
+-- user a needless 3-second reopen cycle.
+--
+-- >>> NEW: When the "Keep Menu Open" toggle is ON, auto-hide is disabled
+-- entirely. The menu stays up until the user closes it manually (ESC,
+-- right-click, or the X button). Useful while tuning shaders/shapes/
+-- crops in real time.
+local function trigger_auto_hide()
+    if auto_hide_disabled then return end
     local s = SECTIONS[section]
-    if force or is_auto_hide_section(s) then
+    if is_auto_hide_section(s) then
         cancel_hide_timer()
         if visible then
             hide()
@@ -1505,8 +1558,10 @@ local function gridcards()
 end
 
 local function first()
+    local s = SECTIONS[section]
+    if not s then return 1 end
     if gridcards() then return 1 end
-    local r = SECTIONS[section].rows()
+    local r = s.rows()
     for i, q in ipairs(r) do
         if q.kind ~= "head" then return i end
     end
@@ -1524,7 +1579,6 @@ function render()
         local s0 = SECTIONS[section]
         if (s0.key_en == "quick" or s0.key_en == "audio") and not audio_refreshed then
             audio_refresh()
-            audio_refreshed = true
         end
     end
 
@@ -1880,7 +1934,12 @@ function render()
                     rect(a, px, py, 1, cardh, ed, 0x10)
                     rect(a, px + cardw - 1, py, 1, cardh, ed, 0x10)
 
-                    local icon_x = px + 14 * sx
+                    -- Shift the icon+text group to the right so it
+                    -- doesn't hug the card's left edge. Tune this single
+                    -- value to push more/less: 0 = original left-aligned.
+                    local content_shift = 8 * sx
+
+                    local icon_x = px + 14 * sx + content_shift
                     local icon_y = py + cardh / 2
                     draw_card_icon(a, icon_x, icon_y, q, on, sel)
 
@@ -2005,7 +2064,12 @@ function render()
             rect(a, px, py, 1, cardh, ed, 0x10)
             rect(a, px + cardw - 1, py, 1, cardh, ed, 0x10)
 
-            local icon_x = px + 14 * sx
+            -- Shift the icon+text group to the right so it doesn't hug
+            -- the card's left edge. Tune this single value to push
+            -- more/less: 0 = original left-aligned.
+            local content_shift = 8 * sx
+
+            local icon_x = px + 14 * sx + content_shift
             local icon_y = py + cardh / 2
             draw_card_icon(a, icon_x, icon_y, q, on, sel)
 
@@ -2146,6 +2210,19 @@ function render()
     ov.res_y = oh
     ov.data = a.text
     ov:update()
+end
+
+-- Throttled entry point for hover-driven renders. Fires immediately, then
+-- drops further calls within a ~33ms window (about one frame at 30 fps).
+-- Cheap enough to keep the overlay feeling instant, cheap enough to stop
+-- the cursor sweeping over a dense grid from triggering dozens of full
+-- ASS rebuilds per second.
+local function request_render()
+    if render_gate_open then
+        render_gate_open = false
+        render()
+        mp.add_timeout(0.033, function() render_gate_open = true end)
+    end
 end
 
 -- ------------------------------------------------------------
@@ -2382,6 +2459,8 @@ local function stopdrag()
 end
 
 local function switch_section_and_refresh(new_section)
+    if #SECTIONS == 0 then return end
+    if new_section < 1 or new_section > #SECTIONS then return end
     if section == new_section then return end
     section = new_section
     cursor = first()
@@ -2399,10 +2478,10 @@ local function run_card(q)
     if not q or not q.run then return end
     q.run()
     if q.close_after then
-        hide()                                  -- pure close
+        hide()
     else
         render()
-        trigger_auto_hide(q.is_boost)           -- force hide+reopen for boost
+        trigger_auto_hide()
     end
 end
 
@@ -2440,7 +2519,11 @@ local function move(d)
 end
 
 local function sw(d)
-    switch_section_and_refresh(section + d)
+    local n = #SECTIONS
+    if n == 0 then return end
+    local s = section + d
+    if s < 1 then s = n elseif s > n then s = 1 end
+    switch_section_and_refresh(s)
 end
 
 local function horiz(d)
@@ -2506,6 +2589,7 @@ local function unbind()
     mp.remove_key_binding("msc_esc")
     mp.remove_key_binding("msc_rmb")
     mp.remove_key_binding("msc_lmb")
+    mp.remove_key_binding("msc_lmb_dbl")
     mp.unobserve_property(mousemove)
     bound = false
 end
@@ -2568,7 +2652,7 @@ function mousemove()
         hover_lang        = new_lang
         hover_mute        = new_mute
         hover_audio_icon  = new_audio_icon
-        render()
+        request_render()
         return
     end
 
@@ -2579,10 +2663,28 @@ function mousemove()
     for _, h in ipairs(hit.rows) do
         if inside(h, x, y) and h.index > 0 and cursor ~= h.index then
             cursor = h.index
-            render()
+            request_render()
             return
         end
     end
+end
+
+local card_locks = {}
+local CARD_DEBOUNCE = 1.2
+
+local function card_lock_key(h)
+    if not h then return nil end
+    return string.format("%.0f:%.0f:%.0f:%.0f",
+        h[1] or 0, h[2] or 0, h[3] or 0, h[4] or 0)
+end
+
+local function should_run_card(h)
+    local k = card_lock_key(h)
+    if not k then return false end
+    if card_locks[k] then return false end
+    card_locks[k] = true
+    mp.add_timeout(CARD_DEBOUNCE, function() card_locks[k] = nil end)
+    return true
 end
 
 local function mousedown()
@@ -2593,7 +2695,7 @@ local function mousedown()
     if hit.close and inside(hit.close, x, y) then hide(); return end
     if hit.quit and inside(hit.quit, x, y) then mp.command("quit"); return end
     if hit.clean and inside(hit.clean, x, y) then cleanall(); return end
-    if hit.reload and inside(hit.reload, x, y) then audio_refresh(); return end
+    if hit.reload and inside(hit.reload, x, y) then audio_refresh(nil, true); return end
     if hit.mute and inside(hit.mute, x, y) then
         -- Optimistic UI update so the icon flips immediately; the real
         -- state syncs back via observe_property (native) or the ffplay
@@ -2651,21 +2753,12 @@ local function mousedown()
 
     for i, h in ipairs(hit.cards or {}) do
         if inside(h, x, y) then
+            if not should_run_card(h) then return end
             cursor = i
             local cs = gridcards()
             run_card(cs and cs[cursor])
             return
         end
-    end
-
-    if hit.clear and inside(hit.clear, x, y) then
-        local sec = SECTIONS[section]
-        if sec.clear and sec.clear.run then
-            sec.clear.run()
-            render()
-            trigger_auto_hide()
-        end
-        return
     end
 
     for _, h in ipairs(hit.rows) do
@@ -2712,6 +2805,14 @@ local function bind()
     end
     mp.add_forced_key_binding("ESC", "msc_esc", hide)
     mp.add_forced_key_binding("MBTN_RIGHT", "msc_rmb", hide)
+
+    -- Swallow MBTN_LEFT_DBL while the overlay is open. Otherwise a
+    -- double-click on a card would run the card action AND trigger the
+    -- "cycle fullscreen" binding from input.conf at the same time.
+    -- This binding is removed in unbind(), so the input.conf behavior
+    -- returns as soon as the overlay is hidden.
+    mp.add_forced_key_binding("MBTN_LEFT_DBL", "msc_lmb_dbl", function() end)
+
     mp.add_forced_key_binding("MBTN_LEFT", "msc_lmb", function(e)
         if e.event == "down" then mousedown() elseif e.event == "up" then mouseup() end
     end, { complex = true })
@@ -2724,6 +2825,7 @@ end
 -- ------------------------------------------------------------
 function show()
     if visible then return end
+    if mp.get_property_native("user-data/menu_locked") then return end
     edge_hide()
     visible = true
     cancel_hide_timer()
@@ -2733,7 +2835,7 @@ function show()
     refresh_app_version()
     device_refresh()
     bind()
-    audio_refresh()
+    audio_refresh(nil, true)
     audio_refreshed = true
     render()
 end
@@ -2746,6 +2848,13 @@ mp.add_key_binding(nil, "toggle-overlay", toggle)
 mp.register_script_message("toggle-overlay", toggle)
 mp.register_script_message("close-overlay", hide)
 mp.register_script_message("toggle-hover-volume", toggle_edge_enabled)
+
+mp.register_script_message("toggle-menu-lock", function()
+    local locked = mp.get_property_native("user-data/menu_locked") or false
+    local new_locked = not locked
+    mp.set_property_bool("user-data/menu_locked", new_locked)
+    if new_locked and visible then hide() end
+end)
 
 mp.register_script_message("reload-lang", function()
     rebuild_dicts()

@@ -1,0 +1,107 @@
+# STMENU_jp.dat - By TyRaS-SW - Japanese strings for StreamMenu_MSC.ps1
+# ASMENU_<lang>.dat と同じ key=value 形式。
+# キーは翻訳しないでください。'=' の右側のみ翻訳します。
+
+# --- Header ---
+StreamMenuTitle=ストリームメニュー
+StreamMenuSubtitle=MPV-SW-Capture の外部コントロール
+
+# --- Sliders ---
+Volume=音量
+AudioBoost=オーディオブースト
+
+# --- Lock / OSD ---
+LockMenu=メニューをロック
+UnlockMenu=ロックを解除
+HideOSD=OSDメッセージを隠す
+ShowOSD=OSDメッセージを表示
+
+# --- Action buttons ---
+Screenshot=スクリーンショット
+Record=録画
+InfoStream=ストリーム情報
+CleanALL=すべてクリア
+ShowMenu=メニューを表示
+ReloadConfig=設定を再読み込み
+
+# --- Open / Close ---
+OpenMPV=MPV-SW-Capture を起動
+CloseMPV=MPV-SW-Capture を終了
+
+# --- Toggles ---
+AutoICC=自動 ICC
+AutoICCOn=自動 ICC: オン
+Fullscreen=全画面
+FullscreenOn=全画面: オン
+OnTop=常に手前
+OnTopOn=常に手前: オン
+FitFull=全体に合わせる
+FitFullOn=全体に合わせる: オン
+FillScreen=画面全体
+FillScreenOn=画面全体 ✓
+
+# --- Position + Shader + Shapes + Crops + Bezels ---
+WindowPosition=ウィンドウ位置
+Shader=シェーダー
+Shapes=形状
+Crops=クロップ
+Bezels=ベゼル
+Apply=適用
+
+# --- Folder shortcuts + Tools ---
+OpenRecordings=録画フォルダを開く
+OpenScreenshots=スクリーンショットフォルダを開く
+CreateShortcut=デスクトップにショートカットを作成
+OpenTools=ツールを開く
+
+# --- Status / log ---
+Connected=接続済み
+Connecting=接続中...
+Disconnected=切断されました (mpv を待機中)
+MPVClosed=MPV を閉じました
+NoShaderSelected=シェーダーが選択されていません
+NoShapeSelected=形状が選択されていません
+NoCropSelected=クロップが選択されていません
+NoBezelSelected=ベゼルが選択されていません
+AppliedShader=シェーダーを適用
+AppliedShape=形状を適用
+AppliedCrop=クロップを適用
+AppliedBezel=ベゼルを適用
+ConfigReloaded=設定を再読み込みしました
+CleanALLApplied=すべてクリアを適用
+ScreenshotSaved=スクリーンショットを保存
+RecordToggled=録画を切り替えました
+ASSMenuToggled=ASS メニューを切り替えました
+InfoToggled=ストリーム情報を切り替えました
+LanguageChanged=言語を変更しました
+OpenedRecordings=録画フォルダを開きました
+OpenedScreenshots=スクリーンショットフォルダを開きました
+RecordingsNotFound=録画フォルダが見つかりません
+ScreenshotsNotFound=スクリーンショットフォルダが見つかりません
+OpenedTools=ツールフォルダを開きました
+ToolsNotFound=ツールフォルダが見つかりません
+ShortcutCreated=デスクトップにショートカットを作成しました
+ShortcutFailed=ショートカットを作成できませんでした
+ScriptNotFound=StreamMenu_MSC.ps1 が見つかりません
+LaunchedMPV=MPV-SW-Capture を起動しました
+LaunchedMPVExe=mpv.exe を起動しました
+MPVNotFound=mpv.exe が見つかりません
+
+# --- Window positions ---
+PosTopLeft=位置: 左上
+PosTopCenter=位置: 上中央
+PosTopRight=位置: 右上
+PosCenterLeft=位置: 左中央
+PosCenter=位置: 中央
+PosCenterRight=位置: 右中央
+PosBottomLeft=位置: 左下
+PosBottomCenter=位置: 下中央
+PosBottomRight=位置: 右下
+FocusMPV=MPVをフォーカス
+MPVFocused=MPVを最前面に表示しました
+MPVFocusFailed=MPVをフォーカスできませんでした
+
+# --- Recording ---
+RecordingHintClose=録画中です。もう一度録画ボタンを押して停止し、処理が終わるまで待ってから閉じてください。
+ProcessingHintClose=録画を処理中です。閉じる前にしばらくお待ちください。
+CannotCloseWhileRecording=閉じられません: 録画または処理が進行中です。

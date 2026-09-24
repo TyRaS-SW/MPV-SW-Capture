@@ -18,8 +18,23 @@ set "prog2_name=ffplay.exe"
 SET "video_device="
 SET "audio_device="
 
+:: --- WASAPI capture period (plugin audio mode only) ---
+:: Controls the periodicity of the IAudioClient3 shared-mode capture stream.
+::
+:: Options:
+:: minimum -> shortest legal period (~1 ms). Lowest latency, but
+:: most sensitive to DPC/CPU spikes -> risk of crackles.
+:: fundamental -> base period (minimum multiple of the engine tick).
+:: default -> device default period (~10 ms). Most stable under
+:: DPC/CPU load. Recommended when crackles are reported.
+:: maximum -> longest legal period (highest stability, highest latency).
+::
+:: NOTE: If this variable is removed or left empty, the DLL falls back to
+:: 'minimum' (the engine's historical default). Any unknown value also
+:: falls back to 'minimum'.
+set "MSC_AUDIO_PERIOD=minimum"
+
 set "ffplay_volume=100"
-set "mutex_name=Global\SW_CAPTURE_MPV_SINGLE_INSTANCE"
 
 set "audio_mode_file=%ROOT_DIR%\data\menu\audio_mode.txt"
 set "audio_mode=plugin"
@@ -74,12 +89,12 @@ set "timing_args=--untimed"
 goto :start_mpv
 
 :start_mpv
-start "" /b "%prog1_path%" --no-border --config-dir="%ROOT_DIR%" %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args%
+start "" /b "%prog1_path%" --no-border --config-dir="%ROOT_DIR%" %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args% --input-ipc-server=\\.\pipe\mpv-sw-capture-socket
 
 set "SDL_AUDIODRIVER=wasapi"
 set "SDL_AUDIO_SAMPLES=128"
 
-if /I not "%audio_mode%"=="ffplay" goto :release_mutex
+if /I not "%audio_mode%"=="ffplay" goto :skip_ffplay_start
 :: Start volume monitor
 start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayvol_ps1%" watch-tag ffplay 5000 >nul 2>&1
 
@@ -94,9 +109,7 @@ start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%ffplayboos
 :: Only needed in ffplay mode: plugin mode has nothing to clean up.
 start "" /b powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%watchdog_ps1%" >nul 2>&1
 
-:release_mutex
-:: Release the single-instance mutex (best-effort)
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "try { $m = [System.Threading.Mutex]::OpenExisting('%mutex_name%'); $m.ReleaseMutex(); $m.Dispose() } catch {}" >nul 2>&1
+:skip_ffplay_start
 
 :: The .bat's job is done. Exit immediately; the watchdog handles cleanup in ffplay mode.
 exit /b

@@ -159,7 +159,8 @@ Audio plugin:=Plugin de audio:
 TOOLS=HERRAMIENTAS
 Open Bezel Manager=Abrir Administrador de Marcos
 Open Video Manager=Abrir Administrador de Video
-Open Stream Helper=Abrir Asistente de Stream
+Open FFPlay Stream Helper=Abrir Asistente FFPlay Stream
+Open Stream Menu=Abrir Menú de Stream
 
 # ============================================================
 #  OTHERS - INSTALLERS
