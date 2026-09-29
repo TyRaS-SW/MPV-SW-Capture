@@ -81,6 +81,7 @@ You only need to run this CMD **once**. After that, all future updates use `MPV-
 - Update MPV-SW-Capture to a newer version.
 - Update `ffplay` and `ffmpeg` to their latest versions.
 - Re-download components that are missing (e.g., if you accidentally deleted `ffplay.exe` or `ffmpeg.exe`).
+- Perform a **Clean Install** — see [Software Q8](#8-what-is-the-clean-install-option-in-the-installer) for details.
 
 > ⚠️ **Important limitation**: This `.vbs` **requires `mpv.exe` to be present** in order to run — it uses `mpv.exe` to launch the internal installer script. If `mpv.exe` itself is deleted, the `.vbs` will do nothing visible.
 >
@@ -113,6 +114,27 @@ v`X`.`Y`.`Z`.
 - `X` = Very important update that must be applied.
 - `Y` = Important update.
 - `Z` = Minor patch or something small added.
+
+### 8. What is the "Clean Install" option in the installer?
+
+The Clean Install option performs a completely fresh setup. When enabled, the installer:
+
+1. Downloads the new version to a temporary folder first (nothing in your root is touched yet).
+2. Moves all old files to a folder called `OLDMSC` (created in the same folder).
+3. Installs the new version on a clean root.
+4. Restores your Extra Tools configs automatically.
+
+**What is preserved during a Clean Install:**
+
+- `mpv.exe`, `ffplay.exe`, `ffmpeg.exe` — the core binaries.
+- `_record\` and `_screenshots\` — your recordings and screenshots.
+- `tools\*.json` — your Extra Tools configuration.
+
+**What is moved to `OLDMSC`:** everything else — old configs, shaders, bezels, unused files. You can recover anything from there manually before the next clean install overwrites it.
+
+The checkbox is **checked by default** and only appears enabled when a previous MPV-SW-Capture install is detected. If you just want a normal update, uncheck it before clicking **Install / Update**.
+
+> 💡 **Tip:** After a Clean Install, the installer asks you to close and reopen it. This is expected — it guarantees the new version takes full effect.
 
 ---
 
@@ -151,7 +173,7 @@ Yes — once MPV-SW-Capture is running, go to the **TOOLS** section in the menu.
 They're available in two ways:
 
 - Download the separate `TOOLS_*.zip` from the [releases page](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) and extract it.
-- Or check **"Install Extra Tools with Install / Update All?"** in the Installer and click **"Install / Update ALL"**.
+- Or check **"Install Extra Tools with Install / Update All?"** in the Installer and click **"Install / Update ALL"**. (This is a separate checkbox from the **Clean Install** one — both can be enabled at the same time.)
 
 ### 5. I accidentally deleted `mpv.exe` / `ffplay.exe` / `ffmpeg.exe`. Do I have to reinstall everything?
 
@@ -367,6 +389,8 @@ They are saved inside the `_record` and `_screenshots` folders, located in the s
 It's not necessary to create them, because the software creates them automatically after taking a screenshot or recording a video.
 
 If, for a strange reason, you cannot record video and/or take screenshots, and you don't have these folders, you can manually create them.
+
+> 💡 **Note:** These two folders are **preserved during a Clean Install**. Your recordings and screenshots are never moved to `OLDMSC`, so you don't have to worry about losing them when using that option.
 
 ### 6. When recording a video, I see a counter with the time left to finish the record. Is that normal?
 
