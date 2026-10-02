@@ -43,6 +43,11 @@
         h2 { font-size:2rem; margin:2rem 0 1.5rem; border-bottom:2px solid var(--border-color); padding-bottom:0.5rem; display:flex; align-items:center; gap:10px; }
         h2 i { color:var(--accent-gold); font-size:1.6rem; }
 
+        /* ===== SCROLL OFFSET (evita que el nav tape los títulos al saltar) ===== */
+        section[id], #hero {
+            scroll-margin-top: 90px;
+        }
+
         /* ===== NAVEGACIÓN ===== */
         nav { position:sticky; top:0; z-index:100; background:rgba(13,17,23,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--border-color); padding:0.8rem 0; }
         nav .container { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; }
@@ -575,7 +580,7 @@
             <button class="menu-toggle" id="menu-toggle" aria-label="Menú"><i class="fas fa-bars"></i></button>
             <div class="nav-links" id="nav-links">
                 <a href="#features" data-i18n="nav-features">Features</a>
-                <a href="#advanced" data-i18n="nav-custom">Advanced</a>
+                <a href="#guides" data-i18n="nav-guides">Guides</a>
                 <a href="#news" data-i18n="nav-news">News</a>
                 <a href="#faq" data-i18n="nav-faq">FAQ</a>
                 <a href="#suggestion" data-i18n="nav-suggestion">Suggestion</a>
@@ -707,9 +712,9 @@
         </div>
     </section>
 
-    <!-- ===== ADVANCED CUSTOMIZATION ===== -->
-    <section id="advanced" class="container">
-        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Personalización avanzada</span><span class="lang-en" style="display:none;">Advanced customization</span></h2>
+    <!-- ===== GUIDES & CUSTOMIZATION ===== -->
+    <section id="guides" class="container">
+        <h2><i class="fas fa-paint-brush"></i> <span class="lang-es">Guías y Personalización</span><span class="lang-en" style="display:none;">Guides &amp; Customization</span></h2>
         <div class="custom-grid">
             <!-- Video Options -->
             <div class="card">
@@ -731,14 +736,34 @@
                     <span class="lang-en" style="display:none;">Bezels Manager Guide →</span>
                 </a>
             </div>
-            <!-- OBS -->
+            <!-- OBS (actualizado) -->
             <div class="card">
                 <i class="fas fa-video"></i>
                 <h3><span class="lang-es">OBS con MPV-SW-Capture</span><span class="lang-en" style="display:none;">OBS with MPV-SW-Capture</span></h3>
                 <p><span class="lang-es">Usa una herramienta para una fácil compatibilidad con OBS.</span><span class="lang-en" style="display:none;">Use a tool for easy compatibility with OBS.</span></p>
-                <a href="#" onclick="openStreamManager(); return false;">
-                    <span class="lang-es">Guía de Asistente de Stream →</span>
-                    <span class="lang-en" style="display:none;">Stream Helper Guide →</span>
+                <a href="#" onclick="openStreamMenuGuide(); return false;">
+                    <span class="lang-es">Guía del Menú de Stream →</span>
+                    <span class="lang-en" style="display:none;">Stream Menu Guide →</span>
+                </a>
+            </div>
+            <!-- NEW: Menu Guide -->
+            <div class="card">
+                <i class="fas fa-list-ul"></i>
+                <h3><span class="lang-es">Guía del Menú</span><span class="lang-en" style="display:none;">Menu Guide</span></h3>
+                <p><span class="lang-es">Una guía más a fondo con todas las opciones disponibles en el menú.</span><span class="lang-en" style="display:none;">A further guide with all options available in the menu.</span></p>
+                <a href="#" onclick="openMenuGuide(); return false;">
+                    <span class="lang-es">Guía del Menú →</span>
+                    <span class="lang-en" style="display:none;">Menu Guide →</span>
+                </a>
+            </div>
+            <!-- NEW: FFPlay Stream Helper -->
+            <div class="card">
+                <i class="fas fa-headphones-alt"></i>
+                <h3><span class="lang-es">Asistente FFPlay Stream</span><span class="lang-en" style="display:none;">FFPlay Stream Helper</span></h3>
+                <p><span class="lang-es">Herramienta SOLO para conectar MPV+FFPlay con OBS.</span><span class="lang-en" style="display:none;">Tool ONLY for connect MPV+FFPlay with OBS.</span></p>
+                <a href="#" onclick="openFFPlayHelper(); return false;">
+                    <span class="lang-es">Guía del Asistente FFPlay Stream →</span>
+                    <span class="lang-en" style="display:none;">FFPlay Stream Helper Guide →</span>
                 </a>
             </div>
         </div>
@@ -988,7 +1013,7 @@
                     const key = el.getAttribute('data-i18n');
                     const translations = {
                         'nav-features': { es: 'Funciones', en: 'Features' },
-                        'nav-custom': { es: 'Avanzado', en: 'Advanced' },
+                        'nav-guides': { es: 'Guías', en: 'Guides' },
                         'nav-news': { es: 'Noticias', en: 'News' },
                         'nav-faq': { es: 'FAQ', en: 'FAQ' },
                         'nav-suggestion': { es: 'Sugerencia', en: 'Suggestion' },
@@ -1215,13 +1240,36 @@
             }
         }
 
-        function openStreamManager() {
-            setModalParam('stream');
+        // OBS card → Stream Menu Guide
+        function openStreamMenuGuide() {
+            setModalParam('streammenu');
             const lang = window.currentLang || 'en';
             if (lang === 'es') {
-                openModal('Guía de Asistente de Stream', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Asistente-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Asistente-Stream');
+                openModal('Guía del Menú de Stream', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Men%C3%BA-de-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Men%C3%BA-de-Stream');
             } else {
-                openModal('Stream Helper Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Stream-Helper.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Stream-Helper');
+                openModal('Stream Menu Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90Stream-Menu.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90Stream-Menu');
+            }
+        }
+
+        // NEW: MSC Menu Guide
+        function openMenuGuide() {
+            setModalParam('menuguide');
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Guía del Menú', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Men%C3%BA-de-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Men%C3%BA-de-Stream');
+            } else {
+                openModal('MSC Menu Guide', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90MSC-Menu.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90MSC-Menu');
+            }
+        }
+
+        // NEW: FFPlay Stream Helper
+        function openFFPlayHelper() {
+            setModalParam('ffplayhelper');
+            const lang = window.currentLang || 'en';
+            if (lang === 'es') {
+                openModal('Asistente FFPlay Stream', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Gu%C3%ADa%E2%80%90Asistente-FFPlay-Stream.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Gu%C3%ADa%E2%80%90Asistente-FFPlay-Stream');
+            } else {
+                openModal('FFPlay Stream Helper', 'https://raw.githubusercontent.com/wiki/TyRaS-SW/MPV-SW-Capture/Guide%E2%80%90FFPlay-Stream-Helper.md', 'https://github.com/TyRaS-SW/MPV-SW-Capture/wiki/Guide%E2%80%90FFPlay-Stream-Helper');
             }
         }
 
@@ -1238,7 +1286,9 @@
                 'donate': openDonate,
                 'video': openVideoManager,
                 'bezel': openBezelManager,
-                'stream': openStreamManager
+                'streammenu': openStreamMenuGuide,
+                'menuguide': openMenuGuide,
+                'ffplayhelper': openFFPlayHelper
             };
             const accion = acciones[view];
             if (accion) {
@@ -1279,7 +1329,7 @@
         document.getElementById('menu-toggle').addEventListener('click', function() { document.getElementById('nav-links').classList.toggle('open'); });
 
         // ========================================================
-        // 7. DEMOSTRACIÓN INTERACTIVA (15 modos)
+        // 7. DEMOSTRACIÓN INTERACTIVA (16 modos)
         // ========================================================
         const demoData = [
             // Fila 1: Menu, Fullscreen, Mini Mode, Mirror Mode, Stretch Window, Recording, Rotation
@@ -1367,7 +1417,7 @@
                 desc_es: 'Rota la ventana en sentido horario o antihorario.',
                 desc_en: 'Rotate the window clockwise or counterclockwise.'
             },
-            // Fila 2: Shaders, Shapes, Crops, Bezels, Shader+Bezel, Shader+Shape+Bezel, Shader+Crop, Shader+Crop+Shape
+            // Fila 2: Shaders, Shapes, Crops, Bezels, Shader+Bezel, Shader+Shape+Bezel, Shader+Crop, Shader+Crop+Shape, Fit 16:9 to Bezel
             {
                 icon: 'fa-palette',
                 color: '#fd79a8',
@@ -1463,6 +1513,19 @@
                 title_en: 'Shader + Crop + Shape',
                 desc_es: 'Combina shaders, recortes y formas para la máxima personalización.',
                 desc_en: 'Combine shaders, crops and shapes for maximum customization.'
+            },
+            // NEW: Fit 16:9 to Bezel
+            {
+                icon: 'fa-vector-square',
+                color: '#00cec9',
+                image_es: 'assets/demo/16_fitbezel.jpg',
+                image_en: 'assets/demo/16_fitbezel.jpg',
+                label_es: 'Ajustar 16:9 a Marco',
+                label_en: 'Fit 16:9 to Bezel',
+                title_es: 'Ajustar 16:9 a Marco',
+                title_en: 'Fit 16:9 to Bezel',
+                desc_es: 'Ajusta cualquier pantalla 16:9 en un marco sin cortar la imagen.',
+                desc_en: 'Fit any 16:9 screen into a bezel without cutting the image.'
             }
         ];
 
@@ -1486,7 +1549,7 @@
             row2.innerHTML = '';
             dotContainer.innerHTML = '';
 
-            // Los primeros 7 van en row1, los 7 restantes en row2
+            // Los primeros 7 van en row1, los restantes en row2
             const row1Data = demoData.slice(0, 7);
             const row2Data = demoData.slice(7);
 
@@ -1498,7 +1561,7 @@
             });
 
             row2Data.forEach((item, idx) => {
-                const index = idx + 7; // 7-13
+                const index = idx + 7; // 7+
                 const btn = crearBoton(item, index, lang);
                 row2.appendChild(btn);
                 crearDot(index, lang);
