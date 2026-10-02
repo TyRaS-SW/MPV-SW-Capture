@@ -94,7 +94,7 @@ end
 local settings = dofile(getroot() .. "/data/modules/msc_settings.lua")
 local function load_edge_enabled()
     local value = settings.read("hover_volume.txt")
-    if value == nil then return true end
+    if value == nil then return false end
     return value:match("^%s*(.-)%s*$") ~= "no"
 end
 local edge_enabled = load_edge_enabled()
