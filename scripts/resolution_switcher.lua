@@ -128,7 +128,7 @@ end
 -- the choice in scale_gpu.txt. SCALE_USE_GPU is only the initial value before 
 -- a saved choice exists.
 
-local SCALE_USE_GPU = true
+local SCALE_USE_GPU = false
 
 local gpu_active = false   -- shader currently controls the input resolution
 local gpu_target = nil     -- { w = ..., h = ... }
