@@ -10,7 +10,7 @@ MPV is a very capable and fast video player when configured correctly. It also l
 
 There are other programs that let you capture video and do something similar to this project, but they tend to be more limited and do not allow the same level of customization that MPV-SW-Capture offers on top of MPV. On top of that, most tend to increase the lag, making the experience unplayable.
 
-> 💡 **Note:** Since v5.1.0, MPV-SW-Capture ships with its own native audio plugin (WASAPI), which means audio is captured in-process and can be used by OBS, Discord, and other tools without any external plugin.
+> 💡 **Note:** MPV-SW-Capture ships with its own native audio plugin (WASAPI), which means audio is captured in-process and can be used by OBS, Discord, and other tools without any external plugin.
 
 ---
 
@@ -62,7 +62,7 @@ But if you notice some problems, you can try older versions. If that happens, pl
 
 If you are talking about MPV-SW-Capture itself, the recommendation is just replace all the files.
 
-> 💡 **Note:** Starting with v5.1.0, some user preferences (Audio Boost, Audio Output Mode, Hover Volume Sidebar, and Auto ICC Profile) are saved automatically and persist across updates. You do not need to reconfigure them after replacing the files.
+> 💡 **Note:** Some user preferences (Audio Boost, Audio Output Mode, Hover Volume Sidebar, and Auto ICC Profile) are saved automatically and persist across updates. You do not need to reconfigure them after replacing the files.
 
 ### 3. What does `1_INSTALLER_MSC_First-Usage.cmd` do?
 
@@ -186,32 +186,40 @@ It depends on which file is missing:
 
 > 💡 **Why keep the CMD around?** Even though you only need it for the first install, it's the only recovery path if `mpv.exe` is ever deleted. Leave it in the folder — it takes almost no space (3 KB).
 
-### 6. What new options were added to the Setup tool in v5.1.0?
+### 6. What can I configure in the Setup tool?
 
-The Setup tool now includes two additional configuration options:
+The Setup tool lets you configure the base options of MPV-SW-Capture. It includes:
 
-- **AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT** — choose between **WASAPI** or **FFPLAY** as the default backend on launch.
+- **Capture device selection** — pick your capture card (video and audio) from a **Scan Device** scan.
+- **Language** — choose the interface language for the GUIs. Press **Apply Language** after selecting.
+- **AUTOSTART WITH THE FOLLOWING AUDIO OUTPUT** — choose between **WASAPI** or **FFPLAY** as the default audio backend on launch.
 - **AUTOSTART WITH HOVER VOLUME SIDEBAR** — choose whether the Hover Volume Sidebar is active when MPV-SW-Capture starts.
+- **Input Video Format** — choose `Auto`, `mjpeg`, `yuyv422`, `nv12`, `i420`, or `h264` if `Auto` causes lag or compatibility issues.
+- **Auto Start with Special Shaders** — choose whether to auto-start a **Sharpen** or **Anti-Aliasing** shader, or leave it at **NO**.
+- **WASAPI audio parameters** — fine-tune low-level WASAPI audio settings. See the **🔊 Audio** section for details.
+- **Default Options button** — loads factory defaults instead of your configured ones. It only *marks* the options; they are not applied until you press **Apply Setup**.
 
-Both options are saved to their respective `.txt` files (`audio_mode.txt` and `hover_volume.txt`) and applied on the next launch.
+> 💡 **Tip:** The Setup tool reads and preserves some of your existing values, so your previous configuration is not lost when you re-run it.
 
 ---
 
 ## 🎨 Image, Shaders, Bezels, Crops & Shapes
 
-### 1. Why do some shaders say 4K if I'm only using 1080p60?
+### 1. In Setup, there is an "Auto Start with Special Shaders" option. What should I choose?
 
-Those shaders perform an image enhancement. If you have a 4K display, this helps to improve image in higher resolution than the original (1080p) one.
+The Setup tool lets you choose whether to auto-start a shader when MPV-SW-Capture opens. There are three choices:
 
-### 2. During setup, there is an option to auto‑enable the "👑1080p→4K Fast⚡" shader combo. Why is it recommended?
+- **NO (default)** — no special shader auto-start. Recommended if you prefer to pick your own shaders per game.
+- **Sharpen** — auto-starts a very low-consumption Sharpen shader.
+- **Anti-Aliasing** — auto-starts a low-consumption Anti-Aliasing shader.
 
-Because it's a very good combination of shaders that improve the image quality when you use fullscreen to 4K, while using very few resources and this will help to have a less blurry and cleaner image.
+Both YES options deliver a clean, sharp image with **minimal** resource usage. If you want a sharper image, pick **Sharpen**. If you prefer smoother edges, pick **Anti-Aliasing**.
 
-### 3. I connected a Switch and use NSO, but when I apply a bezel or crop the image looks wrong (badly cut). How do I fix this?
+### 2. I connected a Switch and use NSO, but when I apply a bezel or crop the image looks wrong (badly cut). How do I fix this?
 
 This is usually caused by the black bar that NSO shows at the bottom with controls and help text. You need to disable that overlay. Open any NSO app, and before selecting a game go to the `right side menu` → `Settings` → `Control Display` → turn off `Show controls in game`. Once that bar is gone, the image area is cleaner (bigger in some cases) and the crops and bezels will work correctly. Must be done in each NSO app.
 
-### 4. How do I disable a shader, bezel, or crop?
+### 3. How do I disable a shader, bezel, or crop?
 
 - **Shader**: Use the "Clean Shader" option, or simply select a different shader (it replaces the previous one, they are not stacked).
 - **Bezel**: Press the same bezel you selected before, or use the "Clear Bezels" option.
@@ -220,17 +228,17 @@ This is usually caused by the black bar that NSO shows at the bottom with contro
 
 If you want to clear everything at once (for example, bezel, shader, shape), you can use the "Clean ALL" option.
 
-### 5. I want to create my own bezels but I don't know how. How do I do it?
+### 4. I want to create my own bezels but I don't know how. How do I do it?
 
 Bezels are 1920x1080 PNG images. They are mainly used with NSO to replace the default borders with whatever artwork you want. The central area is where the game image goes; you just need to design the bezel so that the game area aligns correctly and looks good. A more detailed tutorial on how to create bezels and add them to the menu, you can go here: **[Advanced customization → 8. Create your Custom Bezel](https://tyras-sw.github.io/MPV-SW-Capture/#advanced)**.
 
-### 6. Can I add my own shaders?
+### 5. Can I add my own shaders?
 
 Yes, you can. Shaders must be compatible with MPV, and in `.glsl` format.
 
 You must put them in the `/shaders` folder and edit `menu.conf` to add your shader, following the same format as the other ones.
 
-### 7. What are SHAPES? Why do they have a specific separated submenu?
+### 6. What are SHAPES? Why do they have a specific separated submenu?
 
 SHAPES are shaders that do the specific function of changing the shape of the screen.
 
@@ -240,16 +248,101 @@ You can make any combination possible, without limits!
 
 So, you can combine any Shader with any Shape at any time. If you want to see some examples, go here: **[MPV-SW-Capture in action](https://tyras-sw.github.io/MPV-SW-Capture/)**.
 
-### 8. What is "Fit Full 16:9 to Bezel" and how do I use it?
+### 7. What do the "Fit Full 16:9 to Bezel" and "Fit Full 16:9 to Crop" options do?
 
-This option fits the entire 16:9 content window perfectly inside a chosen bezel frame. It lets you enjoy your 16:9 content in your favorite bezels without cutting the image.
+Both options help you fit a 16:9 image into a non-16:9 area, but they apply to different things:
 
-**How to use it:**
+- **↹ Fit Full 16:9 to Bezel** — under `BEZELS`. Fits the entire 16:9 content window perfectly inside a chosen **bezel frame**, so you can use a bezel without cutting the image.
+- **↹ Fit Full 16:9 to Crop** — under `CROPS`. Fits a 16:9 image to the size of any **crop**, so the image adapts to the crop area instead of being stretched.
+
+**How to use Fit Full 16:9 to Bezel:**
 
 1. Select a bezel frame first (from the `BEZELS` section).
 2. Then navigate to `BEZELS → Fit Full 16:9 to Bezel`.
 
 If you don't have a bezel selected, you will see a message asking you to select one first.
+
+> 💡 **Note:** When **Fit Full 16:9 to Crop** is active, GPU scaling is bypassed in favor of the CPU scaler. This is intentional — a shader would stretch the compressed frame.
+
+### 8. What is `INPUT RESOLUTION` and how does it work?
+
+`INPUT RESOLUTION` is available under `VIDEO OPTIONS → INPUT RESOLUTION` in the menu. It lets you choose the resolution at which MPV-SW-Capture actually captures the input, and scales it up or down before it reaches the display.
+
+**Why it's useful:**
+- You can set a higher capture resolution (e.g., 1080p → 1440p or 4K) and let the CPU or GPU do the scaling.
+- Results are similar or better than heavy shader-based upscaling, with **very low** additional resource usage.
+- Works correctly with bezels and crops.
+
+**Available options:** `480p`, `720p`, `FHD (1080p)`, `QWXGA (1152p)`, `QHD (1440p)`, `3K (1620p)`, `QHD+ (1800p)`, `4K (2160p)`, and `Auto/Native`.
+
+> ⚠️ **Important:** Selecting a resolution higher than your native one **increases resource usage**, even though it's efficient. If you experience issues (dropped frames, lag), lower the input resolution a bit.
+
+### 9. What's the difference between CPU and GPU scaling in Input Resolution?
+
+Under `INPUT RESOLUTION`, there is a **⚡ GPU Scaling** toggle:
+
+- **CPU (default)** — the scaling is done by libavfilter's `scale` filter (bicubic, similar to libswscale). The most compatible and stable option. CPU usage increases with the resolution but stays reasonable.
+- **GPU** — the scaling is done by an auto-generated GPU shader (`msc_scale`). More efficient in terms of CPU and RAM, because no enlarged frame is built in RAM. Only used when actually upscaling to a resolution **higher** than the native input. Reductions (480p/720p) and native resolution always go through the CPU.
+
+The state is **saved automatically** — if you switch to GPU, MPV-SW-Capture remembers your choice on the next launch.
+
+### 10. What do `Save Resolution` / `Unsave Resolution` do?
+
+- **💾 Save Resolution** — saves the currently selected `INPUT RESOLUTION` so MPV-SW-Capture starts with it on next launch. Without saving, the resolution is forgotten when you close the program.
+- **🗑 Unsave Resolution** — removes the saved resolution and reverts to the native one.
+
+You only need to save the resolution if you want it to persist between sessions.
+
+### 11. What is the Quick Resolution Toggle Button?
+
+A button in the menu header (alongside the other quick actions) that lets you quickly cycle through the `INPUT RESOLUTION` options. The icon changes to indicate the current state:
+
+- ⏫ **Upscaling** — the chosen resolution is higher than the native one.
+- ⏬ **Downscaling** — the chosen resolution is lower than the native one.
+- No arrow — you are at the native resolution.
+
+**Example:** a native 1080p input upscaled to QHD shows `QHD (1440p) ⏫`.
+
+### 12. What are the SHARPEN and Anti-Aliasing shaders?
+
+Under `SHADERS`, there are two categories dedicated to image enhancement:
+
+**Sharpen** — 5 options, each with a different sharpening algorithm:
+- 👑 **Sharpen Lite MSC** — lightweight default, good balance.
+- **Adaptive Luma** — sharpens based on brightness to avoid halos.
+- **NVSharpen RT** — Nvidia-style sharpen.
+- **FidelityFX CAS** — AMD's Contrast Adaptive Sharpening.
+- **AMD FSR1 RCAS RT** — AMD's FidelityFX Super Resolution 1 sharpening pass.
+
+**Anti-Aliasing** — 3 options to smooth edges:
+- 👑 **AA Lite MSC** — balanced default.
+- **AA Lite MSC Extreme** — stronger edge smoothing.
+- **AA Lite MSC Soft** — subtle smoothing.
+
+All of them are **very light** on resources.
+
+### 13. What is Retro Pixel / NSO 5xBRZ?
+
+**Retro Pixel** is a shader category under `SHADERS` with a subcategory called **NSO 5xBRZ**. These are exclusive filters for NSO systems (NES, SNES/Genesis, Game Boy/GBC, and GBA). They smooth and round off pixels to achieve an "HD" look on retro content.
+
+Currently the filters are **limited to NSO** systems, but they work correctly alongside crop and bezel options.
+
+### 14. What is "Convert SDR to HDR"?
+
+**Convert SDR to HDR** is an option under `VIDEO OPTIONS → VIDEO`. It gives an HDR-like look to SDR content — useful for SDR-only capture cards when your console and/or monitor support HDR.
+
+The option is **saved automatically**, so it can start automatically next time you open MPV-SW-Capture.
+
+**Important warnings:**
+
+- While Convert SDR to HDR is active, **AutoICC cannot be used** until you disable it.
+- If your capture card, monitor, and console **all support true HDR** and HDR is already enabled, **do not use this option**. It is strictly a workaround for SDR signals. Enabling it on a native HDR signal will produce washed-out, incorrect colors.
+
+### 15. What is Full RGB (0-255)?
+
+**Full RGB** is an option under `VIDEO OPTIONS → VIDEO` that forces the Full RGB color space (0–255, as opposed to the broadcast Limited range 16–235).
+
+Only enable it if your **console supports Full RGB**. Otherwise blacks and whites will be clipped. If your console is set to Limited RGB, leave this off.
 
 ---
 
@@ -259,7 +352,7 @@ If you don't have a bezel selected, you will see a message asking you to select 
 
 Both backends capture audio from your capture card, but they do it differently:
 
-**WASAPI Audio Plugin (default since v5.1.0):**
+**WASAPI Audio Plugin (default):**
 - A native plugin loaded directly into MPV.
 - Handles both video and audio in the same process.
 - Lower CPU and RAM usage.
@@ -300,7 +393,7 @@ You can also check the **header**: the audio line shows either "WASAPI AUDIO" or
 
 ### 1. What audio backends does MPV-SW-Capture support?
 
-Starting with v5.1.0, MPV-SW-Capture supports **two audio backends**, and you can choose the one that works best on your system:
+MPV-SW-Capture supports **two audio backends**, and you can choose the one that works best on your system:
 
 - **WASAPI Audio Plugin** (default) — a native plugin loaded directly into MPV. It handles both video and audio in the same process, is capturable by OBS, Discord and other tools **without third-party plugins**, and uses less CPU and RAM than the FFplay backend.
 - **FFplay Low Latency** (fallback) — the classic split-process approach: MPV handles video, `ffplay` handles audio. Use this if your system does not support the WASAPI plugin, or if you prefer the older pipeline.
@@ -359,6 +452,17 @@ When muted, the icon changes and the volume label switches to **"MUTED"**.
 It's a floating audio rail that appears when you move the cursor to the middle-left edge of the window. It gives you quick access to Volume and Audio Boost without opening the full menu.
 
 To enable or disable it: go to **AUDIO → Hover Volume Sidebar**. The state is saved and restored across sessions. You can also set its default state from the **Setup** tool.
+
+### 8. What are the WASAPI audio parameters in Setup?
+
+The Setup tool has an **exclusive** WASAPI audio parameters section. It lets you adjust certain low-level audio settings that would otherwise be hardcoded — for example, to match what your PC or capture card actually supports.
+
+**Best practices:**
+
+- Leave the parameters at their defaults unless you have a specific reason to change them. The defaults are tuned for stability.
+- If you experience audio glitches (clicks, pops, crackling), you can try adjusting the buffer or the WASAPI parameters.
+
+> 💡 **Buffer size:** The default WASAPI Audio Buffer Size is **25 ms**, tuned for stability without losing quality or immediacy.
 
 ---
 
@@ -443,7 +547,7 @@ See the **🔊 Audio** section above (question 2).
 
 ### 7. You say there are two programs, one for video and one for audio. What happens to audio if I close MPV‑SW‑Capture?
 
-> 💡 **Note:** Starting with v5.1.0, the default audio backend is **WASAPI Audio Plugin**, which runs entirely inside MPV — there is no separate audio process. The answer below applies to the **FFplay Low Latency** mode.
+> 💡 **Note:** The default audio backend is **WASAPI Audio Plugin**, which runs entirely inside MPV — there is no separate audio process. The answer below applies to the **FFplay Low Latency** mode.
 
 In FFplay mode, if you close the MPV‑SW‑Capture window, the audio closes as well. Both parts are designed to work together, so when MPV‑SW‑Capture is closed, the audio process is also stopped and fully closed.
 
@@ -457,6 +561,9 @@ Most visual options (shaders, bezels, shapes, crops) are **not persisted** — t
 - **Audio Output Mode** — WASAPI or FFplay.
 - **Hover Volume Sidebar** — enabled or disabled.
 - **Change to Auto ICC Profile** — enabled or disabled.
+- **Convert SDR to HDR** — saved automatically.
+- **GPU Scaling mode** — saved automatically.
+- **Input Resolution** — only if you clicked **Save Resolution**.
 
 The other options that persist are the ones you can choose in the **Setup**, **Installer**, and **Tools**.
 
@@ -486,38 +593,50 @@ There are two ways:
 1. Visit the [official releases page](https://github.com/TyRaS-SW/MPV-SW-Capture/releases) to see the latest version available.
 2. Open MPV-SW-Capture, go to the menu **`HELP` → `Check Latest MSC Version`**. The program will tell you if you have the latest version or if an update is available.
 
-### 11. What's new in the menu compared to previous versions?
+### 11. What features does the menu have?
 
-The old list-based menu was replaced with a graphical Smart-TV-style interface built on ASS (Advanced SubStation Alpha). Since then, it has continued to evolve. Current features include:
+The menu is a graphical Smart-TV-style interface built on ASS (Advanced SubStation Alpha). Its features include:
 
 - Section-based navigation with a visual sidebar and badges.
 - Dedicated cards per option, with active-state indicators.
 - Draggable audio sliders with a live effective-gain readout.
 - **In-menu language switcher**: change the interface language on the fly.
-- **Header quick actions**: clickable buttons for `TAKE SCREENSHOT`, `RECORD VIDEO`, the language badge (`EN`/`ES`/`JP`), and the close button.
+- **Header quick actions**: clickable buttons for `TAKE SCREENSHOT`, `RECORD VIDEO`, the language badge (`EN`/`ES`/`JP`), the **Quick Resolution Toggle**, and the close button.
 - **Quick Options** section for fast access to common tasks.
-- **Restructured sections**: the old `OTHERS` section was split into two independent entries — **HELP** and **TOOLS**.
-- **Section descriptions**: every menu section now shows a short explanatory text at the bottom.
-- **Bezels restructured with tabs**: **All**, **NSO** (with sub-tabs per console: NES, SNES, GB, GBA, N64), and **PERSONAL** (auto-appears when you create non-NSO bezels).
+- **Dedicated sections**: HELP and TOOLS are separate from each other.
+- **Section descriptions**: every menu section shows a short explanatory text at the bottom.
+- **Bezels organized with tabs**: **All**, **NSO** (with sub-tabs per console: NES, SNES, GB, GBA, N64), and **PERSONAL** (auto-appears when you create non-NSO bezels).
 - **Custom icons** for most menu options, giving the interface a cleaner look.
 - **Audio Output Mode** selector (WASAPI / FFplay) in the **AUDIO** section.
 - **Hover Volume Sidebar** in the **AUDIO** section.
 - **Change to Auto ICC Profile** added to **Quick Options → SETTINGS**.
 - **Mute button** in the audio bar and clickable audio icon in the header.
+- **`INPUT RESOLUTION`** section under **VIDEO OPTIONS** with CPU/GPU scaling and Save/Unsave Resolution.
+- **`Convert SDR to HDR`** and **`Full RGB`** under **VIDEO OPTIONS**.
+- **SHARPEN and Anti-Aliasing shaders** under **SHADERS**.
+- **Retro Pixel / NSO 5xBRZ** shaders.
+- **`Fit 16:9 to Bezel`** and **`Fit 16:9 to Crop`** options.
+- **TV-like navigation** — the menu remembers your last section and tab (see next question).
 
-### 12. Why does the menu sometimes close and reopen automatically?
+### 12. The menu remembers where I was when I reopen it. Is that intentional?
+
+Yes. The menu preserves your current section and tab when you close and reopen it. You always return exactly where you left off — this gives MPV-SW-Capture a TV-like navigation feel.
+
+### 13. Why does the menu sometimes close and reopen automatically?
 
 Applying a card in **Shaders**, **Shapes**, **Crops**, or **Bezels** hides the menu and reopens it 3 seconds later. This is intentional — it lets you see the effect on the video while keeping the menu handy.
 
 Audio Boost options behave the same way, so the slider reflects the new value when the menu reopens.
 
-### 13. How do I change the language without leaving MPV?
+### 14. How do I change the language without leaving MPV?
 
 Click the **language badge** in the header (shows `EN`, `ES`, `JP`, …) or the equivalent button in **Quick Options → SETTINGS**. Each click cycles to the next available language.
 
 The change applies **instantly** — no need to close and reopen MPV-SW-Capture.
 
-### 14. What does CLEAN ALL do?
+> 💡 If you were on a tab other than the default and then change the language, the tab you are on stays active.
+
+### 15. What does CLEAN ALL do?
 
 `CLEAN ALL` performs a full reset. It clears all shaders, shapes, crops, and bezels, and additionally restores:
 
@@ -529,6 +648,8 @@ The change applies **instantly** — no need to close and reopen MPV-SW-Capture.
 - Always On Top → **off**
 - Aspect override → **16:9**
 - Deband → **off**
+
+> 💡 **Note:** `CLEAN ALL` does **not** touch `INPUT RESOLUTION`, `Convert SDR to HDR`, or `Full RGB` — those are preserved. It also does **not** wipe `vf` filters directly; it delegates to each script (bezel, crop, addon shaders, colors) so the HDR and Full RGB pipelines stay intact.
 
 You can trigger it from the footer of the sidebar, or from **Quick Options → CAPTURE → Clean ALL**.
 
@@ -596,13 +717,19 @@ This tool simplifies the process of creating and using custom bezels without edi
 
 The Video Manager is a graphical tool from the `TOOLS_*.zip` package that lets you adjust advanced video parameters for MPV-SW-Capture without editing `mpv.conf` directly. You can modify settings such as:
 
-- Video latency
-- Audio buffer size
-- Hardware decoding (`hwdec`)
-- GPU rendering options (`vo=gpu`)
-- And other performance‑related options
+- **Input Video Format** — choose `Auto`, `mjpeg`, `yuyv422`, `nv12`, `i420`, or `h264`. Only change it if you experience lag or compatibility issues.
+- **Frame rate** — up to **120 fps** (requires the capture card, monitor, and console to support 120 fps).
+- **GPU API**.
+- **Swapchain Depth**.
+- Video latency.
+- Audio buffer size.
+- Hardware decoding (`hwdec`).
+- GPU rendering options (`vo=gpu`).
+- Other performance-related options.
 
-This tool is especially useful for users who want to fine‑tune performance and quality but prefer a user‑friendly interface over manual configuration files.
+This tool is especially useful for users who want to fine-tune performance and quality but prefer a user-friendly interface over manual configuration files.
+
+> ⚠️ **FPS note:** If you configure an FPS that your capture card doesn't support, MPV will not be able to start. If you are not sure, leave it at **Auto**.
 
 ---
 
@@ -744,3 +871,45 @@ If after restarting you still have no audio:
 - Check that the correct audio device is selected in the **Setup** tool.
 - Verify that MPV-SW-Capture is not muted in the **Windows Volume Mixer**. In WASAPI mode, MPV-SW-Capture appears in the mixer under its own icon (not as `ffplay`).
 - If the issue persists, switch back to **FFplay Low Latency** mode from **AUDIO → AUDIO OUTPUT MODE**. Your system may not fully support the WASAPI plugin.
+
+### 6. My capture shows lag, stutter, or compatibility issues. What can I do?
+
+Open **Setup** or **Video Manager** and change **Input Video Format** from `Auto` (default) to another format. Here is what each option means:
+
+- **`mjpeg`**: **Compressed** (intra-frame). The capture card compresses each frame as a JPEG. It uses **less USB bandwidth**, but the compression/decompression process adds a small amount of latency. It's often the fastest *compressed* option, but a raw format will usually be faster if your bandwidth allows it.
+
+- **`yuyv422`** (also known as YUY2): **RAW / Uncompressed**. Color is sampled at 4:2:2. It requires **high USB bandwidth** but offers the **lowest possible latency**, as there is no decoding step. In practice, it can have 30 ms or more lower latency than MJPEG.
+
+- **`nv12`**: **RAW / Uncompressed**. Color is sampled at 4:2:0. It needs **less bandwidth than `yuyv422`** (about 12 bits per pixel vs. 16) while still avoiding compression, so it also provides **very low latency**.
+
+- **`i420`**: **RAW / Uncompressed**. Also uses 4:2:0 sampling but with a different memory layout. Performance and bandwidth are **similar to `nv12`**: no compression, very low latency.
+
+- **`h264`**: **Compressed** (inter-frame). This is the most heavily compressed option. It uses the least bandwidth but typically introduces **higher latency** due to the encoding/decoding process, unless your GPU handles it with hardware acceleration.
+
+> 💡 **Quick summary:**
+> - **Lowest latency (RAW):** `yuyv422`, `nv12`, `i420`
+> - **Low bandwidth (Compressed):** `mjpeg`, `h264`
+> - **Best balance:** Try `nv12` or `yuyv422` if your USB bandwidth allows it. Use `mjpeg` only if you have bandwidth issues and can tolerate a bit more latency.
+
+> ⚠️ **Important — not all formats are compatible with every capture card.**  
+> Each capture card only supports a **subset** of these formats, and the exact list depends on the model, the drivers, and even the USB port you use.
+>
+> - If you select a format your capture card doesn't support, **MPV-SW-Capture may fail to open**, show a black screen, or close immediately.
+> - In that case, **reopen `MPV-SW-Capture_SETUP.vbs`** (or the Video Manager) and select a different format until you find one that works.
+> - If you're not sure which ones your card supports, the safest option is to go back to **`Auto`**.
+
+Remember that `Auto` is the recommended default. Only change this setting if `Auto` is causing lag or compatibility problems on your specific capture card.
+
+### 7. MPV won't open after I set a specific FPS in the Video Manager. What can I do?
+
+Setting an FPS value that your capture card does not support can prevent MPV from opening. To avoid this:
+
+- Always leave the FPS at **Auto** unless you are certain your capture card supports the chosen value.
+- If you know your card's FPS specs, you can set it explicitly. Otherwise, use Auto.
+
+If MPV won't open:
+
+- Reinstall via `MPV-SW-Capture_INSTALLER.vbs` (or `1_INSTALLER_MSC_First-Usage.cmd` if `mpv.exe` is also missing).
+- After recovery, set FPS back to **Auto** in the Video Manager.
+
+If you still have issues, check the FPS your capture card actually supports, or leave it at **Auto**.
