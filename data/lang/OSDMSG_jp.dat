@@ -1,14 +1,29 @@
 # OSDMSG_jp.dat - By TyRaS-SW
 # Japanese OSD messages for MPV-SW-Capture scripts
-# Keep %s placeholders intact.
+# Keep %s placeholders intact. A literal \n inside a value is a line break.
 
 # ============================================================
-#  NSORETRO (Bezel fit messages)
+#  Bezel fit messages
 # ============================================================
 nsoretro_no_bezel=先にベゼルを選択してください!
 nsoretro_fill_on=16:9 をベゼルに合わせる: ON
 nsoretro_fill_off=16:9 をベゼルに合わせる: OFF
 nsoretro_reset=ベゼル調整: リセット
+
+# ============================================================
+#  Crop fit messages
+# ============================================================
+nsoretro_no_crop=先にCropを選択してください！
+nsoretro_crop_fill_on=フル16:9をCropに合わせる: ON
+nsoretro_crop_fill_off=フル16:9をCropに合わせる: OFF
+
+# ============================================================
+#  NSO RETRO WARNINGS (bezel)
+# ============================================================
+nsoretro_stretch_blocked=ベゼル有効中はウィンドウの伸縮が無効です
+nsoretro_gpu_unavailable=NSO Retro: GPUベゼルは利用できません (%s)。CPUベゼルを使用します。
+nsoretro_hole_failed=NSO Retro: ベゼルの穴の作成に失敗しました (%s)
+nsoretro_ps1_missing=NSO Retro: bezel_to_bgra.ps1 が見つかりません (mpv の data フォルダに置いてください)。CPUベゼルを使用します。
 
 # ============================================================
 #  MIRROR
@@ -56,6 +71,52 @@ shaderinit_osd_off=🙈 OSD 非表示モード と 🔒 録画無効
 # ============================================================
 motioninterp_on=モーション補間: ON
 motioninterp_off=モーション補間: OFF
+
+# ============================================================
+#  RESOLUTION SWITCHER
+# ============================================================
+res_480=解像度: 480p
+res_720=解像度: 720p
+res_1080=解像度: FHD (1080p)
+res_2048=解像度: QWXGA (1152p)
+res_1440=解像度: QHD (1440p)
+res_1620=解像度: 3K (1620p)
+res_1800=解像度: QHD+ (1800p)
+res_4k=解像度: 4K (2160p)
+res_auto=解像度: 自動 (ネイティブ)
+res_scale_gpu=スケーリング: GPU (シェーダー)
+res_scale_cpu=スケーリング: CPU (lavfi)
+res_err_mkdir=resolution_switcher: %s を作成できませんでした (CPUスケーリングを使用)
+res_err_shader_write=resolution_switcher: %s に書き込めませんでした (CPUスケーリングを使用)
+res_log_saved=ログを保存しました:\n%s
+res_log_error=ログを書き込めませんでした:\n%s
+
+# ============================================================
+#  SAVE/UNSAVE RESOLUTION
+# ============================================================
+save_res_ok=解像度を保存しました: %s
+save_res_cleared=保存した解像度を解除しました
+save_res_error=解像度の保存に失敗しました
+save_res_label_auto=自動/ネイティブ
+
+# ============================================================
+#  5xBRZ LOADER
+# ============================================================
+xbrz_on=5xBRZ: %s (%s)
+xbrz_mode_full=全画面
+xbrz_mode_cropped=Crop済み
+xbrz_mode_fit=Crop: 16:9に合わせる
+xbrz_err_notfound=エラー: 5xBRz.glsl が見つかりません
+xbrz_err_write=エラー: %s に書き込めませんでした
+
+# ============================================================
+#  SDR TO HDR CONVERTER + FULL RGB
+# ============================================================
+sdrtohdr_on=SDR→HDR: オン (調整済み)
+sdrtohdr_off=SDR→HDR: オフ (SDRネイティブ)
+fullrgb_on=Full RGB: オン (0-255)
+fullrgb_off=Full RGB: オフ (自動)
+icc_disabled_hdr=HDRモードではICC無効
 
 # ============================================================
 #  TOOLS LAUNCHER

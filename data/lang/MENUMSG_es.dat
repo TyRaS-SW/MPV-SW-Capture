@@ -18,10 +18,12 @@ OTHERS=OTROS
 # ============================================================
 #  TABS
 # ============================================================
-4K=4K
+Sharpen=Nitidez
+Anti-Aliasing=Anti-Aliasing
 TV=TV
 VideoGame=Videojuegos
 Special=Especial
+Retro Pixel=Pixel Retro
 SIZE=TAMAÑO
 POSITION=POSICIÓN
 ROTATION=ROTACIÓN
@@ -65,13 +67,14 @@ Generic=Genérico
 NSO N64 (Mario 64 Size)=NSO N64 (Tamaño Mario 64)
 NSO N64 (DK64 Widescreen Size)=NSO N64 (Tamaño Panorámico DK64)
 NSO: 『N64/GC』 (Full 4:3)=NSO: 『N64/GC』 (4:3 Completo)
+Fit Full 16:9 to Crop=Ajustar 16:9 Total al Recorte
 
 # ============================================================
 #  BEZELS
 # ============================================================
 Clear Bezels=Borrar Marcos
 Bezels Cleared=Marcos Eliminados
-Fit Full 16:9 to Bezel=Ajustar 16:9 Completo al Marco
+Fit Full 16:9 to Bezel=Ajustar 16:9 Total al Marco
 Full 4꞉3 BG ⌗1 (90s TV)=4:3 Completo BG ⌗1 (90s TV)
 
 # ============================================================
@@ -136,12 +139,18 @@ Change to Auto ICC Profile=Cambiar a Perfíl ICC Automático
 Auto ICC=ICC Automático
 ICC Profile=Perfil ICC
 Toggle Deband=Alternar Deband
+Toggle Full RGB (0-255)=Alternar RGB Completo (0-255)
+Toggle Input Resolution=Alternar Resolución Entrada
 Deband:=Deband:
 Toggle Deinterlace=Alternar Desentrelazado
 Deinterlace:=Desentrelazado:
 Borders=Bordes
 Motion Interpolation=Interpolación de Movimiento
 Other Video Options=Otras Opciones de Video
+INPUT RESOLUTION=RESOLUCIÓN DE ENTRADA
+Auto/Native=Auto/Nativo
+Save Resolution=Guardar Resolución
+Unsave Resolution=Quitar Guardado Resolución
 
 # ============================================================
 #  AUDIO

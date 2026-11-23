@@ -3,7 +3,7 @@
 local mp = require "mp"
 
 -- -------------------------------------------------------------------------
--- Cargar osd_messages de forma segura
+-- Load osd_messages safely
 -- -------------------------------------------------------------------------
 local osd
 local function get_script_path()
@@ -24,7 +24,7 @@ local ok, err = pcall(function()
 end)
 
 if not ok then
-    -- Fallback: función get básica
+    -- Fallback: basic get function
     osd = {
         get = function(key) return key end
     }
@@ -34,28 +34,28 @@ else
 end
 
 -- -------------------------------------------------------------------------
--- Inicializar shader activo
+-- Initialize active shader
 -- -------------------------------------------------------------------------
-mp.set_property("user-data/active_shader", "SH_4K_1")
+mp.set_property("user-data/active_shader", "none")
 
--- Variable para rastrear si la ventana de Info Stream está visible
+-- Variable to track if Info Stream window is visible
 local stats_visible = false
 
 -- -------------------------------------------------------------------------
--- FUNCIÓN: toggle OSD (mostrar/ocultar mensajes)
+-- FUNCTION: toggle OSD (show/hide messages)
 -- -------------------------------------------------------------------------
 local function toggle_osd()
     local dur = mp.get_property_number("osd-duration")
     if dur == 0 then
-        -- Activar modo normal (mostrar OSD)
+        -- Activate normal mode (show OSD)
         mp.set_property_number("osd-duration", 1000)
         local msg_text = osd.get("shaderinit_osd_on")
         mp.osd_message(msg_text, 2.0)
     else
-        -- Activar modo oculto (ocultar OSD)
+        -- Activate hidden mode (hide OSD)
         mp.set_property_number("osd-duration", 0)
 
-        -- Si Info Stream está visible, cerrarlo automáticamente
+        -- If Info Stream is visible, close it automatically
         if stats_visible then
             mp.commandv("script-binding", "stats/display-page-1-toggle")
             stats_visible = false
@@ -69,14 +69,14 @@ end
 mp.register_script_message("toggle-osd", toggle_osd)
 
 -- -------------------------------------------------------------------------
--- FUNCIÓN: Info Stream (bloqueado en modo oculto)
+-- FUNCTION: Info Stream (locked in hidden mode)
 -- -------------------------------------------------------------------------
 local function toggle_stats()
     local dur = mp.get_property_number("osd-duration")
 
-    -- Si está en modo oculto, no permitir abrir Info Stream
+    -- If in hidden mode, do not allow opening Info Stream
     if dur == 0 then
-        -- Si por algún motivo está visible (caso raro), lo cerramos
+        -- If visible for some reason (rare case), close it
         if stats_visible then
             mp.commandv("script-binding", "stats/display-page-1-toggle")
             stats_visible = false
@@ -84,7 +84,7 @@ local function toggle_stats()
         return
     end
 
-    -- Modo normal: alternar Info Stream
+    -- Normal Mode: Toggle Info Stream
     mp.commandv("script-binding", "stats/display-page-1-toggle")
     stats_visible = not stats_visible
 end

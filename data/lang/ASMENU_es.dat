@@ -26,8 +26,10 @@ Keep Menu Open=Mantener Menú Abierto
 Help=Ayuda
 SETTINGS=AJUSTES
 Switch Language=Cambiar Idioma
+Convert SDR to HDR=Convertir SDR a HDR
 CLEAN ALL=LIMPIAR TODO
 Close MPV-SW-Capture=Cerrar MPV-SW-Capture
+Native Resolution=Resolución Nativa
 
 # --- Etiquetas de estado + ICC ---
 ON=SÍ
@@ -92,6 +94,7 @@ DESC_WINDOW_WINDOW_EXTRAS=EXTRAS DE VENTANA|Mantén la ventana siempre visible o
 DESC_AUDIO_ALL=TODO|Acciones rápidas de volumen: +10%, -10%, silenciar, o fijar en 100% / 50%.
 DESC_AUDIO_AUDIO_BOOST=AMPLIFICACIÓN DE AUDIO|Amplifica el audio por encima de 100% (hasta 400%) para contenido de volumen bajo.
 DESC_AUDIO_AUDIO_OUTPUT_MODE=MODO DE SALIDA|Elige qué motor de audio maneja el stream de captura.
+DESC_VIDEO_OPTIONS_INPUT_RESOLUTION=RESOLUCIÓN DE ENTRADA|Escala la imagen dinámicamente. No cambia la señal física de la capturadora.
 
 # --- 6. Ayudas de teclado / mouse -----------------------------------------
 KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=TECLADO: [FLECHAS] Mover. [ENTER] Aplicar. [TAB] Cambiar a la siguiente sección. [ESC] Cerrar menú.

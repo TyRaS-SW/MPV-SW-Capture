@@ -17,6 +17,7 @@ local C = {
     btn_yellow = "41A4D9",
     btn_hover  = "008CFF",
     btn_black  = "000000",
+    dark_red   = "2222B2", -- #B22222 (Firebrick) for downscaling
 }
 
 -- Design-space dimensions (scaled by sx/sy at render time).
@@ -26,18 +27,18 @@ local SW, HH, RHROW, BOOST = 232, 64, 32, 400
 
 -- Overlay state.
 local visible, section, cursor, scroll = false, 1, 1, 0
+local last_menu_rect = nil
 local tabs = {}
 local subtabs = {}
 local bound, drag, timer = false, nil, nil
 local root, device = nil, ""
 local app_version = "vUnknown"
 
--- Hover state per element.
-local hover_close, hover_quit, hover_clean, hover_reload = false, false, false, false
-local hover_screenshot, hover_record, hover_lang = false, false, false
-local hover_mute = false
-local hover_audio_icon = false
-local hover_pin = false
+-- Hover states. Keys match the hitbox names stored in `hit`.
+local HOVER_KEYS = { "close", "quit", "clean", "reload", "screenshot", "record",
+                     "lang", "mute", "audio_icon", "pin", "res_icon" }
+local hover = {}
+for _, k in ipairs(HOVER_KEYS) do hover[k] = false end
 
 -- Audio cache. Filled from mpv props (WASAPI) or PowerShell (ffplay).
 local audio = { volume = nil, boost = 100, muted = false, pending = false, version = 0 }
@@ -50,6 +51,7 @@ local ov = mp.create_osd_overlay("ass-events")
 local edge_ov = mp.create_osd_overlay("ass-events")
 
 local sx, sy = 1, 1
+local last_ow, last_oh = nil, nil
 local hide_timer = nil
 local render_gate_open = true
 local pending_render = false
@@ -60,7 +62,7 @@ local edge_hide_timer, edge_hit = nil, nil
 local edge_window_dragging = nil
 
 -- Forward declarations.
-local edge_render, edge_set_from_y, inside, pos
+local edge_render, edge_set_from_y, inside, pos, request_render
 
 local audio_refreshed = false
 local boost_debounce = nil
@@ -68,11 +70,22 @@ local volume_debounce = nil
 local audio_last_ffplay_refresh = 0
 local AUDIO_REFRESH_CACHE = 2.0
 
--- Cached values. These avoid repeated I/O and FFI calls on hot paths
--- (render, observers). Invalidated at their respective change points.
-local cached_lang_code = nil       -- invalidate after writing OSDLang.dat
-local cached_native_audio = nil    -- invalidate on audio-mode change
-local _emoji_cache = {}            -- never invalidated: icons are static
+-- Resolution cycle state.
+local resolutions = {
+    { cmd = "script-message set-res-480",  val = "854x480",   label = "480p (854x480)" },
+    { cmd = "script-message set-res-720",  val = "1280x720",  label = "720p (1280x720)" },
+    { cmd = "script-message set-res-1080", val = "1920x1080", label = "FHD (1080p)" },
+    { cmd = "script-message set-res-2048", val = "2048x1152", label = "QWXGA (1152p)" },
+    { cmd = "script-message set-res-1440", val = "2560x1440", label = "QHD (1440p)" },
+    { cmd = "script-message set-res-1620", val = "2880x1620", label = "3K (1620p)" },
+    { cmd = "script-message set-res-1800", val = "3200x1800", label = "QHD+ (1800p)" },
+    { cmd = "script-message set-res-4k",   val = "3840x2160", label = "4K (2160p)" },
+}
+
+-- Cached values. Invalidated at their respective change points.
+local cached_lang_code = nil
+local cached_native_audio = nil
+local _emoji_cache = {}
 
 -- ------------------------------------------------------------
 -- Helpers
@@ -81,7 +94,7 @@ local function reset_hit()
     hit = { panel = nil, side = {}, rows = {}, tabs = {}, cards = {},
             close = nil, quit = nil, clean = nil, reload = nil,
             screenshot = nil, record = nil, lang = nil, mute = nil,
-            audio_icon = nil, pin = nil }
+            audio_icon = nil, pin = nil, res_icon = nil }
 end
 reset_hit()
 
@@ -91,7 +104,91 @@ local function getroot()
     return root
 end
 
+-- Saved resolution file, read at most once per second (render() asks for it
+-- on every redraw while the capture resolution is "auto"). Also invalidated
+-- as soon as save_resolution.lua reports a change.
+local saved_res_cache, saved_res_stamp = nil, nil
+
+local function read_saved_resolution()
+    local now = mp.get_time()
+    if saved_res_stamp and now - saved_res_stamp < 1.0 then
+        return saved_res_cache
+    end
+    saved_res_stamp = now
+    saved_res_cache = nil
+    local f = io.open(getroot() .. "/data/menu/saved_resolution.txt", "r")
+    if f then
+        local s = (f:read("*a") or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        f:close()
+        s = s:gsub('"', ''):gsub("'", '') -- Clean quotes
+        if s ~= "" then saved_res_cache = s end
+    end
+    return saved_res_cache
+end
+
+mp.observe_property("user-data/saved_resolution_active", "string",
+    function() saved_res_stamp = nil end)
+mp.observe_property("user-data/saved_resolution_exists", "string",
+    function() saved_res_stamp = nil end)
+
+-- Dynamic resolution index calculation based on active state and saved file
+local function get_effective_res_idx()
+    local current = tostring(mp.get_property("user-data/capture_resolution") or "auto"):gsub("%s+", "")
+    
+    -- 1. If a resolution is explicitly set in user-data, use its index.
+    if current ~= "auto" then
+        for i, r in ipairs(resolutions) do
+            if r.val == current then
+                return i
+            end
+        end
+        -- Fallback: match by height if the property stores just the height (e.g. "1440" or "1440p")
+        local _, ph = current:match("(%d+)x(%d+)")
+        local h_str = ph and ph or current
+        for i, r in ipairs(resolutions) do
+            local _, rh = r.val:match("(%d+)x(%d+)")
+            if rh == h_str then
+                return i
+            end
+        end
+    end
+
+    -- 2. If auto (or not found), check the saved resolution file.
+    local saved_res = read_saved_resolution()
+
+    if saved_res then
+        for i, r in ipairs(resolutions) do
+            if r.val == saved_res then
+                return i
+            end
+        end
+        local _, sh = saved_res:match("(%d+)x(%d+)")
+        local h_str = sh and sh or saved_res
+        for i, r in ipairs(resolutions) do
+            local _, rh = r.val:match("(%d+)x(%d+)")
+            if rh == h_str then
+                return i
+            end
+        end
+    end
+
+    -- 3. Fallback to native height.
+    local actual_h = mp.get_property_number("video-params/h") or mp.get_property_number("height")
+    if actual_h then
+        for i, r in ipairs(resolutions) do
+            local _, rh = r.val:match("(%d+)x(%d+)")
+            if tonumber(rh) == actual_h then
+                return i
+            end
+        end
+    end
+
+    -- 4. Default to the first resolution if everything fails.
+    return 1
+end
+
 local settings = dofile(getroot() .. "/data/modules/msc_settings.lua")
+
 local function load_edge_enabled()
     local value = settings.read("hover_volume.txt")
     if value == nil then return false end
@@ -138,8 +235,13 @@ restore_icc_profile()
 mp.add_timeout(0.1, function()
     mp.observe_property("icc-profile-auto", "bool", function(_, value)
         if value == nil then return end
+        -- HDR forces ICC off internally; that is NOT a user preference.
+        if mp.get_property("user-data/sdr_to_hdr", "no") == "yes" then
+            if visible then request_render() end
+            return
+        end
         settings.write("icc_profile.txt", value and "yes\n" or "no\n")
-        if visible then render() end
+        if visible then request_render() end
     end)
 end)
 
@@ -163,9 +265,7 @@ end
 local AS, MM, MM_SORTED = {}, {}, {}
 local T_cache = {}
 
--- Cached: reads the file only once, or after an explicit invalidation
--- (set_language_and_reload / reload-lang). Avoids a disk open on every
--- render pass (up to ~30/sec during hover).
+-- Cached: reads the file only once, or after an explicit invalidation.
 local function current_lang_code()
     if cached_lang_code then return cached_lang_code end
     local f = io.open(getroot() .. "/data/lang/OSDLang.dat", "r")
@@ -345,18 +445,17 @@ local function ps(rel, args, cb)
     end)
 end
 
--- Cached: the backend does not change during a session. Invalidated by
--- the audio-mode observers when the user switches plugin <-> ffplay.
+-- Cached: the backend does not change during a session.
 local function using_native_audio()
     if cached_native_audio ~= nil then return cached_native_audio end
     local mode = mp.get_property_native("user-data/audio-active-mode")
               or mp.get_property_native("user-data/audio-mode")
+    if mode == nil then return false end -- not published yet: do not cache
     cached_native_audio = (mode == "mpv" or mode == "plugin")
     return cached_native_audio
 end
 
 -- Refresh audio state. attempt > 1 = retry loop (ffplay not ready yet).
--- force = bypass ffplay cache (reload button, show()).
 local function audio_refresh(attempt, force)
     audio_refreshed = true
     attempt = attempt or 1
@@ -365,10 +464,7 @@ local function audio_refresh(attempt, force)
     audio.pending = true
 
     if using_native_audio() then
-        -- Ask the WASAPI plugin to re-read the Windows session volume.
-        -- The observer below picks up the change and re-renders.
         mp.commandv("script-message-to", "msc_audio", "msc-audio-refresh")
-
         audio.muted = mp.get_property_bool("mute", false)
         audio.boost = tonumber(mp.get_property_native("user-data/audio-boost")) or 100
         if audio.volume == nil then
@@ -380,7 +476,6 @@ local function audio_refresh(attempt, force)
         return
     end
 
-    -- FFplay: spawns two PS processes. Cache hits skip the round-trip.
     if not force and attempt == 1 then
         local now = mp.get_time()
         if now - audio_last_ffplay_refresh < AUDIO_REFRESH_CACHE then
@@ -443,7 +538,7 @@ local function volset(v)
     if type(v) ~= "number" then return end
     v = math.floor(math.max(0, math.min(100, v)) + 0.5)
     audio.volume = v
-    if visible then render() end
+    if visible then request_render() end
     schedule_volume_send(v)
 end
 
@@ -452,7 +547,7 @@ local function boostset(v)
     v = math.max(100, math.min(BOOST, v))
     if v == audio.boost then return end
     audio.boost = v
-    if visible then render() end
+    if visible then request_render() end
     schedule_boost_send(v)
 end
 
@@ -473,10 +568,18 @@ end
 -- Clean All
 -- ------------------------------------------------------------
 local function cleanall()
+    -- 1. Ask scripts to clean their own filters safely
     mp.commandv("script-message", "clear-bezel", "silent")
     mp.commandv("script-message", "clear-crop", "silent")
     mp.commandv("script-message", "clear-addon-shaders", "silent")
-    mp.commandv("vf", "set", "")
+    
+    -- 2. The input resolution is NOT touched by Clean ALL.
+
+    -- 3. NOTE: "vf set ''" has been intentionally removed.
+    -- Wiping all filters here would destroy the @msc_fullrgb label,
+    -- breaking Full RGB and HDR.
+    
+    -- 4. Reset standard playback properties
     mp.commandv("change-list", "glsl-shaders", "clr", "")
     mp.set_property("deband", "no")
     mp.set_property("user-data/active_shader", "none")
@@ -488,6 +591,11 @@ local function cleanall()
     mp.set_property("title-bar", "no")
     mp.set_property("ontop", "no")
     mp.set_property("video-aspect-override", "16:9")
+    
+    -- 5. Safely reset colors (HDR-aware via sdrtohdr_convert.lua)
+    mp.commandv("script-message", "clean-all-colors")
+    
+    -- 6. Notify user
     osd(T("CLEAN ALL"))
 end
 
@@ -518,8 +626,8 @@ local function canon(v)
         return v and "yes" or "no"
     end
     v = tostring(v)
-    if v == "true" or v == "yes" then return "yes" end
-    if v == "false" or v == "no" then return "no" end
+    if v == "true" or v == "yes" or v == "1" then return "yes" end
+    if v == "false" or v == "no" or v == "0" then return "no" end
     local a, b = v:match("^(%d+%.?%d*):(%d+%.?%d*)$")
     if a then return string.format("%.6g", tonumber(a) / tonumber(b)) end
     local n = tonumber(v)
@@ -738,22 +846,6 @@ end
 local function bezel_tabs(xs)
     local groups, all, state = {}, {}, { prop = nil }
 
-    local function collect_all(node, dest)
-        for _, child in ipairs(node.children or {}) do
-            if child.command and not child.disabled then
-                local p, v = checked(child.check)
-                local clear = p and (canon(v) == "none" or v == "")
-                if not clear then
-                    local c = card(child, state)
-                    if c then dest[#dest + 1] = c end
-                end
-            end
-            if child.children and #child.children > 0 then
-                collect_all(child, dest)
-            end
-        end
-    end
-
     local function make_group(x)
         local g = { name = x.label, key = x.key }
         local direct_cards = {}
@@ -792,8 +884,6 @@ local function bezel_tabs(xs)
             end
         elseif x.command then
             -- Loose cards at section root only appear in the "All" tab.
-            local p, v = checked(x.check)
-            local clear = p and (canon(v) == "none" or v == "")
             local c = card(x, state)
             if c then all[#all + 1] = c end
         end
@@ -847,9 +937,37 @@ local function generic_tabs(xs)
     local out, flat, state = {}, {}, { prop = nil }
     for _, x in ipairs(xs) do
         if not x.command and #x.children > 0 then
-            local cs = {}
-            collect(x.children, cs, state)
-            if #cs > 0 then out[#out + 1] = { name = x.label, key = x.key, cards = cs } end
+            local g = { name = x.label, key = x.key }
+            local direct_cards = {}
+            local subtabs_list = {}
+            
+            for _, child in ipairs(x.children) do
+                if child.disabled and not child.command then
+                    local sub = { name = child.label, key = child.key, cards = {} }
+                    collect(child.children, sub.cards, state)
+                    if #sub.cards > 0 then
+                        subtabs_list[#subtabs_list + 1] = sub
+                    end
+                elseif child.command then
+                    local c = card(child, state)
+                    if c then direct_cards[#direct_cards + 1] = c end
+                elseif not child.disabled and #child.children > 0 then
+                    collect(child.children, direct_cards, state)
+                end
+            end
+            
+            if #subtabs_list > 0 then
+                g.subtabs = subtabs_list
+                if #direct_cards > 0 then
+                     table.insert(subtabs_list, 1, { name = T("All"), key = "all", cards = direct_cards })
+                end
+            else
+                g.cards = direct_cards
+            end
+            
+            if (g.cards and #g.cards > 0) or (g.subtabs and #g.subtabs > 0) then
+                out[#out + 1] = g
+            end
         elseif x.command then
             flat[#flat + 1] = x
         end
@@ -901,7 +1019,7 @@ local SECTIONS = {}
 local toggle_language
 
 -- sub_en may be a static string or a function (evaluated at render time).
-local function quickcard(en_label, run, sub_en, close_after, icon)
+local function quickcard(en_label, run, sub_en, close_after, icon, check_prop, check_exp)
     return {
         label = T(en_label),
         sub = type(sub_en) == "function" and sub_en or T(sub_en or "Quick"),
@@ -909,6 +1027,8 @@ local function quickcard(en_label, run, sub_en, close_after, icon)
         run = run,
         close_after = close_after or false,
         icon = icon,
+        check_property = check_prop,
+        check_expected = check_exp,
     }
 end
 
@@ -919,19 +1039,6 @@ local function build_quick_section()
         layout = "quick",
         flat = true,
         tabs = {
-            {
-                name = T("CAPTURE"),
-                cards = {
-                    quickcard("Take Screenshot", cmd("screenshot"), nil, true,
-                              "\u{1F4F8}"),
-                    quickcard("Record Video", function()
-                        mp.commandv("script-message-to", "autocompress", "toggle-record")
-                    end, nil, true,
-                              "\u{1F3A5}"),
-                    quickcard("Clean ALL", cleanall, nil, false,
-                              "\u{1F9F9}"),
-                },
-            },
             {
                 name = T("HELP"),
                 cards = {
@@ -946,26 +1053,14 @@ local function build_quick_section()
                         cmd("run explorer https://discord.gg/PaVutUUK9U"),
                               "Help", false,
                               "\u{1F4AC}"),
-                    quickcard("Hide OSD Messages",
-                              cmd("script-message toggle-osd"), "Help", false,
-                              "\u{1F648}"),
-                    quickcard("Info Stream",
-                              cmd("script-message toggle-stats"), "Help", true,
-                              "\u{2139}\u{FE0F}"),
                 },
             },
             {
                 name = T("SETTINGS"),
                 cards = {
-                    -- Persistence to icc_profile.txt handled by the observer at top.
-                    quickcard("Change to Auto ICC Profile",
-                              cmd("cycle icc-profile-auto"),
-                              function()
-                                  return mp.get_property_bool("icc-profile-auto", false)
-                                      and T("ON") or T("OFF")
-                              end,
-                              false,
-                              "\u{1F3A8}"),
+                    quickcard("Hide OSD Messages",
+                              cmd("script-message toggle-osd"), "Help", false,
+                              "\u{1F648}", "osd-duration", 0),
                     (function()
                         local cur = current_lang_code()
                         local target = next_language(cur)
@@ -980,7 +1075,62 @@ local function build_quick_section()
                                       and T("ON") or T("OFF")
                               end,
                               false,
-                              "\u{1F4CC}"),
+                              "\u{1F4CC}", "user-data/auto_hide_disabled", true),
+                },
+            },
+            {
+                name = T("VIDEO OPTIONS"),
+                cards = {
+                    quickcard("Convert SDR to HDR", cmd("script-message toggle-sdr-to-hdr"),
+                              function()
+                                  return mp.get_property("user-data/sdr_to_hdr", "no") == "yes"
+                                      and T("ON") or T("OFF")
+                              end,
+                              false,
+                              "\u{1F7E1}", "user-data/sdr_to_hdr", "yes"),
+                    quickcard("Change to Auto ICC Profile",
+                              cmd("cycle icc-profile-auto"),
+                              function()
+                                  return mp.get_property_bool("icc-profile-auto", false)
+                                      and T("ON") or T("OFF")
+                              end,
+                              false,
+                              "\u{1F3A8}", "icc-profile-auto", true),
+                    
+                    -- Toggle Full RGB
+                    quickcard("Toggle Full RGB (0-255)",
+                              cmd("script-message toggle-full-rgb"),
+                              function()
+                                  local v = mp.get_property_native("user-data/full_rgb")
+                                  return (canon(v) == "yes") and T("ON") or T("OFF")
+                              end,
+                              false,
+                              "\u{1F5A5}", "user-data/full_rgb", "yes"),
+                },
+            },
+            {
+                name = T("OTHER OPTIONS"),
+                cards = {
+                    -- Toggle Input Resolution
+                    quickcard("Toggle Input Resolution",
+                              function()
+                                  local idx = get_effective_res_idx()
+                                  local next_idx = (idx % #resolutions) + 1
+                                  mp.set_property("user-data/capture_resolution", resolutions[next_idx].val)
+                                  mp.command(resolutions[next_idx].cmd)
+                              end,
+                              function()
+                                  return resolutions[get_effective_res_idx()].label
+                              end,
+                              false,
+                              "\u{1F5A5}"),
+                              
+                    quickcard("Info Stream",
+                              cmd("script-message toggle-stats"), "Help", true,
+                              "\u{2139}\u{FE0F}"),
+                    quickcard("Stretch Window",
+                              cmd("cycle-values video-aspect-override 2.35:1 16:9"), "Other", false,
+                              "\u{2194}", "video-aspect-override", 2.35),
                 },
             },
         },
@@ -1084,8 +1234,68 @@ end
 
 -- ------------------------------------------------------------
 -- Language switcher (used by a Quick card).
--- Defined BEFORE rebuild_sections() so build_quick_section() sees it.
 -- ------------------------------------------------------------
+local function reload_and_keep_state()
+    cached_lang_code = nil
+
+    -- Save current UI state to restore it after reload
+    local saved_tabs = {}
+    local saved_subtabs = {}
+    for sec, ti in pairs(tabs) do saved_tabs[sec] = ti end
+    for sec, sti in pairs(subtabs) do saved_subtabs[sec] = sti end
+    local saved_cursor = cursor
+
+    rebuild_dicts()
+    AVAILABLE_LANGS = load_languages()
+    ROOTS = load_roots()
+    rebuild_sections()
+
+    -- Restore UI state
+    tabs = saved_tabs
+    subtabs = saved_subtabs
+
+    if section > #SECTIONS then section = 1 end
+
+    -- Bounds check tabs/subtabs to prevent errors if translations change the layout
+    local s = SECTIONS[section]
+    if s and s.tabs then
+        tabs[section] = tabs[section] or 1
+        if tabs[section] > #s.tabs then tabs[section] = 1 end
+        
+        local g = s.tabs[tabs[section]]
+        if g and g.subtabs then
+            subtabs[section] = subtabs[section] or 1
+            if subtabs[section] > #g.subtabs then subtabs[section] = 1 end
+        end
+    end
+
+    -- Bounds check cursor to prevent errors
+    cursor = saved_cursor
+    if s then
+        if s.flat then
+            if cursor > #s.flat_cards then cursor = 1 end
+        elseif s.tabs then
+            local ti = tabs[section] or 1
+            local g = s.tabs[ti]
+            local cards = nil
+            if g.subtabs then
+                local sti = subtabs[section] or 1
+                cards = g.subtabs[sti].cards
+            else
+                cards = g.cards
+            end
+            if cards and cursor > #cards then cursor = 1 end
+        elseif s.rows then
+            local r = s.rows()
+            if cursor > #r then cursor = 1 end
+        else
+            cursor = 1
+        end
+    else
+        cursor = 1
+    end
+end
+
 local function set_language_and_reload(new_lang)
     local path = getroot() .. "/data/lang/OSDLang.dat"
     local f = io.open(path, "w")
@@ -1096,19 +1306,8 @@ local function set_language_and_reload(new_lang)
     f:write(new_lang)
     f:close()
 
-    cached_lang_code = nil   -- invalidate: file changed
-
-    rebuild_dicts()
-    AVAILABLE_LANGS = load_languages()
-    ROOTS = load_roots()
-    rebuild_sections()
-    tabs = {}
-    subtabs = {}
-
+    reload_and_keep_state()
     mp.command("script-message reload-osd-messages")
-
-    if section > #SECTIONS then section = 1 end
-    cursor = 1
     render()
 end
 
@@ -1171,7 +1370,11 @@ local function text(a, x, y, s, colour, size, bold, align)
     a:append(string.format(
         "{\\pos(%.1f,%.1f)\\an%d\\bord0\\shad0\\1c&H%s&\\fs%.1f\\b%d\\fnSegoe UI}",
         x, y, align or 4, colour, size, bold and 1 or 0))
-    a:append(tostring(s):gsub("\\", "\\\\"):gsub("{", "\\{"):gsub("}", "\\}"))
+    local str = tostring(s)
+    if str:find("[\\{}]") then
+        str = str:gsub("\\", "\\\\"):gsub("{", "\\{"):gsub("}", "\\}")
+    end
+    a:append(str)
 end
 
 -- No brace escaping: only for fully script-controlled strings (inline tags).
@@ -1211,7 +1414,6 @@ local function check_icon(a, x, y, size, colour)
     local y2 = y + size * 0.34
     local x3 = x + size * 0.52
     local y3 = y - size * 0.42
-    -- \pos(0,0) anchors to absolute coords, else libass offsets the icon.
     local style = string.format("{\\pos(0,0)\\bord0\\shad0\\c&H%s&}", colour)
     a:new_event()
     a:append(style)
@@ -1236,8 +1438,6 @@ local function lcd_icon(a, x, y, on)
 end
 
 -- Force color emoji variant on arrows/shapes (Windows picks text by default).
--- Cached: icons are static strings, so the UTF-8 scan runs only once per
--- distinct glyph. Avoids ~700+ scans/sec during hover on a dense grid.
 local function force_emoji_presentation(icon)
     if not icon or icon == "" then return icon end
 
@@ -1416,12 +1616,15 @@ end
 -- ------------------------------------------------------------
 local function truncate_text(str, max_width, font_size)
     local approx_char_width = font_size * 0.35
-    local max_chars = math.floor(max_width / approx_char_width)
-    if max_chars < 1 then max_chars = 1 end
-    if #str > max_chars then
-        return str:sub(1, max_chars - 3) .. "..."
+    local max_chars = math.max(1, math.floor(max_width / approx_char_width))
+    if #str <= max_chars then return str end
+    local cut = math.max(0, max_chars - 3)
+    -- Never cut in the middle of a multi-byte UTF-8 character.
+    while cut > 0 do
+        local b = str:byte(cut + 1)
+        if b and b >= 0x80 and b < 0xC0 then cut = cut - 1 else break end
     end
-    return str
+    return str:sub(1, cut) .. "..."
 end
 
 -- ------------------------------------------------------------
@@ -1481,6 +1684,40 @@ local function first()
     return 1
 end
 
+-- Draws one option card (shared by the flat and grid layouts).
+local function draw_card(a, q, px, py, cardw, cardh, sel)
+    rect(a, px, py, cardw, cardh, sel and C.active or C.card, sel and 0x08 or 0x18)
+
+    if check_matches(q) then
+        check_icon(a, px + cardw - 30 * sx, py + 42 * sy, 11 * sx, C.accent)
+    end
+
+    local ed = sel and C.accent or C.cardedge
+    rect(a, px, py, cardw, 1, ed, 0x10)
+    rect(a, px, py + cardh - 1, cardw, 1, ed, 0x10)
+    rect(a, px, py, 1, cardh, ed, 0x10)
+    rect(a, px + cardw - 1, py, 1, cardh, ed, 0x10)
+
+    local icon_x = px + 22 * sx
+    local icon_y = py + cardh / 2
+    draw_card_icon(a, icon_x, icon_y, q, sel, sel)
+
+    local text_start_x = icon_x + 20 * sx
+    local max_text_width = (px + cardw - 12 * sx) - text_start_x
+    local label_font_size = 16.5 * sx
+    local sub_font_size = 12.6 * sx
+    local truncated_label = truncate_text(q.label, max_text_width, label_font_size)
+    local sub_val = type(q.sub) == "function" and q.sub() or q.sub
+    local truncated_sub = sub_val and truncate_text(sub_val, max_text_width, sub_font_size) or nil
+
+    text(a, text_start_x, py + 18 * sy, truncated_label,
+        sel and C.hi or C.text, label_font_size, sel, 4)
+    if truncated_sub then
+        text(a, text_start_x, py + 18 * sy + 20 * sy, truncated_sub,
+            C.faint, sub_font_size, false, 4)
+    end
+end
+
 function render()
     if not visible then
         ov.data = ""
@@ -1497,6 +1734,7 @@ function render()
 
     local ow = mp.get_property_number("osd-width") or RW
     local oh = mp.get_property_number("osd-height") or RH
+    last_ow, last_oh = ow, oh
     sx = math.min(ow / RW, oh / RH)
     sy = sx
     local ox = (ow - RW * sx) / 2
@@ -1509,12 +1747,23 @@ function render()
     reset_hit()
     hit.panel = { X(P.x), Y(P.y), X(P.x + P.w), Y(P.y + P.h) }
 
+    -- Tell nso_retro where the panel is so the bezel can leave that
+    -- rectangle open (the menu stays on top of the bezel).
+    do
+        local r = string.format("%d,%d,%d,%d", math.floor(X(P.x) - 1), math.floor(Y(P.y) - 1),
+            math.ceil(X(P.x + P.w) + 1), math.ceil(Y(P.y + P.h) + 1))
+        if r ~= last_menu_rect then
+            last_menu_rect = r
+            mp.set_property("user-data/menu_rect", r)
+        end
+    end
+
     rect(a, X(P.x) - 1, Y(P.y) - 1, P.w * sx + 2, P.h * sy + 2, C.edge, 0x10)
     rect(a, X(P.x), Y(P.y), P.w * sx, P.h * sy, C.panel, 0x0A)
 
     -- ============================================================
     -- Header
-    -- Order: [Title] | [🎮 Device] | [📺 Status] | [SS][REC] | [EN] 📌 ✕
+    -- Order: [Title] | [🎮 Device + 🔊 Audio] | [📺 Status + 🖥 GPU] | [SS][REC] | [EN] 📌 ✕
     -- ============================================================
     local hy  = Y(P.y)
     local hcy = hy + 32 * sy
@@ -1543,46 +1792,47 @@ function render()
         C.hi, C.text, math.floor(16 * sx), app_version)
     text_raw(a, X(tb_center_x), hcy, title_str, 25 * sx, true, 5)
 
-    -- 2. Device block: 🎮 + name. Truncation reserves real "..." width.
+    -- 2. Device block (Left Column)
+    local left_icon_cx = X(A_title_bar) + 35 * sx
+    local left_text_x = left_icon_cx + 24 * sx
+    local max_text_width = X(A_dev_bar) - 10 * sx - left_text_x
+
+    -- Row 1: Gamepad
+    local row1_y = hy + 16 * sy
+    text(a, left_icon_cx, row1_y, "\u{1F3AE}", C.btn_yellow, 26 * sx, false, 5)
     if device ~= "" then
-        local dev_left_s  = X(A_title_bar) + 6 * sx
-        local dev_right_s = X(A_dev_bar) - 6 * sx
-
-        local emoji_w  = 28 * sx
-        local gap_w    = 6 * sx
-        local pad_s    = 4 * sx
-        local char_w_s = 5.6 * sx
-        local dot_w_s  = char_w_s * 0.40
-
-        local avail_s  = (dev_right_s - dev_left_s) - emoji_w - gap_w - pad_s
-        local max_full = math.floor(avail_s / char_w_s)
-
-        local dev_text, truncated
-        if #device <= max_full then
-            dev_text  = device
-            truncated = false
-        else
-            local cutoff = math.floor((avail_s - 3 * dot_w_s) / char_w_s)
-            cutoff = math.min(cutoff, #device - 1)
-            if cutoff < 6 then cutoff = 6 end
-            dev_text  = device:sub(1, cutoff) .. "..."
-            truncated = true
+        local char_w = 5.6 * sx
+        local max_chars = math.floor(max_text_width / char_w)
+        local dev_text = device
+        if #device > max_chars then
+            local cutoff = math.max(6, max_chars - 3)
+            dev_text = device:sub(1, cutoff) .. "..."
         end
-
-        local start_s
-        if truncated then
-            start_s = dev_left_s
-        else
-            local text_w  = #dev_text * char_w_s
-            local total_w = emoji_w + gap_w + text_w
-            start_s = (dev_left_s + dev_right_s) / 2 - total_w / 2
-        end
-
-        text(a, start_s + emoji_w / 2, hcy - 3 * sy, "\u{1F3AE}", C.btn_yellow, 32 * sx, false, 5)
-        text(a, start_s + emoji_w + gap_w, hcy + 3 * sy, dev_text, C.dim, 15 * sx, false, 4)
+        text(a, left_text_x, row1_y + 2 * sy, dev_text, C.dim, 16 * sx, false, 4)
     end
 
-    -- 3. Status block: 📺 1080p 60 FPS / 🔊 WASAPI AUDIO
+    -- Row 2: Audio
+    local row2_y = hy + 44 * sy
+    local audio_mode = mp.get_property_native("user-data/audio-active-mode")
+                    or mp.get_property_native("user-data/audio-mode")
+    local audio_label = (audio_mode == "ffplay" and "FFplay " or "WASAPI ") .. T("AUDIO")
+    local audio_icon = audio.muted and "\u{1F507}" or "\u{1F50A}"
+    local audio_color = hover.audio_icon and C.hi
+                     or (audio.muted and C.amber or C.green)
+    local audio_size  = hover.audio_icon and 26 * sx * 1.15 or 26 * sx
+
+    hit.audio_icon = {
+        left_icon_cx - 15 * sx,
+        row2_y - 15 * sy,
+        left_icon_cx + 15 * sx,
+        row2_y + 15 * sy
+    }
+
+    text(a, left_icon_cx, row2_y, audio_icon, audio_color, audio_size, false, 5)
+    text(a, left_text_x, row2_y + 2 * sy, audio_label, C.dim, 16 * sx, false, 4)
+
+
+    -- 3. Status block (Right Column)
     local w, h = mp.get_property_number("width"), mp.get_property_number("height")
     local fps  = mp.get_property_number("estimated-vf-fps")
     local st
@@ -1599,37 +1849,87 @@ function render()
 
     local info_icon_cx = X(A_dev_bar) + 22 * sx
     local info_text_x  = info_icon_cx + 24 * sx
-    local info_icon_dy = -2 * sx
-    local info_text_dy = -1 * sx
-    local info_row1_y  = hy + 18 * sy
-    local info_row2_y  = hy + 44 * sy
-
-    text(a, info_icon_cx, info_row1_y + info_icon_dy, "\u{1F4FA}",
-         w and C.green or C.amber, 26 * sx, false, 5)
-    text(a, info_text_x, info_row1_y + info_text_dy, st, C.text, 16 * sx, false, 4)
-
-    local audio_mode = mp.get_property_native("user-data/audio-active-mode")
-                    or mp.get_property_native("user-data/audio-mode")
-    local audio_label = (audio_mode == "ffplay" and "FFplay " or "WASAPI ") .. T("AUDIO")
-
-    local icon_hit_size = 20 * sx
-    local icon_cy = info_row2_y + info_icon_dy
-    hit.audio_icon = {
-        info_icon_cx - icon_hit_size / 2,
-        icon_cy - icon_hit_size / 2,
-        info_icon_cx + icon_hit_size / 2,
-        icon_cy + icon_hit_size / 2,
-    }
-
-    -- Audio icon: color + size change on hover, no background rect.
+    local icon_hit_size = 30 * sx
     local icon_base_size  = 26 * sx
     local icon_hover_size = icon_base_size * 1.15
-    local audio_icon = audio.muted and "\u{1F507}" or "\u{1F50A}"
-    local audio_color = hover_audio_icon and C.hi
-                     or (audio.muted and C.amber or C.green)
-    local audio_size  = hover_audio_icon and icon_hover_size or icon_base_size
-    text(a, info_icon_cx, info_row2_y + info_icon_dy, audio_icon, audio_color, audio_size, false, 5)
-    text(a, info_text_x, info_row2_y + info_text_dy, audio_label, C.dim, 16 * sx, false, 4)
+
+    -- Row 1: Native Resolution (Top)
+    text(a, info_icon_cx, row1_y, "\u{1F4FA}", w and C.green or C.amber, icon_base_size, false, 5)
+    text(a, info_text_x, row1_y + 2 * sy, st, C.text, 16 * sx, false, 4)
+
+    -- Row 2: GPU Resolution (Bottom)
+    local cur_res_val = tostring(mp.get_property("user-data/capture_resolution") or "auto"):gsub("%s+", "")
+    local native_h = mp.get_property_number("video-params/h") or mp.get_property_number("height") or 0
+    local gpu_res_h = 0
+
+    if cur_res_val ~= "auto" then
+        local _, ph = cur_res_val:match("(%d+)x(%d+)")
+        if ph then gpu_res_h = tonumber(ph) end
+    else
+        gpu_res_h = native_h
+    end
+
+    local gpu_label = T("Native Resolution")
+    local gpu_icon_type = "native"
+    local gpu_color = C.dim
+
+    -- If the effective resolution matches the native height, or it's set to auto, show "Native Resolution"
+    if cur_res_val == "auto" or (gpu_res_h > 0 and gpu_res_h == native_h) then
+        gpu_label = T("Native Resolution")
+        gpu_icon_type = "native"
+        gpu_color = C.dim
+    elseif gpu_res_h > 0 and native_h > 0 then
+        local current_res_obj = nil
+        for _, r in ipairs(resolutions) do
+            if r.val == cur_res_val then
+                current_res_obj = r
+                break
+            end
+        end
+
+        -- Fallback: match by height if the property stores just the height
+        if not current_res_obj then
+            local _, ph = cur_res_val:match("(%d+)x(%d+)")
+            local h_str = ph and ph or cur_res_val
+            for _, r in ipairs(resolutions) do
+                local _, rh = r.val:match("(%d+)x(%d+)")
+                if rh == h_str then
+                    current_res_obj = r
+                    break
+                end
+            end
+        end
+
+        if gpu_res_h > native_h then
+            gpu_label = current_res_obj and current_res_obj.label or (gpu_res_h .. "p")
+            gpu_icon_type = "up"
+            gpu_color = C.btn_yellow
+        elseif gpu_res_h < native_h then
+            gpu_label = current_res_obj and current_res_obj.label or (gpu_res_h .. "p")
+            gpu_icon_type = "down"
+            gpu_color = C.dark_red
+        end
+    end
+
+    hit.res_icon = {
+        info_icon_cx - icon_hit_size / 2,
+        row2_y - icon_hit_size / 2,
+        info_icon_cx + icon_hit_size / 2,
+        row2_y + icon_hit_size / 2,
+    }
+
+    local res_icon_color = hover.res_icon and C.hi or gpu_color
+    local res_icon_size = hover.res_icon and icon_hover_size or icon_base_size
+
+    if gpu_icon_type == "native" then
+        text(a, info_icon_cx, row2_y, "\u{1F5A5}\u{FE0F}", res_icon_color, res_icon_size, false, 5)
+    elseif gpu_icon_type == "up" then
+        text(a, info_icon_cx, row2_y, "\u{23EB}\u{FE0F}", res_icon_color, res_icon_size, false, 5)
+    elseif gpu_icon_type == "down" then
+        text(a, info_icon_cx, row2_y, "\u{23EC}\u{FE0F}", res_icon_color, res_icon_size, false, 5)
+    end
+
+    text(a, info_text_x, row2_y + 2 * sy, gpu_label, gpu_color, 16 * sx, (gpu_color ~= C.dim), 4)
 
     -- Separator: end of the info block, start of the action buttons.
     rect(a, X(A_status_bar), bar_y, 1, bar_h, C.edge, 0x00)
@@ -1652,7 +1952,7 @@ function render()
     local rec_x = sht_x + sht_w + btn_gap
 
     hit.screenshot = { sht_x, btn_y, sht_x + sht_w, btn_y + btn_h }
-    local sht_bg = hover_screenshot and C.btn_hover or C.btn_yellow
+    local sht_bg = hover.screenshot and C.btn_hover or C.btn_yellow
     rect(a, sht_x, btn_y, sht_w, btn_h, sht_bg, 0)
     text(a, sht_x + 11 * sx, hcy - 2 * sy,
          "\u{1F4F8}", C.btn_black, 26 * sx, true, 5)
@@ -1660,7 +1960,7 @@ function render()
          T("SCREENSHOT_HEADER"), C.btn_black, 14 * sx, true, 5)
 
     hit.record = { rec_x, btn_y, rec_x + rec_w, btn_y + btn_h }
-    local rec_bg = hover_record and C.btn_hover or C.btn_yellow
+    local rec_bg = hover.record and C.btn_hover or C.btn_yellow
     rect(a, rec_x, btn_y, rec_w, btn_h, rec_bg, 0)
     text(a, rec_x + 11 * sx, hcy - 2 * sy,
          "\u{1F3A5}", C.btn_black, 26 * sx, true, 5)
@@ -1673,22 +1973,19 @@ function render()
     local lang_x    = X(A_lang_x)
 
     hit.lang = { lang_x, btn_y, lang_x + lang_w, btn_y + btn_h }
-    if hover_lang then
+    if hover.lang then
         rect(a, lang_x - 2 * sx, btn_y - 2 * sy, lang_w + 4 * sx, btn_h + 4 * sy, C.blue, 0x30)
     end
     rect(a, lang_x, btn_y, lang_w, btn_h, C.panel, 0x30)
-    local lang_border = hover_lang and C.hi or C.blue
+    local lang_border = hover.lang and C.hi or C.blue
     rect(a, lang_x,              btn_y,              lang_w, 1,      lang_border, 0x30)
     rect(a, lang_x,              btn_y + btn_h - 1,  lang_w, 1,      lang_border, 0x30)
     rect(a, lang_x,              btn_y,              1,      btn_h,  lang_border, 0x30)
     rect(a, lang_x + lang_w - 1, btn_y,              1,      btn_h,  lang_border, 0x30)
     text(a, lang_x + lang_w / 2, hcy, lang_code,
-         hover_lang and C.hi or C.blue, 22 * sx, true, 5)
+         hover.lang and C.hi or C.blue, 22 * sx, true, 5)
 
     -- 6. Pin (Always On Top): 4 visual states.
-    --   off + no hover : faint / base       off + hover : white / hover
-    --   on  + no hover : amber / active     on  + hover : amber / hover (inverse)
-    -- Click while hovering = same size, only color flips (no jolt).
     local pin_cx    = X(P.x + 925)
     local pin_cy    = hcy
     local pin_hit_r = 26 * sx
@@ -1697,29 +1994,21 @@ function render()
         pin_cx + pin_hit_r, pin_cy + pin_hit_r,
     }
     local pin_base_size   = 26 * sx
-    local pin_hover_size  = pin_base_size * 1.15     -- 30: hover on inactive
-    local pin_active_size = pin_hover_size * 1.25    -- 37.5: active (no hover)
+    local pin_hover_size  = pin_base_size * 1.15
+    local pin_active_size = pin_hover_size * 1.25
     local ontop_on = mp.get_property_bool("ontop", false)
 
-    -- Color: amber while active, white when hovering an inactive pin,
-    -- faint otherwise.
     local pin_color
     if ontop_on then
         pin_color = C.btn_yellow
-    elseif hover_pin then
+    elseif hover.pin then
         pin_color = C.hi
     else
         pin_color = C.faint
     end
 
-    -- Size:
-    --   any state + hover : same "hover" size (30) — clicking while
-    --     hovering only changes the color, never the size, so there is
-    --     no visual jolt.
-    --   off / no hover    : base (26)
-    --   on  / no hover    : active (37.5) — stays big so "on" is obvious.
     local pin_size
-    if hover_pin then
+    if hover.pin then
         pin_size = pin_hover_size
     elseif ontop_on then
         pin_size = pin_active_size
@@ -1732,9 +2021,9 @@ function render()
     local ix, iy = X(A_x_cx), hcy
     hit.close = { ix - 18 * sx, iy - 18 * sy, ix + 18 * sx, iy + 18 * sy }
 
-    local close_arm   = hover_close and (8 * sx * 1.5) or (8 * sx)
-    local close_thick = hover_close and (2.5 * sx * 1.5) or (2.5 * sx)
-    local close_col   = hover_close and "00008B" or C.accent
+    local close_arm   = hover.close and (8 * sx * 1.5) or (8 * sx)
+    local close_thick = hover.close and (2.5 * sx * 1.5) or (2.5 * sx)
+    local close_col   = hover.close and "00008B" or C.accent
     cross(a, ix, iy, close_arm, close_thick, close_col)
 
     -- ============================================================
@@ -1762,21 +2051,21 @@ function render()
 
     rect(a, bx + 20 * sx, clean_y - 12 * sy, (SW - 40) * sx, 1, C.edge, 0x10)
     hit.clean = { bx + 12 * sx, clean_y - 10 * sy, bx + (SW - 12) * sx, clean_y + 22 * sy }
-    if hover_clean then
+    if hover.clean then
         rect(a, bx + 12 * sx, clean_y - 10 * sy, (SW - 24) * sx, 30 * sy, C.active, 0x10)
     end
-    trash_icon(a, bx + 25 * sx, clean_y + 6 * sy, hover_clean and C.accent or C.hi)
+    trash_icon(a, bx + 25 * sx, clean_y + 6 * sy, hover.clean and C.accent or C.hi)
     text(a, bx + 41 * sx, clean_y + 6 * sy, T("CLEAN ALL"),
-        hover_clean and C.hi or C.faint, 19 * sx, hover_clean)
+        hover.clean and C.hi or C.faint, 19 * sx, hover.clean)
 
     rect(a, bx + 20 * sx, fy - 12 * sy, (SW - 40) * sx, 1, C.edge, 0x10)
     hit.quit = { bx + 12 * sx, fy - 12 * sy, bx + (SW - 12) * sx, fy + 22 * sy }
-    if hover_quit then
+    if hover.quit then
         rect(a, bx + 12 * sx, fy - 10 * sy, (SW - 24) * sx, 30 * sy, C.active, 0x10)
     end
-    cross(a, bx + 25 * sx, fy + 6 * sy, 7 * sx, 2.2 * sx, hover_quit and C.accent or C.hi)
+    cross(a, bx + 25 * sx, fy + 6 * sy, 7 * sx, 2.2 * sx, hover.quit and C.accent or C.hi)
     text(a, bx + 41 * sx, fy + 6 * sy, T("Close MPV-SW-Capture"),
-        hover_quit and C.hi or C.faint, 19 * sx, hover_quit)
+        hover.quit and C.hi or C.faint, 19 * sx, hover.quit)
 
     -- ============================================================
     -- Content area
@@ -1826,12 +2115,12 @@ function render()
             -- Reload: grows 25% + accent color on hover.
             local reload_base_size  = rsize * 1.2
             local reload_hover_size = reload_base_size * 1.25
-            local reload_size = hover_reload and reload_hover_size or reload_base_size
+            local reload_size = hover.reload and reload_hover_size or reload_base_size
 
             a:new_event()
             a:append(string.format(
                 "{\\pos(%.1f,%.1f)\\an5\\bord0\\shad0\\1c&H%s&\\fs%.1f\\fnSegoe UI}",
-                rx, ry, hover_reload and C.accent or C.faint, reload_size))
+                rx, ry, hover.reload and C.accent or C.faint, reload_size))
             a:append("\u{1F504}")
 
             -- Mute: grows 25% + dark goldenrod on hover.
@@ -1842,14 +2131,17 @@ function render()
             local mute_icon = audio.muted and "\u{1F507}" or "\u{1F50A}"
             local mute_base_size  = 33 * sx
             local mute_hover_size = mute_base_size * 1.25
-            local mute_color = hover_mute and "0B86B8"
+            local mute_color = hover.mute and "0B86B8"
                             or (audio.muted and C.amber or C.hi)
-            local mute_size  = hover_mute and mute_hover_size or mute_base_size
+            local mute_size  = hover.mute and mute_hover_size or mute_base_size
             text(a, mx, my, mute_icon, mute_color, mute_size, false, 5)
         end
     end
 
     if s.layout == "quick" or s.key_en == "audio" then
+        -- Shift the meters 10 pixels up
+        top = top - 10 * sy
+
         draw_meter(T("Volume"),
             audio.muted and T("MUTED") or (audio.volume and audio.volume .. "%" or "--"),
             (audio.volume or 0) / 100, C.blue, 0)
@@ -1859,9 +2151,10 @@ function render()
 
         local eff_str, eff_colour = compute_effective_gain()
         local yy_eff = top + 2 * 34 * sy
-        text(a, cx + cw * sx, yy_eff + 8 * sy, eff_str, eff_colour, 13 * sx, false, 6)
+        text(a, cx + cw * sx, yy_eff + 2 * sy, eff_str, eff_colour, 13 * sx, false, 6)
 
-        top = top + 98 * sy
+        -- Keep the rest of the content (like HELP) 10 pixels higher as well
+        top = top + 80 * sy
     end
 
     -- ============================================================
@@ -1888,41 +2181,7 @@ function render()
                 local px = cx + col * (cardw + gap)
                 local py = gy
                 if py + cardh <= bottom_limit then
-                    local is_checked = check_matches(q)
-                    local sel = card_global == cursor
-                    local on = sel
-
-                    rect(a, px, py, cardw, cardh, on and C.active or C.card, on and 0x08 or 0x18)
-                    if is_checked then
-                        check_icon(a, px + cardw - 30 * sx, py + 42 * sy, 11 * sx, C.accent)
-                    end
-                    local ed = sel and C.accent or C.cardedge
-                    rect(a, px, py, cardw, 1, ed, 0x10)
-                    rect(a, px, py + cardh - 1, cardw, 1, ed, 0x10)
-                    rect(a, px, py, 1, cardh, ed, 0x10)
-                    rect(a, px + cardw - 1, py, 1, cardh, ed, 0x10)
-
-                    local content_shift = 8 * sx
-                    local icon_x = px + 14 * sx + content_shift
-                    local icon_y = py + cardh / 2
-                    draw_card_icon(a, icon_x, icon_y, q, on, sel)
-
-                    local text_start_x = icon_x + 20 * sx
-                    local text_end_x = px + cardw - 12 * sx
-                    local max_text_width = text_end_x - text_start_x
-                    local label_font_size = 16.5 * sx
-                    local sub_font_size = 12.6 * sx
-                    local truncated_label = truncate_text(q.label, max_text_width, label_font_size)
-                    local sub_val = type(q.sub) == "function" and q.sub() or q.sub
-                    local truncated_sub = sub_val and truncate_text(sub_val, max_text_width, sub_font_size) or nil
-
-                    text(a, text_start_x, py + 18 * sy, truncated_label,
-                        sel and C.hi or C.text, label_font_size, sel, 4)
-                    if truncated_sub then
-                        text(a, text_start_x, py + 18 * sy + 20 * sy, truncated_sub,
-                            C.faint, sub_font_size, false, 4)
-                    end
-
+                    draw_card(a, q, px, py, cardw, cardh, card_global == cursor)
                     hit.cards[card_global] = { px, py, px + cardw, py + cardh, index = card_global }
                 end
 
@@ -2009,49 +2268,13 @@ function render()
             local py = gy + math.floor((i - 1) / cols) * (cardh + gap)
             if py + cardh > Y(P.y + P.h) - 30 * sy then break end
 
-            local is_checked = check_matches(q)
-            local sel = i == cursor
-            local on = sel
-
-            rect(a, px, py, cardw, cardh, on and C.active or C.card, on and 0x08 or 0x18)
-
-            if is_checked then
-                check_icon(a, px + cardw - 30 * sx, py + 42 * sy, 11 * sx, C.accent)
-            end
-
-            local ed = sel and C.accent or C.cardedge
-            rect(a, px, py, cardw, 1, ed, 0x10)
-            rect(a, px, py + cardh - 1, cardw, 1, ed, 0x10)
-            rect(a, px, py, 1, cardh, ed, 0x10)
-            rect(a, px + cardw - 1, py, 1, cardh, ed, 0x10)
-
-            local content_shift = 8 * sx
-            local icon_x = px + 14 * sx + content_shift
-            local icon_y = py + cardh / 2
-            draw_card_icon(a, icon_x, icon_y, q, on, sel)
-
-            local text_start_x = icon_x + 20 * sx
-            local text_end_x = px + cardw - 12 * sx
-            local max_text_width = text_end_x - text_start_x
-            local label_font_size = 16.5 * sx
-            local sub_font_size = 12.6 * sx
-            local truncated_label = truncate_text(q.label, max_text_width, label_font_size)
-            local sub_val = type(q.sub) == "function" and q.sub() or q.sub
-            local truncated_sub = sub_val and truncate_text(sub_val, max_text_width, sub_font_size) or nil
-
-            text(a, text_start_x, py + 18 * sy, truncated_label,
-                sel and C.hi or C.text, label_font_size, sel, 4)
-            if truncated_sub then
-                text(a, text_start_x, py + 18 * sy + 20 * sy, truncated_sub,
-                    C.faint, sub_font_size, false, 4)
-            end
-
+            draw_card(a, q, px, py, cardw, cardh, i == cursor)
             hit.cards[i] = { px, py, px + cardw, py + cardh, index = i }
         end
     else
         -- List layout: rows of actions with optional headings.
         local r = s.rows()
-        local max = math.floor((P.h - HH - 44 - (s.footer and 34 or 0)) / 34)
+        local max = math.floor((P.h - HH - 44) / 34)
         if cursor < scroll + 1 then scroll = cursor - 1 end
         if cursor > scroll + max then scroll = cursor - max end
         if scroll < 0 then scroll = 0 end
@@ -2161,7 +2384,7 @@ end
 -- Throttled entry point: fires immediately, then defers additional calls
 -- within ~33ms. Deferred calls are queued (not dropped) so a hover change
 -- that arrives during the cooldown still gets rendered right after.
-local function request_render()
+function request_render()
     if render_gate_open then
         render_gate_open = false
         render()
@@ -2371,12 +2594,19 @@ local function fromx(h, x)
     if f ~= f then return end
     f = math.max(0, math.min(1, f))
     if h.meter == "volume" then
-        audio.volume = math.floor(f * 100 + 0.5)
-        if using_native_audio() then volset(audio.volume) end
-        render()
+        local v = math.floor(f * 100 + 0.5)
+        if v == audio.volume then return end
+        if using_native_audio() then
+            volset(v) -- sets audio.volume, redraws and sends
+        else
+            audio.volume = v
+            request_render()
+        end
     else
-        audio.boost = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
-        render()
+        local b = math.floor((100 + f * (BOOST - 100)) / 25 + 0.5) * 25
+        if b == audio.boost then return end
+        audio.boost = b
+        request_render()
     end
 end
 
@@ -2429,17 +2659,13 @@ local function run_card(q)
     end
 end
 
-local function handle_action()
+local function activate()
     local cs = gridcards()
     if cs then
         run_card(cs[cursor])
         return
     end
     run_card(SECTIONS[section].rows()[cursor])
-end
-
-local function activate()
-    handle_action()
 end
 
 local function move(d)
@@ -2539,26 +2765,19 @@ function hide()
     if not visible then return end
     visible = false
     cancel_hide_timer()
-    hover_close = false
-    hover_quit = false
-    hover_clean = false
-    hover_reload = false
-    hover_screenshot = false
-    hover_record = false
-    hover_lang = false
-    hover_mute = false
-    hover_audio_icon = false
-    hover_pin = false
+    for _, k in ipairs(HOVER_KEYS) do hover[k] = false end
     stopdrag()
     unbind()
     reset_hit()
     ov.data = ""
     ov:update()
+    mp.set_property("user-data/menu_visible", "no")
+    mp.commandv("script-message-to", "nso_retro", "msc-menu-visible", "no")
 end
 
-function mousemove()
+function mousemove(_, m)
     if not visible then return end
-    local x, y = pos()
+    local x, y = m and m.x, m and m.y
     if not x then return end
 
     if drag then
@@ -2566,44 +2785,20 @@ function mousemove()
         return
     end
 
-    local new_close        = hit.close and inside(hit.close, x, y) or false
-    local new_quit         = hit.quit and inside(hit.quit, x, y) or false
-    local new_clean        = hit.clean and inside(hit.clean, x, y) or false
-    local new_reload       = hit.reload and inside(hit.reload, x, y) or false
-    local new_screenshot   = hit.screenshot and inside(hit.screenshot, x, y) or false
-    local new_record       = hit.record and inside(hit.record, x, y) or false
-    local new_lang         = hit.lang and inside(hit.lang, x, y) or false
-    local new_mute         = hit.mute and inside(hit.mute, x, y) or false
-    local new_audio_icon   = hit.audio_icon and inside(hit.audio_icon, x, y) or false
-    local new_pin          = hit.pin and inside(hit.pin, x, y) or false
-
-    if new_close ~= hover_close
-       or new_quit ~= hover_quit
-       or new_clean ~= hover_clean
-       or new_reload ~= hover_reload
-       or new_screenshot ~= hover_screenshot
-       or new_record ~= hover_record
-       or new_lang ~= hover_lang
-       or new_mute ~= hover_mute
-       or new_audio_icon ~= hover_audio_icon
-       or new_pin ~= hover_pin then
-        hover_close       = new_close
-        hover_quit        = new_quit
-        hover_clean       = new_clean
-        hover_reload      = new_reload
-        hover_screenshot  = new_screenshot
-        hover_record      = new_record
-        hover_lang        = new_lang
-        hover_mute        = new_mute
-        hover_audio_icon  = new_audio_icon
-        hover_pin         = new_pin
+    local changed, any = false, false
+    for _, k in ipairs(HOVER_KEYS) do
+        local now = hit[k] and inside(hit[k], x, y) or false
+        if now ~= hover[k] then
+            hover[k] = now
+            changed = true
+        end
+        if now then any = true end
+    end
+    if changed then
         request_render()
         return
     end
-
-    if hover_close or hover_quit or hover_clean or hover_reload
-       or hover_screenshot or hover_record or hover_lang or hover_mute
-       or hover_audio_icon or hover_pin then return end
+    if any then return end
 
     for _, h in ipairs(hit.rows) do
         if inside(h, x, y) and h.index > 0 and cursor ~= h.index then
@@ -2634,6 +2829,13 @@ end
 
 local function mousedown()
     if not visible then return end
+
+    -- If the window size changed since the last draw, redraw first so the
+    -- hitboxes match the real mouse coordinates.
+    local cur_ow = mp.get_property_number("osd-width") or RW
+    local cur_oh = mp.get_property_number("osd-height") or RH
+    if cur_ow ~= last_ow or cur_oh ~= last_oh then render() end
+
     local x, y = pos()
     if not x then return end
     if not inside(hit.panel, x, y) then hide(); return end
@@ -2652,6 +2854,14 @@ local function mousedown()
         audio.muted = not audio.muted
         render()
         mute()
+        return
+    end
+    if hit.res_icon and inside(hit.res_icon, x, y) then
+        local idx = get_effective_res_idx()
+        local next_idx = (idx % #resolutions) + 1
+        mp.set_property("user-data/capture_resolution", resolutions[next_idx].val)
+        mp.command(resolutions[next_idx].cmd)
+        render()
         return
     end
 
@@ -2768,10 +2978,13 @@ function show()
     if mp.get_property_native("user-data/menu_locked") then return end
     edge_hide()
     visible = true
+    mp.set_property("user-data/menu_visible", "yes")
+    mp.commandv("script-message-to", "nso_retro", "msc-menu-visible", "yes")
     cancel_hide_timer()
     if section > #SECTIONS then section = 1 end
     cursor = first()
     scroll = 0
+
     refresh_app_version()
     device_refresh()
     bind()
@@ -2797,27 +3010,48 @@ mp.register_script_message("toggle-menu-lock", function()
 end)
 
 mp.register_script_message("reload-lang", function()
-    cached_lang_code = nil   -- invalidate: language may have changed
-    rebuild_dicts()
-    AVAILABLE_LANGS = load_languages()
-    ROOTS = load_roots()
-    rebuild_sections()
-    tabs = {}
-    subtabs = {}
+    reload_and_keep_state()
     if visible then
-        if section > #SECTIONS then section = 1 end
-        cursor = first()
         render()
     end
 end)
 
-mp.observe_property("osd-width", "number", function()
-    if visible then render() end
-    if edge_visible then edge_render() end
+mp.register_script_message("reload-language", function()
+    set_language_and_reload(current_lang_code())
 end)
+
+-- Startup defaults: ensure the audio cache and hitboxes exist.
+mp.add_timeout(1.0, function()
+    if not visible then
+        audio_refresh(1, true)
+    end
+end)
+
+-- Watch for resolution changes to update the UI immediately.
+mp.observe_property("user-data/capture_resolution", "string", function(_, val)
+    if not val then return end
+    if visible then request_render() end
+end)
+
+-- Monitor native resolution changes (e.g. swapping input source)
+-- to refresh the status text.
+mp.observe_property("video-params/h", "number", function()
+    if visible then request_render() end
+end)
+
+-- Re-render when the OSD size changes (stretch, window size, fullscreen,
+-- rotation...). Otherwise the overlay and its hitboxes stay at the old size.
+local function on_osd_size_changed()
+    if visible then request_render() end
+    if edge_visible then edge_render() end
+end
+mp.observe_property("osd-width", "number", on_osd_size_changed)
+mp.observe_property("osd-height", "number", on_osd_size_changed)
 
 -- Audio observers use request_render() (throttled) to collapse rapid
 -- bursts from WASAPI during a drag into at most ~30 renders/sec.
+-- They also carry the Windows-mixer volume to the menu when the
+-- reload button asks msc_audio to re-read the session volume.
 mp.observe_property("volume", "number", function(_, value)
     if using_native_audio() and value then
         audio.volume = math.floor(value + 0.5)
@@ -2855,12 +3089,12 @@ mp.observe_property("ontop", "bool", function()
     if visible then render() end
 end)
 
+-- Hover-volume side panel (left screen edge).
 mp.observe_property("mouse-pos", "native", edge_mousemove)
+
 mp.register_event("shutdown", function()
     hide()
     edge_hide()
 end)
 
-msg.info("MSC overlay loaded. Use script-message toggle-overlay.")
-
-audio_refresh()
+msg.info("MSC overlay loaded (build-D, notifies nso_retro). Use script-message toggle-overlay.")

@@ -1,14 +1,29 @@
 # OSDMSG_es.dat - By TyRaS-SW
 # Spanish OSD messages for MPV-SW-Capture scripts
-# Keep %s placeholders intact.
+# Keep %s placeholders intact. A literal \n inside a value is a line break.
 
 # ============================================================
-#  NSORETRO (Bezel fit messages)
+#  Bezel fit messages
 # ============================================================
 nsoretro_no_bezel=Selecciona un Marco primero!
 nsoretro_fill_on=Ajuste 16:9 al Marco: ACTIVADO
 nsoretro_fill_off=Ajuste 16:9 al Marco: DESACTIVADO
 nsoretro_reset=Ajuste de bezel: Reiniciado
+
+# ============================================================
+#  Crop fit messages
+# ============================================================
+nsoretro_no_crop=¡Selecciona un Crop primero!
+nsoretro_crop_fill_on=Ajustar 16:9 completo al Crop: ON
+nsoretro_crop_fill_off=Ajustar 16:9 completo al Crop: OFF
+
+# ============================================================
+#  NSO RETRO WARNINGS (bezel)
+# ============================================================
+nsoretro_stretch_blocked=Estirar Ventana desactivado mientras hay un Marco activo
+nsoretro_gpu_unavailable=NSO Retro: Marco por GPU no disponible (%s). Usando el Marco por CPU.
+nsoretro_hole_failed=NSO Retro: falló el hueco del Marco (%s)
+nsoretro_ps1_missing=NSO Retro: no se encontró bezel_to_bgra.ps1 (colócalo en la carpeta de datos de mpv). Usando el Marco por CPU.
 
 # ============================================================
 #  MIRROR
@@ -56,6 +71,52 @@ shaderinit_osd_off=🙈 Ocultar OSD y 🔒 Grabación Desactivada
 # ============================================================
 motioninterp_on=Interpolación de movimiento: ACTIVADO
 motioninterp_off=Interpolación de movimiento: DESACTIVADO
+
+# ============================================================
+#  RESOLUTION SWITCHER
+# ============================================================
+res_480=Resolución: 480p
+res_720=Resolución: 720p
+res_1080=Resolución: FHD (1080p)
+res_2048=Resolución: QWXGA (1152p)
+res_1440=Resolución: QHD (1440p)
+res_1620=Resolución: 3K (1620p)
+res_1800=Resolución: QHD+ (1800p)
+res_4k=Resolución: 4K (2160p)
+res_auto=Resolución: Automática (Nativa)
+res_scale_gpu=Escalado: GPU (shader)
+res_scale_cpu=Escalado: CPU (lavfi)
+res_err_mkdir=resolution_switcher: no se pudo crear %s (usando escalado por CPU)
+res_err_shader_write=resolution_switcher: no se pudo escribir %s (usando escalado por CPU)
+res_log_saved=Registro guardado en:\n%s
+res_log_error=No se pudo escribir el registro:\n%s
+
+# ============================================================
+#  SAVE/UNSAVE RESOLUTION
+# ============================================================
+save_res_ok=Resolución guardada: %s
+save_res_cleared=Guardado de resolución quitado
+save_res_error=Error al guardar la resolución
+save_res_label_auto=Auto/Nativa
+
+# ============================================================
+#  5xBRZ LOADER
+# ============================================================
+xbrz_on=5xBRZ: %s (%s)
+xbrz_mode_full=Pantalla Completa
+xbrz_mode_cropped=Recortado
+xbrz_mode_fit=Crop: Ajuste 16:9
+xbrz_err_notfound=Error: no se encontró 5xBRz.glsl
+xbrz_err_write=Error: no se pudo escribir %s
+
+# ============================================================
+#  SDR TO HDR CONVERTER + FULL RGB
+# ============================================================
+sdrtohdr_on=SDR a HDR: ACTIVADO (Refinado)
+sdrtohdr_off=SDR a HDR: DESACTIVADO (SDR Nativo)
+fullrgb_on=RGB Completo: ACTIVADO (0-255)
+fullrgb_off=RGB Completo: DESACTIVADO (Auto)
+icc_disabled_hdr=ICC desactivado en modo HDR
 
 # ============================================================
 #  TOOLS LAUNCHER

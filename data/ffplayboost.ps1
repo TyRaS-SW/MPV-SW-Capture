@@ -31,7 +31,7 @@ $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir   = Split-Path -Parent $scriptDir
-. (Join-Path $scriptDir 'menu_settings.ps1')
+
 $statePath = Join-Path $scriptDir "menu/boost.txt"
 $ffplayExe = Join-Path $rootDir "ffplay.exe"
 $batPath   = Join-Path $scriptDir "MPV-SW-Capture.bat"

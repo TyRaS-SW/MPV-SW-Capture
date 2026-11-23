@@ -1,10 +1,9 @@
-local current_lang = "en"
 -- mirror_toggle.lua - For MPV-SW-Capture - By TyRaS-SW
 -- Toggle mirror effect with OSD, language support, and menu tick
 local mp = require "mp"
 
 -- -------------------------------------------------------------------------
--- Cargar osd_messages de forma segura (con dofile y ruta del script)
+-- Load osd_messages safely (using dofile and the script path)
 -- -------------------------------------------------------------------------
 local osd
 local function get_script_path()
@@ -25,7 +24,7 @@ local ok, err = pcall(function()
 end)
 
 if not ok then
-    -- Fallback: funciones básicas sin traducción
+    -- Fallback: basic functions without translation
     osd = {
         get = function(key) return key end,
         show = function(key, duration)
@@ -48,7 +47,7 @@ else
 end
 
 -- -------------------------------------------------------------------------
--- Funciones de filtro
+-- Filter functions
 -- -------------------------------------------------------------------------
 local function get_vf_list()
     return mp.get_property_native("vf", {})
@@ -68,7 +67,7 @@ local function has_hflip(list)
 end
 
 -- -------------------------------------------------------------------------
--- Actualizar user-data para el menú
+-- Update user-data for the menu
 -- -------------------------------------------------------------------------
 local function update_mirror_user_data()
     local vf_list = get_vf_list()
@@ -78,7 +77,7 @@ local function update_mirror_user_data()
 end
 
 -- -------------------------------------------------------------------------
--- Toggle mirror usando osd.show() para mensajes
+-- Toggle mirror using osd.show() for messages
 -- -------------------------------------------------------------------------
 local function toggle_mirror()
     print("mirror_toggle: toggle_mirror called")
@@ -111,14 +110,14 @@ local function toggle_mirror()
 end
 
 -- -------------------------------------------------------------------------
--- Observar cambios en vf para mantener user-data sincronizado
+-- Monitor changes in vf to keep user-data synchronized
 -- -------------------------------------------------------------------------
 mp.observe_property("vf", "native", function()
     update_mirror_user_data()
 end)
 
 -- -------------------------------------------------------------------------
--- Inicializar
+-- Initialize
 -- -------------------------------------------------------------------------
 update_mirror_user_data()
 

@@ -18,10 +18,12 @@ OTHERS=その他
 # ============================================================
 #  TABS
 # ============================================================
-4K=4K
+Sharpen=シャープ 
+Anti-Aliasing=アンチエイリアス
 TV=テレビ
 VideoGame=ゲーム
 Special=特殊
+Retro Pixel=レトロドット
 SIZE=サイズ
 POSITION=位置
 ROTATION=回転
@@ -65,6 +67,7 @@ Generic=汎用
 NSO N64 (Mario 64 Size)=NSO N64 (マリオ64サイズ)
 NSO N64 (DK64 Widescreen Size)=NSO N64 (DK64 ワイドサイズ)
 NSO: 『N64/GC』 (Full 4:3)=NSO: 『N64/GC』 (フル 4:3)
+Fit Full 16:9 to Crop=16:9 をクロップに合わせる
 
 # ============================================================
 #  BEZELS
@@ -136,12 +139,18 @@ Change to Auto ICC Profile=自動ICCプロファイルに変更
 Auto ICC=自動ICC
 ICC Profile=ICCプロファイル
 Toggle Deband=デバンド切替
+Toggle Full RGB (0-255)=フルRGB (0-255) の切り替え
+Toggle Input Resolution=入力解像度の切り替え
 Deband:=デバンド:
 Toggle Deinterlace=インターレース解除切替
 Deinterlace:=インターレース:
 Borders=枠
 Motion Interpolation=モーション補間
 Other Video Options=その他のビデオオプション
+INPUT RESOLUTION=入力解像度 
+Auto/Native=自動/ネイティブ
+Save Resolution=解像度を保存
+Unsave Resolution=保存解除
 
 # ============================================================
 #  AUDIO

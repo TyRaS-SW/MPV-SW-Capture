@@ -26,8 +26,10 @@ Keep Menu Open=Keep Menu Open
 Help=Help
 SETTINGS=SETTINGS
 Switch Language=Switch Language
+Convert SDR to HDR=Convert SDR to HDR
 CLEAN ALL=CLEAN ALL
 Close MPV-SW-Capture=Close MPV-SW-Capture
+Native Resolution=Native Resolution
 
 # --- Toggle state labels + ICC ---
 ON=ON
@@ -92,6 +94,7 @@ DESC_WINDOW_WINDOW_EXTRAS=WINDOW EXTRAS|Keep the window always on top or stretch
 DESC_AUDIO_ALL=ALL|Quick volume actions: +10%, -10%, mute, or set to 100% / 50%.
 DESC_AUDIO_AUDIO_BOOST=AUDIO BOOST|Amplify capture audio above 100% (up to 400%) for low-volume content.
 DESC_AUDIO_AUDIO_OUTPUT_MODE=OUTPUT MODE|Choose which audio backend handles the capture stream.
+DESC_VIDEO_OPTIONS_INPUT_RESOLUTION=INPUT RESOLUTION|Dynamically scales the image. It does not change the capture card's hardware signal.
 
 # --- 6. Keyboard / Mouse hints --------------------------------------------
 KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.=KEYBOARD: [ARROW KEYS] Move. [ENTER] Apply. [TAB] Change to next section. [ESC] Close menu.

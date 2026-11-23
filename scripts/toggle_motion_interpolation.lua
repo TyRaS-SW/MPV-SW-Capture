@@ -3,7 +3,7 @@
 local mp = require "mp"
 
 -- -------------------------------------------------------------------------
--- Cargar osd_messages de forma segura
+-- Load osd_messages safely
 -- -------------------------------------------------------------------------
 local osd
 local function get_script_path()
@@ -40,7 +40,7 @@ else
 end
 
 -- -------------------------------------------------------------------------
--- Funciones principales
+-- Main functions
 -- -------------------------------------------------------------------------
 local function is_on()
     return mp.get_property_bool("user-data/motion_interpolation", false)

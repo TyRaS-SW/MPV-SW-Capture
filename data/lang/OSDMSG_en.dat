@@ -1,14 +1,29 @@
 # OSDMSG_en.dat - By TyRaS-SW
 # English OSD messages for MPV-SW-Capture scripts
-# Keep %s placeholders intact.
+# Keep %s placeholders intact. A literal \n inside a value is a line break.
 
 # ============================================================
-#  NSORETRO (Bezel fit messages)
+#  Bezel fit messages
 # ============================================================
 nsoretro_no_bezel=Select a Bezel first!
 nsoretro_fill_on=Fit Full 16:9 to Bezel: ON
 nsoretro_fill_off=Fit Full 16:9 to Bezel: OFF
 nsoretro_reset=Bezel Fit: Reset
+
+# ============================================================
+#  Crop fit messages
+# ============================================================
+nsoretro_no_crop=Select a Crop first!
+nsoretro_crop_fill_on=Fit Full 16:9 to Crop: ON
+nsoretro_crop_fill_off=Fit Full 16:9 to Crop: OFF
+
+# ============================================================
+#  NSO RETRO WARNINGS (bezel)
+# ============================================================
+nsoretro_stretch_blocked=Stretch Window disabled while bezel is active
+nsoretro_gpu_unavailable=NSO Retro: GPU bezel unavailable (%s). Using the CPU bezel.
+nsoretro_hole_failed=NSO Retro: bezel hole failed (%s)
+nsoretro_ps1_missing=NSO Retro: bezel_to_bgra.ps1 not found (put it in the mpv data folder). Using the CPU bezel.
 
 # ============================================================
 #  MIRROR
@@ -56,6 +71,52 @@ shaderinit_osd_off=🙈 OSD Hidden Mode and 🔒 Record Disabled
 # ============================================================
 motioninterp_on=Motion Interpolation: ON
 motioninterp_off=Motion Interpolation: OFF
+
+# ============================================================
+#  RESOLUTION SWITCHER
+# ============================================================
+res_480=Resolution: 480p
+res_720=Resolution: 720p
+res_1080=Resolution: FHD (1080p)
+res_2048=Resolution: QWXGA (1152p)
+res_1440=Resolution: QHD (1440p)
+res_1620=Resolution: 3K (1620p)
+res_1800=Resolution: QHD+ (1800p)
+res_4k=Resolution: 4K (2160p)
+res_auto=Resolution: Auto (Native)
+res_scale_gpu=Scaling: GPU (shader)
+res_scale_cpu=Scaling: CPU (lavfi)
+res_err_mkdir=resolution_switcher: could not create %s (using CPU scaling)
+res_err_shader_write=resolution_switcher: could not write %s (using CPU scaling)
+res_log_saved=Log saved to:\n%s
+res_log_error=Could not write log:\n%s
+
+# ============================================================
+#  SAVE/UNSAVE RESOLUTION
+# ============================================================
+save_res_ok=Resolution saved: %s
+save_res_cleared=Saved resolution cleared
+save_res_error=Error saving resolution
+save_res_label_auto=Auto/Native
+
+# ============================================================
+#  5xBRZ LOADER
+# ============================================================
+xbrz_on=5xBRZ: %s (%s)
+xbrz_mode_full=Full Screen
+xbrz_mode_cropped=Cropped
+xbrz_mode_fit=Crop: Fit 16:9
+xbrz_err_notfound=Error: 5xBRz.glsl not found
+xbrz_err_write=Error: could not write %s
+
+# ============================================================
+#  SDR TO HDR CONVERTER + FULL RGB
+# ============================================================
+sdrtohdr_on=SDR to HDR: ON (Refined)
+sdrtohdr_off=SDR to HDR: OFF (SDR Native)
+fullrgb_on=Full RGB: ON (0-255)
+fullrgb_off=Full RGB: OFF (Auto)
+icc_disabled_hdr=ICC disabled in HDR mode
 
 # ============================================================
 #  TOOLS LAUNCHER

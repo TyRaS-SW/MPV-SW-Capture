@@ -1,4 +1,4 @@
-﻿@echo off
+@echo off
 setlocal EnableExtensions EnableDelayedExpansion
 
 :: MPV-SW-Capture launcher
@@ -18,6 +18,20 @@ set "prog2_name=ffplay.exe"
 SET "video_device="
 SET "audio_device="
 
+:: --- Capture framerate (dshow) ---
+:: Frame rate requested from the capture card (e.g. 30, 60, 90, 120).
+:: The capture card must offer a mode with this resolution + fps.
+:: Check available modes with:
+:: ffplay -list_options true -f dshow -i video="USB3 Video"
+::
+:: AUTO MODE: leave empty (set "capture_fps=") and the framerate option
+:: is NOT passed at all, so the driver chooses the fps by itself.
+set "capture_fps="
+
+:: Build the optional framerate argument (empty when capture_fps is empty)
+set "fps_opt="
+if defined capture_fps set "fps_opt=,framerate=%capture_fps%"
+
 :: --- WASAPI capture period (plugin audio mode only) ---
 :: Controls the periodicity of the IAudioClient3 shared-mode capture stream.
 ::
@@ -33,6 +47,10 @@ SET "audio_device="
 :: 'minimum' (the engine's historical default). Any unknown value also
 :: falls back to 'minimum'.
 set "MSC_AUDIO_PERIOD=minimum"
+:: --- Audio buffer size in milliseconds ---
+set "MSC_AUDIO_BUFFER_MS=25"
+:: --- Underrun behavior: 1=Silence, 0=Pop ---
+set "MSC_AUDIO_ZERO_FILL=0"
 
 set "ffplay_volume=100"
 
@@ -73,23 +91,23 @@ if not exist "%watchdog_ps1%" (
 
 :: --- START MPV-SW-Capture ---
 if /I "%audio_mode%"=="plugin" goto :plugin_audio
-set "capture_source=av://dshow:video="%video_device%"" 
+set "capture_source=av://dshow:video="%video_device%""
 set "native_audio_args="
 set "timing_args=--untimed"
 goto :start_mpv
 
 :plugin_audio
 if not exist "%ROOT_DIR%\scripts\msc_audio.dll" (
- echo ERROR: Audio plugin missing. Run native-audio\build.ps1 or select another audio mode.
+ echo ERROR: Audio plugin missing. Check if you have .dll or select another audio mode.
  exit /b 1
 )
-set "capture_source=av://dshow:video="%video_device%"" 
+set "capture_source=av://dshow:video="%video_device%""
 set "native_audio_args=--aid=no --audio-file-auto=no"
 set "timing_args=--untimed"
 goto :start_mpv
 
 :start_mpv
-start "" /b "%prog1_path%" --no-border --config-dir="%ROOT_DIR%" %capture_source% --profile=low-latency --demuxer-lavf-o-set=rtbufsize=64M --sws-scaler=point --demuxer-lavf-o-set=video_size=1920x1080 --container-fps-override=60 --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args% --input-ipc-server=\\.\pipe\mpv-sw-capture-socket
+start "" /b "%prog1_path%" --no-border --config-dir="%ROOT_DIR%" %capture_source% --profile=low-latency --demuxer-lavf-o="video_size=1920x1080%fps_opt%,rtbufsize=24M" --vd-lavc-threads=1 %timing_args% --demuxer-thread=no --vo=gpu-next --gpu-api=d3d11 --swapchain-depth=1 --hwdec=no --target-colorspace-hint=no --cursor-autohide=100 --window-scale=1.0 --osc=no --script-opts=msc_check_version_auto=0 %native_audio_args% --input-ipc-server=\\.\pipe\mpv-sw-capture-socket
 
 set "SDL_AUDIODRIVER=wasapi"
 set "SDL_AUDIO_SAMPLES=128"

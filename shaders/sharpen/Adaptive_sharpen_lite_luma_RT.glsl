@@ -24,7 +24,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Tuned for use post-resize
 // MOD of adaptive_sharpen.glsl
 
 
@@ -35,9 +34,9 @@
 1.0
 
 
-//!HOOK SCALED
+//!HOOK LUMA
 //!BIND HOOKED
-//!DESC [Adaptive_sharpen_lite_RT]
+//!DESC [Adaptive_sharpen_lite_luma_RT]
 //!WHEN STR
 
 //--------------------------------------- Settings ------------------------------------------------

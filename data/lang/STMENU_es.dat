@@ -22,6 +22,7 @@ Record=Grabar
 InfoStream=Información del Stream
 CleanALL=Limpiar TODO
 ShowMenu=Mostrar Menú
+ReloadConfig=Recargar Configuración
 
 # --- Open / Close ---
 OpenMPV=Abrir MPV-SW-Capture
